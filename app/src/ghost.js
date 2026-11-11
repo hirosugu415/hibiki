@@ -38,7 +38,7 @@ export function createGhost(api, { demo }) {
   function hold(x, y, ms) {
     api.tap(x, y, 0.7);
     later(() => { if (alive) api.holdStart(x, y); }, 280);
-    later(() => { api.holdEnd(); api.dotHide(); later(playMotif, 2200); }, ms);
+    later(() => { api.holdEnd(true); api.dotHide(); later(playMotif, 2200); }, ms);
   }
 
   // 短いドラッグの軌跡

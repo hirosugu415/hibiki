@@ -186,7 +186,8 @@ function fountainStart(owner, ref) {
   document.body.dataset.holdHz = hz.toFixed(1);
   fountainTick(f);
 }
-function fountainStop(owner) {
+// reward=true は正常に離したとき（pointerup / ゴーストの長押し終わり）だけ。1 回の離しにつき必ず 1 回。
+function fountainStop(owner, reward = false) {
   const f = fountain;
   if (!f || (owner !== undefined && f.owner !== owner)) return;
   fountain = null;
@@ -194,6 +195,17 @@ function fountainStop(owner) {
   if (f.voice) f.voice.release();
   document.body.dataset.holding = '0';
   delete document.body.dataset.holdHz;
+  if (reward) releaseRing(f);
+}
+// 離した瞬間の大きなひと輪: 泉の輪より太く（半径 約 1.5 倍）・強く（振幅 約 2 倍）ゆっくり広がる。
+function releaseRing(f) {
+  const { x, y } = f.ref;
+  const k = noteIndex(x) / (NOTE_COUNT - 1);
+  ripple(x, y, 0.4, mix(0.022, 0.014, k) * 1.5, 6000);
+  const m = target, hz = noteFreq(m, noteIndex(x));
+  audio.play(hz >= 200 ? hz / 2 : hz, Math.min(1, Math.max(0, 1 - y + m.bright)), 0.8, x);
+  const n = (+document.body.dataset.releases || 0) + 1;
+  document.body.dataset.releases = String(n);
 }
 
 const pointers = new Map();
@@ -248,7 +260,7 @@ function onUp(e) {
   const p = pointers.get(e.pointerId);
   if (p && p.timer) clearTimeout(p.timer);
   pointers.delete(e.pointerId);
-  fountainStop(e.pointerId);
+  fountainStop(e.pointerId, e.type === 'pointerup');
 }
 function releaseAll() {
   for (const [id, p] of pointers) { if (p.timer) clearTimeout(p.timer); pointers.delete(id); }
@@ -276,7 +288,7 @@ const ghost = createGhost({
   },
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
-  holdEnd() { fountainStop('ghost'); },
+  holdEnd(reward) { fountainStop('ghost', !!reward); },
   dotHide() { dot.classList.remove('show'); },
 }, { demo: DEMO });
 function dotShow(x, y) {

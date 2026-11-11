@@ -148,9 +148,10 @@ body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
 /* こだまの戻りの光輪（JS が生成。細い縁と淡い芯。バーより下の層） */
 .echo-ring {
   position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0;
-  /* 波紋の縁（屈折の縁）と同系統: アクセントを少し白へ寄せた細い縁と、ごく淡い芯 */
-  border: 1.5px solid color-mix(in srgb, rgb(var(--accent) / calc(.85 * var(--o, 1))) 78%, rgb(255 255 255 / calc(.85 * var(--o, 1))));
-  background: radial-gradient(closest-side, rgb(var(--accent) / calc(.2 * var(--o, 1))), rgb(var(--accent) / calc(.07 * var(--o, 1))) 55%, transparent);
-  box-shadow: 0 0 22px rgb(var(--accent) / calc(.4 * var(--o, 1))), inset 0 0 16px rgb(var(--accent) / calc(.3 * var(--o, 1)));
+  /* 波紋の縁と同系統の、にじんだ細い光。鋭い 1px の幾何円にしない（ぼかして不透明度を落とす） */
+  border: 2px solid color-mix(in srgb, rgb(var(--accent) / calc(.5 * var(--o, 1))) 80%, rgb(255 255 255 / calc(.5 * var(--o, 1))));
+  background: radial-gradient(closest-side, rgb(var(--accent) / calc(.1 * var(--o, 1))), rgb(var(--accent) / calc(.035 * var(--o, 1))) 55%, transparent);
+  box-shadow: 0 0 20px rgb(var(--accent) / calc(.24 * var(--o, 1))), inset 0 0 18px rgb(var(--accent) / calc(.18 * var(--o, 1)));
+  filter: blur(2.2px);
   mix-blend-mode: screen; will-change: transform, opacity;
 }

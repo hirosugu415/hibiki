@@ -92,9 +92,12 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 5500
+          "waitFor": "body[data-holding='1']"
+        },
+        {
+          "wait": 2200
         }
       ]
     }
   ]
-}
+}
