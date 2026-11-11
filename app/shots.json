@@ -1,15 +1,15 @@
 {
   "screens": [
-    { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 1500 } ] },
-    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1000 }, { "clickAt": [195, 380] }, { "wait": 120 } ] },
-    { "name": "glimmer-ring", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [320, 400] }, { "wait": 650 } ] },
-    { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1200 } ] },
+    { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 1200 } ] },
+    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 800 }, { "clickAt": [195, 380] }, { "wait": 120 } ] },
+    { "name": "glimmer-ring", "url": "/?demo=1", "steps": [ { "wait": 1000 }, { "clickAt": [320, 400] }, { "wait": 600 } ] },
+    { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1000 } ] },
     { "name": "hold", "url": "/?demo=1", "steps": [
-      { "wait": 400 },
+      { "wait": 300 },
       { "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.45,clientY:innerHeight*0.5,pointerId:9,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));return 'down'})()" },
-      { "wait": 1000 },
+      { "wait": 800 },
       { "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.45,clientY:innerHeight*0.5,pointerId:9,pointerType:'mouse',button:0,bubbles:true};const h=document.body.dataset.holding;c.dispatchEvent(new PointerEvent('pointerup',o));return 'holding='+h})()" },
-      { "wait": 900 }
+      { "wait": 300 }
     ] }
   ]
 }
