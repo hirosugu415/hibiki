@@ -55,3 +55,4 @@
 - [cycle 037] mode=repair | score 6/10 | health=ok | polish | 撮影が復旧しヘルスOK。app無変更で静かな水面は崩れ無し、c34と同じ6点
 - [cycle 038] mode=normal | score 3/10 | health=ok | polish | 「響」の階層は上がり崩れ無し。だが撮影launch失敗でヘルスNG(上限3点)
 - [cycle 039] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でヘルスNG(上限3点)。appはprobeで健全
+- [cycle 040] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (1e926807) へ自動ロールバックした
