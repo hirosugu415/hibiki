@@ -58,10 +58,11 @@ function snapPalette(m) { for (const k of PKEYS) for (let i = 0; i < pal[k].leng
 snapPalette(mood);
 
 // ---- 音 ----
+let lastTouch = -1e9; // 最後に人が触れた時刻（雨粒の抑制に使う）
 const audio = createAudio();
 audio.setMood(mood);
-window.addEventListener('pointerdown', () => { audio.unlock(); audio.applyPendingMood(); }, { capture: true });
-window.addEventListener('keydown', () => { audio.unlock(); audio.applyPendingMood(); }, { capture: true });
+window.addEventListener('pointerdown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
+window.addEventListener('keydown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
 
 // ---- ループ制御（静止時は止めて CPU/GPU を休ませる） ----
 let running = false, last = 0, keepUntil = 0;
@@ -89,10 +90,10 @@ const LIVE = 14000;
 let touched = store.get('hint') === '1';
 if (touched) hint.classList.add('gone');
 
-function ripple(x, yTop, amp, radius) {
+function ripple(x, yTop, amp, radius, live = LIVE) {
   if (!backend) return;
   backend.splat(x, 1 - yTop, amp, radius);
-  wake(LIVE);
+  wake(live);
 }
 function note(x, yTop, vel) {
   const m = target;
@@ -156,6 +157,7 @@ function onMove(e) {
   const p = pointers.get(e.pointerId);
   if (!p) return;
   e.preventDefault();
+  lastTouch = performance.now();
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   for (const ev of (evs.length ? evs : [e])) strokeTo(p, ev.clientX / viewW, ev.clientY / viewH, false);
 }
@@ -187,6 +189,26 @@ function dotShow(x, y) {
   dotShow.t = setTimeout(() => dot.classList.remove('show'), 420);
 }
 
+// ---- 間欠の雨粒（通常モードのみ。触れられていない間、7〜11 秒に一滴） ----
+let ambientN = 0;
+document.body.dataset.ambient = '0';
+function drop() {
+  if (document.hidden || !backend || performance.now() - lastTouch < 8000) return;
+  const x = 0.1 + Math.random() * 0.8;
+  // バー（下 ~100px）とヒント（下 ~150px）の領域、ワードマーク（上 ~80px）を避ける
+  const top = 90 / viewH, bottom = 1 - 215 / viewH;
+  const y = top + Math.random() * Math.max(0.1, bottom - top);
+  ripple(x, y, 0.2, 0.013, 5000); // 小さな波なので短く見守って止める
+  const m = target;
+  audio.play(noteFreq(m, 6 + Math.floor(Math.random() * 4)), Math.min(1, 0.65 + m.bright), 0.16, x);
+  ambientN++;
+  document.body.dataset.ambient = String(ambientN);
+}
+function scheduleDrop() {
+  setTimeout(() => { try { drop(); } catch { /* noop */ } scheduleDrop(); }, 7000 + Math.random() * 4000);
+}
+if (!DEMO) scheduleDrop();
+
 // ---- UI: ムード・ミュート ----
 const seg = document.querySelector('.seg');
 function selectMood(id, persist = true) {
@@ -194,6 +216,7 @@ function selectMood(id, persist = true) {
   moodBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mood === target.id)));
   seg.style.setProperty('--i', String(MOOD_ORDER.indexOf(target.id)));
   if (themeMeta) themeMeta.setAttribute('content', '#' + target.deep.map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join(''));
+  document.body.dataset.mood = target.id;
   audio.setMood(target);
   if (persist) store.set('mood', target.id);
   wake(1500);

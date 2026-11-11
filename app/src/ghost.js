@@ -53,17 +53,9 @@ export function createGhost(api, { demo }) {
     later(playMotif, delay);
   }
 
-  // 通常モード: 触れられないまま約 8 秒で、控えめな一滴を 1〜2 回
-  function nudgeOnce() {
-    later(() => {
-      alive = true;
-      api.tap(0.38 + Math.random() * 0.24, 0.5 + Math.random() * 0.1, 0.45);
-      later(() => { api.tap(0.6 + Math.random() * 0.15, 0.42, 0.35); alive = false; }, 2300);
-    }, 8000);
-  }
-
   return {
-    start() { demo ? start(800) : nudgeOnce(); },
+    // 通常モードの「間欠の雨粒」は main.js 側が担当する
+    start() { if (demo) start(800); },
     retreat() {
       const wasDemo = demo;
       alive = false; clear();

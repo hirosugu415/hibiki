@@ -21,23 +21,49 @@ body { position: fixed; inset: 0; }
 
 #wordmark {
   position: fixed; margin: 0; z-index: 2; pointer-events: none;
-  top: max(18px, calc(env(safe-area-inset-top) + 10px));
-  left: max(22px, calc(env(safe-area-inset-left) + 16px));
-  font-size: 22px; font-weight: 200; letter-spacing: .3em; line-height: 1;
-  color: rgb(255 255 255 / .62);
-  text-shadow: 0 0 24px rgb(var(--accent) / .35);
+  top: max(24px, calc(env(safe-area-inset-top) + 16px));
+  left: max(28px, calc(env(safe-area-inset-left) + 22px));
+  font-size: 30px; font-weight: 200; letter-spacing: .12em; line-height: 1;
+  color: rgb(255 255 255 / .78);
+  text-shadow: 0 0 22px rgb(var(--accent) / .5), 0 1px 10px rgb(var(--deep) / .5);
+}
+
+/* ---- 生きた環境: 呼吸する光と漂う塵（transform / opacity のみ） ---- */
+#aura { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; contain: strict; }
+#aura .glow {
+  position: absolute; border-radius: 50%; mix-blend-mode: screen; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgb(var(--accent) / var(--a, .18)), rgb(var(--accent) / calc(var(--a, .18) * .4)) 45%, transparent);
+}
+#aura .g1 { --a: .34; width: 120vmax; height: 120vmax; left: -30vmax; top: -45vmax; animation: breathe-a 13s ease-in-out infinite; }
+#aura .g2 { --a: .28; width: 100vmax; height: 100vmax; right: -40vmax; bottom: -42vmax; animation: breathe-b 11s ease-in-out -4s infinite; }
+#aura .g3 { --a: .2; width: 70vmax; height: 70vmax; left: 20vw; top: 25vh; animation: breathe-a 9s ease-in-out -2s infinite; }
+@keyframes breathe-a { 0%, 100% { transform: scale(.9) translate3d(0, 0, 0); opacity: .5 } 50% { transform: scale(1.06) translate3d(2vmax, 1.5vmax, 0); opacity: 1 } }
+@keyframes breathe-b { 0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); opacity: .95 } 50% { transform: scale(.88) translate3d(-2vmax, -2vmax, 0); opacity: .45 } }
+#aura i {
+  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / .95) 30%, rgb(var(--accent) / .6) 65%, transparent);
+  opacity: 0; will-change: transform, opacity;
+  animation: drift var(--d) ease-in-out var(--l) infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0 }
+  25% { opacity: var(--o) }
+  50% { transform: translate3d(var(--dx), var(--dy), 0); opacity: calc(var(--o) * .35) }
+  75% { opacity: var(--o) }
 }
 
 #hint {
-  position: fixed; z-index: 2; margin: 0; left: 0; right: 0; top: 60%;
+  position: fixed; z-index: 2; margin: 0; left: 0; right: 0;
+  bottom: calc(max(20px, calc(env(safe-area-inset-bottom) + 12px)) + 60px + 34px);
   text-align: center; pointer-events: none;
   font-size: 15px; font-weight: 300; letter-spacing: .28em; text-indent: .28em;
   color: #fff;
   text-shadow: 0 1px 2px rgb(var(--deep) / .55), 0 1px 14px rgb(var(--deep) / .9), 0 0 28px rgb(var(--deep) / .6), 0 0 36px rgb(var(--accent) / .35);
-  animation: breathe 3.8s ease-in-out infinite;
-  transition: opacity .7s var(--ease), transform .7s var(--ease);
+  animation: hint-in 1s var(--ease) .4s both, breathe 3.8s ease-in-out 1.4s infinite;
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
 }
-#hint.gone { opacity: 0 !important; transform: translateY(-6px); animation: none; }
+#hint.gone { opacity: 0 !important; transform: translateY(8px); animation: none; }
+@keyframes hint-in { from { opacity: 0; transform: translateY(8px) } to { opacity: .6; transform: none } }
 @keyframes breathe { 0%, 100% { opacity: .6 } 50% { opacity: .98 } }
 
 /* 触れた瞬間の光の滲み（JS が生成） */
@@ -100,8 +126,20 @@ body { position: fixed; inset: 0; }
 #mute[aria-pressed="true"] .on { display: none; }
 #mute[aria-pressed="true"] { color: rgb(255 255 255 / .96); }
 
+/* 暁: 明るい背景でも読めるよう、バーを少し沈めて文字を立てる */
+body[data-mood="dawn"] #bar {
+  background: linear-gradient(180deg, rgb(255 255 255 / .1), rgb(255 255 255 / .03)), rgb(var(--deep) / .34);
+}
+body[data-mood="dawn"] #bar button { color: rgb(255 255 255 / .9); text-shadow: 0 1px 8px rgb(var(--deep) / .55); }
+body[data-mood="dawn"] #bar button[aria-checked="true"] { color: #fff; }
+body[data-mood="dawn"] #bar svg { filter: drop-shadow(0 1px 4px rgb(var(--deep) / .5)); }
+body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
+
 @media (prefers-reduced-motion: reduce) {
   #hint { animation: none; opacity: .85; }
+  #aura .glow, #aura i { animation: none; }
+  #aura .glow { opacity: .8; }
+  #aura i { opacity: calc(var(--o) * .7); }
   .ind { transition-duration: .01s; }
   #bar button, #ghost-dot { transition-duration: .01s; }
 }
