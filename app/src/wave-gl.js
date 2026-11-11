@@ -22,7 +22,8 @@ void main(){
   float damp = uDamp - sponge * 0.028;
   float v = (c.g + uK * lap) * damp;
   v -= sign(v) * min(abs(v), 0.00006);
-  float h = (c.r + v) * 0.9992;
+  // 高さへの弱い拡散: 格子の分散で生まれる高波数の尾（縁の二重線・ちぎれ）だけを静かに均す
+  float h = (c.r + v + 0.03 * lap) * 0.9992;
   // 光の滲み: 近傍へ拡散しつつ約 1.5 秒で消える（波とは別チャンネル）
   float glow = mix(c3.b, (L4.b + R4.b + D4.b + U4.b) * 0.25, 0.35) * uGlowDecay;
   for (int i = 0; i < 16; i++) {
@@ -187,7 +188,7 @@ export function createGL(canvas) {
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[cur]);
       gl.uniform1i(sim.u.uState, 0);
       gl.uniform2i(sim.u.uSize, W, H);
-      gl.uniform1f(sim.u.uK, 0.47);
+      gl.uniform1f(sim.u.uK, 0.44); // 拡散項 0.03 と合わせて実効 0.47（2D の安定限界 0.5 の手前）
       gl.uniform1f(sim.u.uDamp, look[3]);
       gl.uniform1f(sim.u.uGlowDecay, look[5]);
       const n = withSplats ? Math.min(16, queue.length / 4) : 0;

@@ -4,6 +4,7 @@ import { createGL } from './wave-gl.js';
 import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
+import { createEcho } from './echo.js';
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
@@ -101,18 +102,18 @@ function note(x, yTop, vel) {
 }
 // 触れた瞬間の光の滲み。色は音高（x）に応じて、アクセントの周りでわずかに変える。
 const mix = (a, b, t) => a + (b - a) * t;
-function flash(x, yTop, vel) {
+function flash(x, yTop, vel, soft = 1) {
   if (!document.body || !target) return;
   const a = pal.accent, k = noteIndex(x) / (NOTE_COUNT - 1); // 0=低 … 1=高
   const white = 0.1 + 0.34 * k; // 高い音ほど白寄り
   const c = a.map((v) => Math.round(mix(v, 1, white) * 255));
   const warm = (0.5 - k) * 0.12; // 低い音は少しだけ暖色/深め
   const rgb = [c[0] + warm * 255, c[1], c[2] - warm * 255].map((v) => Math.max(0, Math.min(255, Math.round(v))));
-  const size = 150 + 70 * vel;
+  const size = (150 + 70 * vel) * (soft < 1 ? 0.8 : 1);
   const el = document.createElement('div');
   el.className = 'flash';
   el.style.cssText = `left:${x * viewW}px;top:${yTop * viewH}px;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;` +
-    `background:radial-gradient(closest-side, rgb(${rgb.join(' ')} / ${(0.5 + 0.2 * k).toFixed(2)}), rgb(${rgb.join(' ')} / .2) 45%, transparent)`;
+    `background:radial-gradient(closest-side, rgb(${rgb.join(' ')} / ${((0.5 + 0.2 * k) * soft).toFixed(2)}), rgb(${rgb.join(' ')} / ${(0.2 * soft).toFixed(2)}) 45%, transparent)`;
   document.body.appendChild(el);
   const done = () => el.remove();
   if (el.animate) {
@@ -122,11 +123,24 @@ function flash(x, yTop, vel) {
   } else setTimeout(done, 460);
   setTimeout(done, 900);
 }
-function tap(x, yTop, vel = 1) {
+function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.018);
   note(x, yTop, vel);
   flash(x, yTop, vel);
+  if (record) echo.record(x, yTop, vel);
 }
+
+// ---- こだま: 触れた場所が数秒後にそっと戻る（自身は記録しない） ----
+document.body.dataset.echoes = '0';
+document.body.dataset.echoPending = '0';
+const echo = createEcho({
+  play(x, yTop, vel, st) {
+    ripple(x, yTop, (0.3 + 0.2 * vel) * st.amp, 0.018, 5000);
+    note(x, yTop, vel * st.vel);
+    flash(x, yTop, vel, 0.4 * st.amp / 0.6);
+  },
+  onChange(n, p) { document.body.dataset.echoes = String(n); document.body.dataset.echoPending = String(p); },
+});
 
 const pointers = new Map();
 function onDown(e) {
@@ -144,10 +158,10 @@ function strokeTo(p, x, y, fromGhost) {
   const dist = Math.hypot(dx, dy), step = 0.03;
   // 連続した1本の筋: 距離に比例して注入し（遅いほど弱く）、同時波源は最大 10 に間引く
   const n = Math.max(1, Math.min(10, Math.ceil(dist / step)));
-  const amp = (fromGhost ? 0.11 : 0.16) * Math.min(1, dist / (n * step));
+  const amp = (fromGhost ? 0.07 : 0.13) * Math.min(1, dist / (n * step));
   for (let i = 1; i <= n; i++) {
     const k = i / n;
-    ripple(p.x + (x - p.x) * k, p.y + (y - p.y) * k, amp, 0.02);
+    ripple(p.x + (x - p.x) * k, p.y + (y - p.y) * k, amp, 0.026);
   }
   const idx = noteIndex(x), now = performance.now();
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }

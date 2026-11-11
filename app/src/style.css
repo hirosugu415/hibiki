@@ -45,6 +45,7 @@ body { position: fixed; inset: 0; }
   opacity: 0; will-change: transform, opacity;
   animation: drift var(--d) ease-in-out var(--l) infinite;
 }
+#aura i.soft { background: radial-gradient(closest-side, rgb(var(--accent) / .55), rgb(var(--accent) / .18) 55%, transparent); mix-blend-mode: screen; }
 @keyframes drift {
   0%, 100% { transform: translate3d(0, 0, 0); opacity: 0 }
   25% { opacity: var(--o) }

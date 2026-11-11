@@ -28,6 +28,24 @@
       ]
     },
     {
+      "name": "echo",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "clickAt": [
+            400,
+            330
+          ]
+        },
+        {
+          "wait": 6600
+        }
+      ]
+    },
+    {
       "name": "mood-night",
       "url": "/?demo=1",
       "steps": [
