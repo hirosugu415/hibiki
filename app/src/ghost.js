@@ -26,6 +26,12 @@ export function createGhost(api, { demo }) {
     const x2 = Math.min(0.94, st.x + st.rx + 0.16), y2 = Math.max(0.2, st.y - st.ry * 2.2);
     later(() => { if (alive) { lastIdx = 3; api.tap(x1, y1, 0.75); } }, 0);
     later(() => { if (alive) { lastIdx = 7; api.tap(x2, y2, 0.6); } }, 2300);
+    // 砂州の手前（中心の左 25%）で一音: 輪が浅瀬で歪み、遅れて鐘が返る
+    later(() => {
+      if (!alive) return;
+      const b = api.bar ? api.bar() : null;
+      if (b) { lastIdx = 4; api.tap(Math.max(0.06, Math.min(0.94, b.x - 0.25)), b.y, 0.6); }
+    }, 3400);
     later(() => { if (alive) { api.nudge(0.08, -0.03); } }, 4300);
     later(() => { if (alive) hold(xOf(7), Math.max(0.22, st.y - 0.2), 3000); }, 6200);
   }

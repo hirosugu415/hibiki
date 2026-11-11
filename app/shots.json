@@ -155,6 +155,21 @@
           "wait": 2200
         }
       ]
+    },
+    {
+      "name": "bar-refract",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 900
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),[bx,by]=document.body.dataset.bar.split(',').map(Number),x=(bx-0.2)*innerWidth,y=by*innerHeight;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
+        },
+        {
+          "wait": 1400
+        }
+      ]
     }
   ]
 }

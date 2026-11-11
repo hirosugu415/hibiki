@@ -79,10 +79,29 @@ function clampStone(x, y) {
 function pushStone() {
   if (!backend || !backend.setStone) return;
   backend.setStone(stone.x, 1 - stone.y, stoneR());
+  pushBar();
   document.body.dataset.stones = '1';
   document.body.dataset.stone = stone.x.toFixed(3) + ',' + stone.y.toFixed(3);
 }
 function placeStone() { [stone.x, stone.y] = clampStone(stone.x, stone.y); stone.tx = stone.x; stone.ty = stone.y; stone.glide = false; stone.vx = stone.vy = 0; pushStone(); }
+
+// ---- 砂州: 波を曲げる浅瀬。ゆっくり往復する（位相は rAF が回っている間の dt だけで進める） ----
+const BAR_PERIOD = 90; // 秒
+const shoal = { phase: BAR_PERIOD * Math.asin(0.4) / (2 * Math.PI), x: 0.62, y: 0.33, chimeT: 0, key: '' };
+document.body.dataset.barChimes = '0';
+const barRx = () => 0.26 * Math.min(viewW, viewH), barRy = () => 0.13 * Math.min(viewW, viewH); // CSS px
+function barPlace() {
+  const w = shoal.phase / BAR_PERIOD * Math.PI * 2;
+  shoal.x = 0.5 + 0.3 * Math.sin(w);
+  shoal.y = 0.33 + 0.03 * Math.sin(w * 1.5 + 1);
+}
+function pushBar() {
+  if (!backend || !backend.setBar) return;
+  barPlace();
+  backend.setBar(shoal.x, 1 - shoal.y, barRx(), barRy());
+  const k = shoal.x.toFixed(3) + ',' + shoal.y.toFixed(3);
+  if (k !== shoal.key) { shoal.key = k; document.body.dataset.bar = k; }
+}
 
 // ---- ループ制御（静止時は止めて CPU/GPU を休ませる） ----
 let running = false, last = 0, keepUntil = 0;
@@ -115,6 +134,7 @@ function tick(now) {
       stone.x += dx * ks; stone.y += dy * ks; pushStone(); moving = true;
     } else if (dx || dy) { stone.x = stone.tx; stone.y = stone.ty; pushStone(); }
   }
+  shoal.phase = (shoal.phase + dt) % BAR_PERIOD; pushBar();
   try { backend.frame(dt, pal); } catch { /* 描画失敗でも落とさない */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
@@ -210,10 +230,28 @@ function stoneEcho(x, yTop) {
     pushByWave(x, yTop);
   }, delay);
 }
+// 波が砂州の中心に届く頃（浅瀬は遅いので 1.4 倍）、砂州がやわらかい鐘を 1 回鳴らす。1 タップ最大 1 回・間隔 0.6 秒以上
+function barChime(x, yTop) {
+  if (!backend || backend.kind !== 'webgl2' || audio.muted) return;
+  const dist = Math.hypot((x - shoal.x) * viewW, (yTop - shoal.y) * viewH);
+  const speed = 0.68 * 95 * (viewW / 420);
+  const delay = Math.max(250, Math.min(5000, dist / speed * 1000 * 1.4));
+  const hzBase = noteFreq(target, noteIndex(shoal.x));
+  setTimeout(() => {
+    const now = performance.now();
+    if (audio.muted || document.hidden || now - shoal.chimeT < 600) return;
+    // 石と重なっているときは鐘だけ抑える
+    if (Math.hypot((shoal.x - stone.x) * viewW, (shoal.y - stone.y) * viewH) < stoneR() + barRy()) return;
+    shoal.chimeT = now;
+    document.body.dataset.barChimes = String((+document.body.dataset.barChimes || 0) + 1);
+    audio.play(Math.min(1600, hzBase * 2), 0.55, 0.3, shoal.x, 1.7);
+  }, delay);
+}
 function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   note(x, yTop, vel);
   stoneEcho(x, yTop);
+  barChime(x, yTop);
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
 }
@@ -375,6 +413,7 @@ bindCanvas(canvas);
 // ---- 幽霊の指 ----
 const ghostPtr = { x: 0.5, y: 0.5, idx: 0, t: 0 };
 const ghost = createGhost({
+  bar() { return { x: shoal.x, y: shoal.y, rx: barRx() / viewW }; },
   stone() { return { x: stone.x, y: stone.y, rx: stoneR() / viewW, ry: stoneR() / viewH }; },
   nudge(dx, dy) { // 石をそっとずらす（掴んで離すだけの小さな移動）
     stone.glide = false; stone.vx = stone.vy = 0;
