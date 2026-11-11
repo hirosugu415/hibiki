@@ -1,28 +1,37 @@
-# ORDER v28  (mode: repair)
+# ORDER v28  (mode: innovation)
 ## 目的
-rollback で戻ってしまった重い `app/shots.json` を再び軽量化し、公式撮影を完走させる。新機能は禁止。app のコードは触らない。
+実装はしない。「響」を、通常訪問者が数十秒触ったあとも変化を感じ続けられる楽器にするための新機能案を 3 つ、`comms/IDEAS.md` に追記する。
 
-## 背景
-c27 の `meta.json`: `healthy:false`、`screens:[]`、理由 `browserType.launch: Target page, context or browser has been closed`。ビルド成功・コンソールエラー 0。ハーネスが app/ を最後の健全状態 (4ab8dbd2) へ rollback したため、c27 で入れた shots.json 軽量化も失われ、現在は 5 枚（home / touched / echo / mood-night / hold、echo の wait 1800 等）の旧版。司令塔の probe（desktop・`/?demo=1`）は健全（`render=webgl2`、`audio=running`、blank:false、エラー 0）。
+## 前提（現状の認識）
+- c27 の撮影は完走（healthy=true、4 画面×2 幅、エラー 0）。app は c19 水準: 水面（WebGL 波動方程式）、浮かぶ石、砂州、長押しの泉、こだま、手紙（URL 楽譜）、凪／夜／暁＋音量のピル。夜光虫（glimmer）は rollback で失われている（過去の IDEAS Cycle 20 案A、復活は未決）。
+- 弱点: 数十秒触ったあとの画面が「輪・石・砂州・バー」のまま変わらない。静止画 5 枚がほぼ同じに見える。「響」ワードマークの存在感が弱い。音は鐘・応答音が中心で、演奏の「記憶」や「展開」が無い。
+- 過去に却下・保留された方向（再提案する場合は却下理由を解消すること）: 媒質の切替（明地の衝突）、光跡の一枚（シートが増える）、声の泉（マイク許可）、傾く水面（実機のみ）、熱で膜になる水。
 
 ## やること（優先順）
-1. **`app/shots.json` のみを軽量化する。** 4 枚: `home`、`touched`、`echo`、`hold`（`mood-night` は削除）。wait 合計 3500ms 以下。`waitFor` 不使用。全 URL に `?demo=1`。
-   - 例: home は wait 1000。touched は wait 700 → clickAt [300,380] → wait 100。echo は wait 500 → clickAt [400,330] → wait 600。hold は wait 200 → eval（pointerdown）→ wait 600 → eval（pointerup）→ wait 100（既存の eval 文は流用してよい）。
-   - 受け入れ条件: JSON.parse OK、枚数 4、name 一意、wait 合計 3500ms 以下（node で集計し REPORT に記載）、`waitFor` 不使用、`app/` の差分が shots.json のみ。
-2. **ビルドと健全性の確認（コードは触らない）。** `cd app && npm run build` 成功。`node harness/tools/probe.mjs` で `/?demo=1` を desktop・mobile で開き、blank:false・エラー 0・`dataset.render` を REPORT に実測値で記載。
-   - 受け入れ条件: 実測値が REPORT にある。
+1. **まず `comms/IDEAS.md` の既存内容（特に Cycle 4/8/12/16/20 の提案と決定）を読み、重複する案を避ける。**
+   - 受け入れ条件: 3 案とも既出と別物であること、または既出なら却下理由をどう解消したか明記。
+2. **`comms/IDEAS.md` の末尾に `## Cycle 28 — 提案 (builder)` を追記する（既存の内容は変更しない）。** 3 案はそれぞれ別領域から:
+   - 領域 S（音・時間）: 演奏が時間とともに展開・記憶される案（例: 触れた音が水に「沈み」あとで静かに戻る、水面が曲を覚える等）。UI のボタンは増やさない方向で。
+   - 領域 V（見た目・質感）: 初画面と数十秒後の静止画が毎回違って見える案（Apple 的な繊細さを崩さないこと。塗り円盤・派手な発光は禁止）。
+   - 領域 U（導線・最初の 3 秒・「響」の存在感）: 初見の体験と文字の階層を上質にする案。
+   各案に必ず書く: 名前／何が起きるか（1〜2 文）／なぜ他のアプリに無いか／VISION への適合（UX・Apple 的洗練）／デモモード（`?demo=1`）でどう評価できるか（静止画のタイミング・`document.body.dataset.*` の名前案）／実装の最小スコープと壊れた時の退路／負荷・撮影への影響（新しい常時 rAF・追加 GL パスを足さない）。
+   - 受け入れ条件: 3 案、各案に上記の項目がすべてある。デモで評価できない案は不可。
+3. **`app/` は一切変更しない。**
+   - 受け入れ条件: `git diff` で app/ の差分が 0。
 
 ## やらないこと
-- 新機能・見た目の変更・夜光虫の復活・鈴の音・「響」の調整（撮影成功後の normal サイクルで、小さな単位で行う）。
-- 撮影枚数・待機の増加。`src/` の変更。常時 rAF の追加。
-- `harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルートの package 系・`.gitignore` の編集。外部通信・新規ライブラリ。
+- 実装・コード変更・shots.json の変更・ライブラリ追加。外部通信。
+- `harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルートの package 系・`.gitignore` の編集。
+- 既存の IDEAS 記述の書き換え（追記のみ）。
 
 ## 見た目・UX の要求
-- 見た目は現状のまま不変（desktop 1280×800・mobile 390×844）。
+- 案は、デスクトップ（1280×800）とスマホ（390×844）の両方で成立し、バーのボタンを増やさず、親指で全操作が届くこと。
+- 見た目は Apple 製品のように繊細・静か。派手さで差をつける案は却下対象。
 
 ## デモモード
-- `?demo=1`。probe 例: `[{"goto":"/?demo=1"},{"wait":1200},{"shot":"home"},{"eval":"document.body.dataset.render"}]`。mobile は `--viewport mobile`。
+- 各案は `?demo=1`（幽霊の指の自動演奏）だけで静止画・`dataset` により評価できること。マイク・カメラ・センサー前提の案は、デモの代替入力を併記すること。
 
 ## 作業役への注意
-- 変更は shots.json のみ。撮影失敗が環境由来でも、コードで対処しようとしない。
-- REPORT は実測の事実で書く。誇張しない。コミットに Claude を貢献者として入れない。
+- 撮影の安定条件（shots.json 4 枚・wait 合計 4 秒以下）は維持。今サイクルは app 無変更なので撮影は影響を受けない。
+- 一度の大きな一括投入は rollback の原因になった（c21→c22）。各案の最小スコープは「1 サイクルで確実に終わる量」にすること。
+- REPORT は事実で書く。コミットに Claude を貢献者として入れない。
