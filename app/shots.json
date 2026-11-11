@@ -5,7 +5,7 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 600
+          "wait": 2500
         }
       ]
     },
@@ -14,7 +14,7 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 200
+          "wait": 1200
         },
         {
           "clickAt": [
@@ -32,7 +32,7 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 200
+          "wait": 1200
         },
         {
           "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
@@ -47,13 +47,13 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 200
+          "wait": 1200
         },
         {
           "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
         },
         {
-          "wait": 700
+          "wait": 900
         }
       ]
     },
@@ -62,7 +62,7 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 200
+          "wait": 1200
         },
         {
           "clickAt": [
@@ -71,7 +71,7 @@
           ]
         },
         {
-          "wait": 4500
+          "wait": 6600
         }
       ]
     },
@@ -83,7 +83,7 @@
           "click": "#mood-night"
         },
         {
-          "wait": 700
+          "wait": 1500
         }
       ]
     },
@@ -95,7 +95,34 @@
           "click": "#mood-dawn"
         },
         {
-          "wait": 700
+          "wait": 1500
+        }
+      ]
+    },
+    {
+      "name": "stone-push",
+      "url": "/?live=1",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.03*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "eval": "document.body.dataset.stone+' push='+document.body.dataset.stonePush"
+        }
+      ]
+    },
+    {
+      "name": "calm-after",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 9000
         }
       ]
     },
@@ -104,7 +131,13 @@
       "url": "/?live=1",
       "steps": [
         {
-          "wait": 1500
+          "wait": 9500
+        },
+        {
+          "waitFor": "body[data-stone-laps='2']"
+        },
+        {
+          "wait": 160
         }
       ]
     },
@@ -113,13 +146,13 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 1500
+          "wait": 6200
         },
         {
           "waitFor": "body[data-holding='1']"
         },
         {
-          "wait": 1500
+          "wait": 2200
         }
       ]
     },
@@ -128,49 +161,22 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 500
+          "wait": 900
         },
         {
           "eval": "(()=>{const c=document.getElementById('water'),[bx,by]=document.body.dataset.bar.split(',').map(Number),x=(bx-0.2)*innerWidth,y=by*innerHeight;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
         },
         {
-          "wait": 1200
-        }
-      ]
-    },
-    {
-      "name": "glimmer-ring",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 1200
-        },
-        {
-          "clickAt": [
-            640,
-            400
-          ]
-        },
-        {
-          "wait": 650
+          "wait": 1400
         }
       ]
     },
     {
       "name": "letter-play",
-      "url": "/?demo=1&pre=1",
+      "url": "/#w=PHn_AItg_xSzn_8V",
       "steps": [
         {
-          "goto": "/?demo=1#w=PHn_AItg_xSzn_8V"
-        },
-        {
-          "wait": 800
-        },
-        {
-          "shot": "first"
-        },
-        {
-          "wait": 2200
+          "wait": 900
         }
       ]
     },
@@ -178,33 +184,13 @@
       "name": "letter-share",
       "url": "/",
       "steps": [
-        {
-          "wait": 300
-        },
-        {
-          "clickAt": [
-            300,
-            380
-          ]
-        },
-        {
-          "wait": 250
-        },
-        {
-          "clickAt": [
-            700,
-            300
-          ]
-        },
-        {
-          "wait": 900
-        },
-        {
-          "click": "#wordmark"
-        },
-        {
-          "wait": 500
-        }
+        { "wait": 1200 },
+        { "clickAt": [300, 380] },
+        { "wait": 300 },
+        { "clickAt": [700, 300] },
+        { "wait": 1200 },
+        { "click": "#wordmark" },
+        { "wait": 600 }
       ]
     }
   ]

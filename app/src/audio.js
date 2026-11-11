@@ -100,7 +100,7 @@ export function createAudio() {
     }
   }
 
-  function voice(freq, bright, vel, pan, decay = 1, level = 1) {
+  function voice(freq, bright, vel, pan, decay = 1) {
     const t = ctx.currentTime;
     trim();
     const out = ctx.createGain();
@@ -118,7 +118,7 @@ export function createAudio() {
       { r: 2, g: 0.18 + 0.4 * bright, d: 0.55 },
       { r: 3.01, g: 0.05 + 0.22 * bright, d: 0.32 },
     ];
-    const peak = 0.2 * (0.45 + 0.55 * vel) * level;
+    const peak = 0.2 * (0.45 + 0.55 * vel);
     const oscs = [];
     let end = t;
     for (const p of partials) {
@@ -147,15 +147,15 @@ export function createAudio() {
   }
 
   // x: 0–1（左→右）、bright: 0–1（下→上）
-  function play(freq, bright, vel = 1, x = 0.5, decay = 1, level = 1) {
+  function play(freq, bright, vel = 1, x = 0.5, decay = 1) {
     if (unavailable || muted || !gesture) return;
     try {
-      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level); } }); return; }
+      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay); } }); return; }
       if (ctx.state !== 'running') {
-        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level); publish(); }).catch(() => {});
+        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay); publish(); }).catch(() => {});
         return;
       }
-      voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level);
+      voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay);
     } catch { /* 音が出せなくても波紋は動く */ }
   }
 
@@ -216,5 +216,5 @@ export function createAudio() {
   function applyPendingMood() { if (ctx && pendingMood) { setMood(pendingMood); pendingMood = null; } }
 
   publish();
-  return { unlock, play, voiceHold, setMood, setMuted, applyPendingMood, get muted() { return muted; }, get live() { return !!(ctx && !unavailable && !muted && gesture && ctx.state === 'running'); } };
+  return { unlock, play, voiceHold, setMood, setMuted, applyPendingMood, get muted() { return muted; } };
 }
