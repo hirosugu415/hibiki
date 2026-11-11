@@ -5,6 +5,7 @@ import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
 import { createEcho } from './echo.js';
+import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
@@ -92,7 +93,8 @@ document.body.dataset.barChimes = '0';
 const barRx = () => 0.26 * Math.min(viewW, viewH), barRy = () => 0.13 * Math.min(viewW, viewH); // CSS px
 function barPlace() {
   const w = shoal.phase / BAR_PERIOD * Math.PI * 2;
-  shoal.x = 0.5 + 0.3 * Math.sin(w);
+  // 画面が狭いほど振れ幅を縮め、砂州の左右の端が画面内に収まるようにする（desktop ではほぼ従来どおり）
+  shoal.x = 0.5 + Math.max(0.05, 0.5 - barRx() / viewW - 0.06) * Math.sin(w);
   shoal.y = 0.33 + 0.03 * Math.sin(w * 1.5 + 1);
 }
 function pushBar() {
@@ -247,6 +249,7 @@ function barChime(x, yTop) {
     audio.play(Math.min(1600, hzBase * 2), 0.55, 0.3, shoal.x, 1.7);
   }, delay);
 }
+const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   note(x, yTop, vel);
@@ -333,6 +336,7 @@ function onDown(e) {
   try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
   if (!touched) { touched = true; store.set('hint', '1'); hideHint(); }
   ghost.retreat();
+  letterStop();
   if (!stone.grab && backend && backend.setStone && Math.hypot(e.clientX - stone.x * viewW, e.clientY - stone.y * viewH) <= stoneR() + 10) {
     stone.grab = { id: e.pointerId, ox: stone.x - e.clientX / viewW, oy: stone.y - e.clientY / viewH };
     stone.glide = false; stone.vx = stone.vy = 0;
@@ -346,6 +350,7 @@ function onDown(e) {
   const p = { x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
   pointers.set(e.pointerId, p);
   tap(x, y, 1);
+  letterRec.record(x, y, 1);
   armHold(e.pointerId, p);
 }
 function strokeTo(p, x, y, fromGhost) {
@@ -440,6 +445,39 @@ function dotShow(x, y) {
   dotShow.t = setTimeout(() => dot.classList.remove('show'), 420);
 }
 
+// ---- 響の手紙: #w= があれば、幽霊の指が記録された演奏を一度だけなぞる ----
+const letter = decodeLetter(location.hash);
+document.body.dataset.letter = 'n=0;len=' + (letter ? location.hash.length : 0);
+document.body.dataset.letterPlay = '0';
+let letterTimers = [], hintWas = null;
+function hintRestore() {
+  if (hintWas === null) return;
+  hint.textContent = hintWas.text;
+  if (hintWas.gone) hint.classList.add('gone');
+  hintWas = null;
+}
+// ユーザーが触れたら再生は中断（ユーザー優先）。再開は ghost.retreat が担当
+function letterStop() {
+  if (!letterTimers.length) return;
+  letterTimers.forEach(clearTimeout); letterTimers = [];
+  document.body.dataset.letterPlay = '0';
+  hintRestore();
+}
+function letterPlay(taps) {
+  document.body.dataset.letterPlay = '1';
+  const later = (fn, ms) => { letterTimers.push(setTimeout(fn, ms)); };
+  hintWas = { text: hint.textContent, gone: hint.classList.contains('gone') };
+  hint.textContent = 'だれかの水面';
+  hint.classList.remove('gone');
+  later(hintRestore, 2000);
+  let t = 450;
+  taps.forEach((s, i) => {
+    if (i) t += Math.min(3000, Math.max(300, s.dt));
+    later(() => { dotShow(s.x, s.y); tap(s.x, s.y, Math.max(0.4, s.vel), false); }, t);
+  });
+  later(() => { letterTimers = []; document.body.dataset.letterPlay = '0'; hintRestore(); ghost.start(); }, t + 1800);
+}
+
 // ---- 間欠の雨粒（通常モードのみ。触れられていない間、7〜11 秒に一滴） ----
 let ambientN = 0;
 document.body.dataset.ambient = '0';
@@ -524,6 +562,12 @@ if (backend) {
   placeStone();
   wake(1200);
   // 起動直後に、音なしの小さな一滴で水面が「生きている」ことを示す
-  if (!DEMO) setTimeout(() => ripple(0.5, 0.52, 0.2, 0.014), 350);
+  if (!DEMO && !letter) setTimeout(() => ripple(0.5, 0.52, 0.2, 0.014), 350);
 }
-ghost.start();
+if (letter && backend) { ghost.skipFirst(); letterPlay(letter); } else ghost.start();
+// 同じページの中でハッシュだけが変わった（手紙のリンクを貼り替えた）ときも、もう一度なぞる
+window.addEventListener('hashchange', () => {
+  const l = decodeLetter(location.hash);
+  if (!l || !backend) return;
+  letterStop(); ghost.skipFirst(); ghost.retreat(); letterPlay(l);
+});

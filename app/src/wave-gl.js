@@ -26,12 +26,12 @@ void main(){
     mk = 1.0 - smoothstep(sr - 1.6, sr + 1.6, length(sd));
   }
   float wet = 1.0 - mk;
-  // 砂州（浅瀬）: 楕円の内側だけ波速を下げる（uK 0.44 → 0.30。下げる方向のみ。実効 0.47 を超えない）。境界は約 16 セルでぼかす
+  // 砂州（浅瀬）: 楕円の内側だけ波速を下げる（uK 0.44 → 0.30。下げる方向のみ。実効 0.47 を超えない）。境界は約 32 セルでぼかす（折れ防止）
   float kk = uK;
   if (uBar.w > 0.5) {
     vec2 bd = ((vec2(p) + 0.5) - uBar.xy) / uBar.zw;
     float sdc = (length(bd) - 1.0) * min(uBar.z, uBar.w);
-    kk = uK - 0.14 * (1.0 - smoothstep(-8.0, 8.0, sdc));
+    kk = uK - 0.14 * (1.0 - smoothstep(-16.0, 16.0, sdc));
   }
   float ed = min(min(float(p.x), float(mx.x - p.x)), min(float(p.y), float(mx.y - p.y)));
   float sponge = 1.0 - smoothstep(0.0, 12.0, ed);
@@ -113,7 +113,7 @@ void main(){
     float sw = 1.0 - smoothstep(0.0, 1.5, bd2);
     sw *= sw;
     float und = 0.62 + 0.38 * sin(bd2 * 4.2 - uTime * 0.28 + sin(bp.x * 2.3 + uTime * 0.11) * 1.1);
-    base += mix(uMid, uAcc, 0.4) * 0.17 * (1.0 - 0.55 * smoothstep(0.25, 0.6, dot(uMid, vec3(0.333)))) * sw * und;
+    base += mix(uMid, uAcc, 0.4) * 0.31 * (1.0 - 0.55 * smoothstep(0.25, 0.6, dot(uMid, vec3(0.333)))) * sw * und;
   }
 
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));

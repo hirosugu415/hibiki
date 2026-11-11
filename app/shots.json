@@ -170,6 +170,15 @@
           "wait": 1400
         }
       ]
+    },
+    {
+      "name": "letter-play",
+      "url": "/#w=PHn_AItg_xSzn_8V",
+      "steps": [
+        {
+          "wait": 1500
+        }
+      ]
     }
   ]
 }
