@@ -63,7 +63,10 @@ snapPalette(mood);
 let lastTouch = -1e9; // 最後に人が触れた時刻（雨粒の抑制に使う）
 const audio = createAudio();
 audio.setMood(mood);
-window.addEventListener('pointerdown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
+window.addEventListener('pointerdown', (e) => {
+  lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood();
+  if (!(e.target && e.target.closest && e.target.closest('#wordmark'))) letterVoice();
+}, { capture: true });
 window.addEventListener('keydown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
 
 // ---- 石: 水に浮かぶ暗い石。波を反射・回折させ、ドラッグで動かせる ----
@@ -449,33 +452,61 @@ function dotShow(x, y) {
 const letter = decodeLetter(location.hash);
 document.body.dataset.letter = 'n=0;len=' + (letter ? location.hash.length : 0);
 document.body.dataset.letterPlay = '0';
-let letterTimers = [], hintWas = null;
+let letterTimers = [], hintWas = null, hintTimer = 0;
 function hintRestore() {
+  clearTimeout(hintTimer); hintTimer = 0;
   if (hintWas === null) return;
   hint.textContent = hintWas.text;
   if (hintWas.gone) hint.classList.add('gone');
   hintWas = null;
+}
+// ヒントの文言を ms だけ差し替える（元の文言と表示状態は hintWas に 1 つだけ保持し、二重に差し替えない）
+function hintSay(text, ms) {
+  if (hintWas === null) hintWas = { text: hint.textContent, gone: hint.classList.contains('gone') };
+  hint.textContent = text;
+  if (hintWas.gone) { hint.style.animation = 'none'; hint.style.opacity = '.7'; } // 触れた後は静かな不透明度で見せる
+  hint.classList.remove('gone');
+  clearTimeout(hintTimer); hintTimer = setTimeout(hintRestore, ms);
 }
 // ユーザーが触れたら再生は中断（ユーザー優先）。再開は ghost.retreat が担当
 function letterStop() {
   if (!letterTimers.length) return;
   letterTimers.forEach(clearTimeout); letterTimers = [];
   document.body.dataset.letterPlay = '0';
-  hintRestore();
+  if (hint.textContent === 'だれかの水面') hintRestore();
 }
 function letterPlay(taps) {
   document.body.dataset.letterPlay = '1';
   const later = (fn, ms) => { letterTimers.push(setTimeout(fn, ms)); };
-  hintWas = { text: hint.textContent, gone: hint.classList.contains('gone') };
-  hint.textContent = 'だれかの水面';
-  hint.classList.remove('gone');
-  later(hintRestore, 2000);
+  hintSay('だれかの水面', 2000);
   let t = 450;
   taps.forEach((s, i) => {
     if (i) t += Math.min(3000, Math.max(300, s.dt));
     later(() => { dotShow(s.x, s.y); tap(s.x, s.y, Math.max(0.4, s.vel), false); }, t);
   });
-  later(() => { letterTimers = []; document.body.dataset.letterPlay = '0'; hintRestore(); ghost.start(); }, t + 1800);
+  later(() => { letterTimers = []; document.body.dataset.letterPlay = '0'; if (hint.textContent === 'だれかの水面') hintRestore(); ghost.start(); }, t + 1800);
+}
+
+// 受け手の最初の pointerdown（AudioContext が起きる操作）の約 0.6 秒後に、手紙を音つきで一度だけなぞる。
+// 中断しない（ユーザーの打と並行して鳴ってよい）。
+let voicedTaps = letter, voicedTimers = [], voicedDone = false;
+if (letter) document.body.dataset.letterVoiced = '0';
+function letterVoice() {
+  if (!voicedTaps || !backend) return;
+  const taps = voicedTaps; voicedTaps = null; voicedDone = true;
+  const later = (fn, ms) => { voicedTimers.push(setTimeout(fn, ms)); };
+  let t = 600;
+  later(() => {
+    document.body.dataset.letterVoiced = '1';
+    document.body.dataset.letterPlay = '1';
+    audio.unlock();
+    hintSay('だれかの水面', 2000);
+  }, t);
+  taps.forEach((s, i) => {
+    if (i) t += Math.min(3000, Math.max(300, s.dt));
+    later(() => { dotShow(s.x, s.y); tap(s.x, s.y, Math.max(0.4, s.vel), false); }, t + 20);
+  });
+  later(() => { voicedTimers = []; document.body.dataset.letterPlay = '0'; if (hint.textContent === 'だれかの水面') hintRestore(); }, t + 1800);
 }
 
 // ---- 間欠の雨粒（通常モードのみ。触れられていない間、7〜11 秒に一滴） ----
@@ -570,4 +601,45 @@ window.addEventListener('hashchange', () => {
   const l = decodeLetter(location.hash);
   if (!l || !backend) return;
   letterStop(); ghost.skipFirst(); ghost.retreat(); letterPlay(l);
+  if (!voicedDone) { voicedTaps = l; document.body.dataset.letterVoiced = '0'; }
+});
+
+// ---- 「響」をタップして手紙を渡す（URL を共有シート / クリップボードへ。UI は足さない） ----
+document.body.dataset.letterShare = '0';
+const wordmark = document.getElementById('wordmark');
+function copyFallback(url) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.setAttribute('readonly', ''); ta.setAttribute('aria-hidden', 'true');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return !!ok;
+  } catch { return false; }
+}
+function shareLetter() {
+  const url = letterRec.commit();
+  if (!url) { document.body.dataset.letterShare = 'none'; return; }
+  const done = (ok) => { document.body.dataset.letterShare = ok ? '1' : 'fail'; if (ok) hintSay('手紙を渡しました', 2000); };
+  const viaClipboard = () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => done(true), () => done(copyFallback(url)));
+        return;
+      }
+    } catch { /* noop */ }
+    done(copyFallback(url));
+  };
+  let coarse = false;
+  try { coarse = matchMedia('(pointer: coarse)').matches; } catch { /* noop */ }
+  if (coarse && navigator.share) {
+    try {
+      navigator.share({ url }).then(() => done(true), (err) => { if (!err || err.name !== 'AbortError') viaClipboard(); });
+    } catch { viaClipboard(); }
+  } else viaClipboard();
+}
+wordmark.addEventListener('click', shareLetter);
+wordmark.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shareLetter(); }
 });

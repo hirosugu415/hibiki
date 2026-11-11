@@ -176,8 +176,21 @@
       "url": "/#w=PHn_AItg_xSzn_8V",
       "steps": [
         {
-          "wait": 1500
+          "wait": 900
         }
+      ]
+    },
+    {
+      "name": "letter-share",
+      "url": "/",
+      "steps": [
+        { "wait": 1200 },
+        { "clickAt": [300, 380] },
+        { "wait": 300 },
+        { "clickAt": [700, 300] },
+        { "wait": 1200 },
+        { "click": "#wordmark" },
+        { "wait": 600 }
       ]
     }
   ]

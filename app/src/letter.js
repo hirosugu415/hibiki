@@ -21,10 +21,12 @@ export function createLetterRecorder(onChange) {
   const taps = [];
   let lastT = 0, timer = 0, lastWrite = 0, hash = '';
   function flush() {
-    timer = 0; lastWrite = performance.now();
+    clearTimeout(timer); timer = 0; lastWrite = performance.now();
     try { history.replaceState(null, '', location.pathname + location.search + hash); } catch { /* noop */ }
   }
   return {
+    // 書き込み待ちを今すぐ反映して、現在の手紙の URL を返す（0 打なら ''）
+    commit() { if (!taps.length) return ''; flush(); return location.href; },
     record(x, y, vel) {
       const now = performance.now();
       taps.push({ x: q(x), y: q(y), v: q(vel), d: taps.length ? q(Math.min(MAX_DT, now - lastT) / MAX_DT) : 0 });
