@@ -1,0 +1,34 @@
+{
+  "_comment": "実行中に編集しても、次のターンから反映されます。claude.command にはフルパスも指定できます。",
+  "pollIntervalSec": 5,
+  "cycleDelaySec": 30,
+  "maxCycles": 100,
+  "innovationEvery": 4,
+  "retry": {
+    "waitMinutes": 15,
+    "backoffMultiplier": 2,
+    "maxWaitMinutes": 120,
+    "maxOutputRetries": 2
+  },
+  "claude": {
+    "command": "claude",
+    "model": null,
+    "effort": null,
+    "maxBudgetUsd": null,
+    "timeoutMinutes": 60,
+    "extraArgs": []
+  },
+  "app": {
+    "installBeforeBuild": true,
+    "demoQuery": "demo=1",
+    "buildTimeoutSec": 300
+  },
+  "screenshots": {
+    "settleMs": 1500,
+    "fullPage": true,
+    "ignoreConsolePatterns": ["favicon"]
+  },
+  "repair": {
+    "rollbackAfterFailures": 3
+  }
+}

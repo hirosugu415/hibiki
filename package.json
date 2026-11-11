@@ -1,0 +1,20 @@
+{
+  "name": "autonomous-app-evolution-harness",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Claude Code 2体（builder / commander）によるアプリ自律進化実験のハーネス",
+  "scripts": {
+    "setup": "npm install && npm --prefix app install && npx playwright install chromium",
+    "builder": "node harness/loop.mjs builder",
+    "commander": "node harness/loop.mjs commander",
+    "timelapse": "node harness/timelapse.mjs",
+    "probe": "node harness/tools/probe.mjs",
+    "dry-run": "node harness/dryrun/run.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "playwright": "^1.65.0",
+    "pngjs": "^7.0.0"
+  }
+}

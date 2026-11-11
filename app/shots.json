@@ -1,0 +1,6 @@
+{
+  "_comment": "ハーネスが撮るスクリーンショット対象の宣言。builder が画面を増やしたら必ず更新すること。steps の書式は README の「steps」節を参照。",
+  "screens": [
+    { "name": "home", "url": "/", "steps": [] }
+  ]
+}
