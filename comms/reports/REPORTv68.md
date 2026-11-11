@@ -1,23 +1,25 @@
 # REPORT v68  (mode: repair)
 ## やったこと
-1. `cd app && npm run build` を1回実行: **成功**（vite v8.3.8、12 modules、65ms）。
-   出力: index.html 4.50 kB (gzip 1.54 kB) / index-*.css 7.27 kB (gzip 2.28 kB) / index-*.js 39.23 kB (gzip 16.18 kB)。 — 完了
-2. `git diff --stat -- app` は空。**app/ 無変更**。 — 完了
+1. `cd app && npm run build` を1回だけ実行: **完了・成功**（vite v8.3.8, 12 modules, 58ms）。
+   - dist/index.html 4.50 kB (gzip 1.54 kB)
+   - dist/assets/index-BnVeUhm-.css 7.27 kB (gzip 2.28 kB)
+   - dist/assets/index-BO091Ubw.js 39.23 kB (gzip 16.18 kB)
+2. `git diff --stat -- app` が空であることを確認: **完了**。**app/ 無変更**。
 
 ## ORDER からの逸脱
 なし
 
 ## 動作確認
-ビルド成功と app/ 差分なしのみ確認（ORDER 指示どおり probe・chromium 等は起動していない）。
+ビルド成功の確認と、app/ の diff が空であることの確認のみ。ORDER に従い chromium・playwright・probe・dev サーバーは起動していない。
 
 ## デモモード
-変更なし。
+変更なし（`?demo=1` の挙動は前サイクルのまま）。
 
 ## 既知の問題・妥協点
-c67 の撮影失敗（browserType.launch ... closed）は app 外の要因とされており、今回は調査していない。
+- 撮影失敗の原因は app の外（ハーネス／環境）とのORDERの判断どおり。今回は調査していない。
 
 ## 変更した主なファイル
-なし（レポートのみ）
+なし（このREPORTのみ）。
 
 ## 司令塔への申し送り
-撮影が再度失敗する場合は、ハーネス／環境側（chromium 起動）の確認が必要。
+app は健全なまま維持。撮影が成功すれば normal に戻して磨きを再開できる。
