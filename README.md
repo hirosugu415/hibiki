@@ -167,15 +167,23 @@ builder / commander の2つのループを実際に同時起動し、番の受�
 
 ## GitHub に上げる
 
-ハーネスはローカルの git にだけコミット・タグを作り、**push はしません**。上げるときは手動で:
+リモート `origin` が設定されていれば、ハーネスが **builder のターン終了時と commander のターン終了時（＝各サイクルに2回）に自動で push** します
+（`git push origin main` と `git push origin --tags`。タグは強制上書きしません）。push が失敗（ネットワーク・認証）しても実験は止まらず、警告を出して続行します。
+設定は `harness/config.json` の `git`（`push` を false にすると無効、`remote` / `branch` / `pushTimeoutSec`）。リモートが無ければ何もしません。
+
+初回のみ手動でリモートを設定します:
 
 ```powershell
-git remote add origin https://github.com/hirosugu415/appByClaude.git   # 初回のみ
+git remote add origin https://github.com/hirosugu415/appByClaude.git
 git push -u origin main --tags
 ```
 
-実験中に別ターミナルで定期的に `git push origin main --tags` しても問題ありません（push は作業ツリーを変更しないので、エージェントの作業とは干渉しません）。
 `shots/`・`logs/`・`node_modules/`・`STOP` は `.gitignore` 済みです。
+
+### 評価が OK のときの commander のコミット
+
+commander は FEEDBACK を書いたあと、**評価が OK（ヘルス OK・VISION 違反なし・5点以上）なら、次の ORDER を考える前にすぐコミット**します
+（`cycle N: accepted (score X/10) — 要約`）。OK でないときはコミットせず、ORDER を書いたあとにハーネスがまとめてコミットします。
 
 ## トラブルシュート
 

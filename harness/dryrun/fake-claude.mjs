@@ -43,6 +43,8 @@ if (role === 'commander') {
   } else {
     const score = Math.min(9, 3 + N);
     write(`comms/feedback/FEEDBACKv${N}.md`, `SCORE: ${score}/10\nDIRECTION: ${N % 2 ? 'polish' : 'pivot'}\nSUMMARY: (dummy) cycle ${N} の評価。スコア ${score}\n\n# FEEDBACK v${N}\n辛口のつもりのダミー評価。\n`);
+    // 評価 OK（スコア5以上）なら、ORDER を書く前にコミットする（本物の司令塔と同じ順序）
+    if (score >= 5) { git('add', '-A'); git('commit', '-q', '-m', `cycle ${N}: accepted (score ${score}/10) — dummy\n\nCo-Authored-By: Claude <noreply@anthropic.com>`); }
     write(`comms/orders/ORDERv${N + 1}.md`, `# ORDER v${N + 1}\n(dummy) 次の指示。mode=${mode}\n`);
     if (mode === 'innovation') append('comms/IDEAS.md', `\n## Cycle ${N} — 決定 (commander)\n- 案A: 採用 — dummy\n- 案B: 却下 — dummy\n- 案C: 却下 — dummy\n`);
   }

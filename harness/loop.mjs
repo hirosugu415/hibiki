@@ -73,6 +73,15 @@ function writeStub(file, text) {
   fs.writeFileSync(file, text);
 }
 
+// ───────── リモートへの定期 push（失敗しても実験は止めない）─────────
+function autoPush(cfg, label) {
+  if (!cfg.git?.push) return;
+  const r = G.pushSafe({ remote: cfg.git.remote, branch: cfg.git.branch, timeoutSec: cfg.git.pushTimeoutSec });
+  if (r.skipped) return;
+  if (r.ok) log(`push 完了 (${label})${r.tagsOk ? '' : ' ※タグの push は一部失敗'}`);
+  else warn(`push 失敗 (${label}): ${r.branchErr} — 実験は続行します。後で手動 push してください`);
+}
+
 // ───────── builder のターン ─────────
 async function builderTurn(st) {
   const cfg = loadConfig({ dryRun });
@@ -128,6 +137,7 @@ async function builderTurn(st) {
     repairStreak, lastHealthyCommit, notes,
   });
   log(`cycle ${N}: builder 完了 → commander へ（次の mode: ${computeNextMode(N + 1, meta.healthy, cfg)}）`);
+  autoPush(cfg, `cycle ${N} builder`);
   return true;
 }
 
@@ -184,6 +194,7 @@ async function commanderTurn(st) {
     waitUntil: done ? 0 : Date.now() + cfg.cycleDelaySec * 1000, done,
   });
   log(done ? `最大サイクル数 (${cfg.maxCycles}) に達したので終了します` : `cycle ${N} 完了 → cycle ${N + 1} の builder へ（mode=${st.nextMode}）`);
+  autoPush(cfg, `cycle ${N} commander`);
   return true;
 }
 

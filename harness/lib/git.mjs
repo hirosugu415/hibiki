@@ -3,8 +3,9 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ROOT } from './paths.mjs';
 
-export function git(args, { check = false, input } = {}) {
-  const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', input, maxBuffer: 64 * 1024 * 1024, windowsHide: true });
+export function git(args, { check = false, input, timeout } = {}) {
+  const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', input, timeout, maxBuffer: 64 * 1024 * 1024, windowsHide: true,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });   // 認証プロンプトで無人運転が止まらないように
   const out = { code: r.status ?? -1, stdout: (r.stdout || '').trim(), stderr: (r.stderr || '').trim() };
   if (check && out.code !== 0) throw new Error(`git ${args.join(' ')} 失敗: ${out.stderr || out.stdout}`);
   return out;
@@ -48,6 +49,19 @@ export function commitAll(message) {
 }
 
 export const tag = (name) => git(['tag', '-f', name], { check: true });
+
+/**
+ * リモートへ push（ブランチとタグ）。失敗しても例外は投げず、結果だけ返す。
+ * リモートが無ければ何もしない（dry-run など）。タグは強制上書きしない。
+ */
+export function pushSafe({ remote = 'origin', branch = 'main', timeoutSec = 90 } = {}) {
+  if (git(['remote', 'get-url', remote]).code !== 0) return { skipped: true };
+  const t = timeoutSec * 1000;
+  const b = git(['push', remote, branch], { timeout: t });
+  const g = git(['push', remote, '--tags'], { timeout: t });
+  const ok = b.code === 0;
+  return { ok, branchErr: b.code === 0 ? '' : (b.stderr || 'timeout').split('\n').slice(-2).join(' '), tagsOk: g.code === 0 };
+}
 
 /** 直前サイクルのタグ（なければ最初のコミット）との差分 */
 export function diffAgainstPrev(cycle) {

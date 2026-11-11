@@ -38,7 +38,19 @@ fs.mkdirSync(SB, { recursive: true });
 const skip = (src) => !/[\\/](node_modules|dist)([\\/]|$)/.test(src);
 for (const f of ['package.json', '.gitignore']) fs.copyFileSync(path.join(ROOT, f), path.join(SB, f));
 fs.cpSync(path.join(ROOT, 'harness'), path.join(SB, 'harness'), { recursive: true, filter: skip });
-fs.cpSync(path.join(ROOT, 'app'), path.join(SB, 'app'), { recursive: true, filter: skip });
+// app/ は実運用で進化していくので、dry-run では「最初のコミット時点の雛形」を使う（git が無ければ現在の app/）
+{
+  const g = (...a) => spawnSync('git', a, { cwd: ROOT, encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
+  const rootSha = g('rev-list', '--max-parents=0', 'HEAD').stdout?.toString().trim().split('\n')[0];
+  const files = rootSha ? g('ls-tree', '-r', '--name-only', rootSha, 'app').stdout.toString().split('\n').filter(Boolean) : [];
+  if (files.length) {
+    for (const f of files) {
+      const out = path.join(SB, f);
+      fs.mkdirSync(path.dirname(out), { recursive: true });
+      fs.writeFileSync(out, g('show', `${rootSha}:${f}`).stdout);
+    }
+  } else fs.cpSync(path.join(ROOT, 'app'), path.join(SB, 'app'), { recursive: true, filter: skip });
+}
 for (const [t, l] of [[path.join(ROOT, 'node_modules'), path.join(SB, 'node_modules')], [path.join(ROOT, 'app', 'node_modules'), path.join(SB, 'app', 'node_modules')]]) {
   if (!fs.existsSync(t)) { console.error(`先に npm run setup を実行してください (${t} がありません)`); process.exit(1); }
   fs.symlinkSync(t, l, 'junction');
@@ -49,6 +61,13 @@ const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
 cfg.dryRun = { ...(cfg.dryRun || {}), maxCycles: CYCLES, app: { installBeforeBuild: false } };
 if (ALWAYS_BREAK) cfg.dryRun.repair = { rollbackAfterFailures: 2 };
 fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+
+// push の検証用に、ローカルの bare リポジトリを origin にする
+const REMOTE = path.join(ROOT, '.dryrun', 'remote.git');
+fs.rmSync(REMOTE, { recursive: true, force: true });
+spawnSync('git', ['init', '-q', '--bare', '-b', 'main', REMOTE]);
+spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: SB });
+spawnSync('git', ['remote', 'add', 'origin', REMOTE], { cwd: SB });
 
 console.log(`サンドボックス: ${SB}\n条件: cycles=${CYCLES} break-cycle=${BREAK || '-'} tamper=${TAMPER} fail-once=${FAIL_ONCE}\n`);
 
@@ -98,6 +117,13 @@ const logText = ex('comms/LOG.md') ? fs.readFileSync(path.join(SB, 'comms/LOG.md
 for (let c = 0; c <= CYCLES; c++) check(`LOG.md に cycle ${String(c).padStart(3, '0')} の行`, logText.includes(`[cycle ${String(c).padStart(3, '0')}]`));
 const msgs = sh('log', '--format=%B%n---%an <%ae>');
 check('git 履歴に Claude / Anthropic の共同作者表記がない', !/claude|anthropic/i.test(msgs), 'ダミーが Co-Authored-By を付けても commit-msg フックで除去される');
+{
+  const rg = (...a) => spawnSync('git', ['--git-dir', REMOTE, ...a], { encoding: 'utf8' }).stdout.trim();
+  check('push: remote の main が手元の HEAD と一致', rg('rev-parse', 'main') === sh('rev-parse', 'HEAD'), `remote=${rg('rev-parse', 'main').slice(0, 8)} local=${sh('rev-parse', 'HEAD').slice(0, 8)}`);
+  const rtags = rg('tag').split('\n').filter(Boolean);
+  check('push: cycle タグが remote に上がっている', tags.length > 0 && tags.every((t) => rtags.includes(t)), rtags.join(','));
+}
+if (CYCLES >= 2 && !BREAK && !ALWAYS_BREAK) check('評価 OK のとき commander が先に "accepted" コミットを作る', /cycle \d+: accepted \(score/.test(sh('log', '--format=%s')));
 check('コミット数 (初期 + 各サイクル)', Number(sh('rev-list', '--count', 'HEAD')) >= 1 + CYCLES * 2, `${sh('rev-list', '--count', 'HEAD')} commits`);
 check('timelapse.html が生成された', ex('shots/timelapse.html'), tl.stderr.trim().slice(0, 200));
 if (CYCLES >= 2 && !BREAK && !ALWAYS_BREAK) {

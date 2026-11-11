@@ -20,6 +20,7 @@ export const DEFAULTS = {
     ignoreConsolePatterns: ['favicon'],
   },
   repair: { rollbackAfterFailures: 3 },
+  git: { push: true, remote: 'origin', branch: 'main', pushTimeoutSec: 90 },
   dryRun: { pollIntervalSec: 1, cycleDelaySec: 0, maxCycles: 2, innovationEvery: 2, retry: { waitMinutes: 0.02 }, screenshots: { settleMs: 300 } },
 };
 

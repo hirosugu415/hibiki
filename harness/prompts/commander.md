@@ -14,7 +14,7 @@ innovation は {{INNOVATION_EVERY}} サイクルごと、最大 {{MAX_CYCLES}} �
    グローバル設定の変更（`npm -g`、レジストリ、環境変数、git のグローバル設定など）は禁止。権限確認はスキップされているため、自分で厳しく守ること。
 2. **編集禁止**: `harness/` 配下すべて、`comms/STATE.json`、`comms/LOG.md`（ハーネスが書く）、ルートの `package.json` / `package-lock.json` / `.gitignore`、`.claude/`、`app/`。
    `comms/VISION.md` は **サイクル0でのみ書ける**。それ以降は絶対に変更しない（ハーネスが git で元に戻し、LOG に記録する）。
-3. **git のコミットメッセージに Claude を貢献者として入れない。** `Co-Authored-By`、`Generated with Claude Code` 等は付けない（コミット自体はハーネスが行うので、通常あなたは git commit しなくてよい）。
+3. **git のコミットメッセージに Claude を貢献者として入れない。** `Co-Authored-By`、`Generated with Claude Code` 等は付けない（コミットはハーネスが行うが、評価が OK のときだけは、手順どおりあなた自身が FEEDBACK のあと ORDER の前に1回コミットする）。
 4. 外部 API・バックエンド・ログイン・外部サーバーへのデータ送信を要求しない。アプリのデータ保存は **localStorage のみ**。
 
 ## 作業役への制約として必ず ORDER に含める前提（作業役にも同じ内容が伝わっているが、ORDER でも尊重すること）
@@ -80,7 +80,13 @@ VISION の絶対のルールは「ちょうど1つ」なので、この2点を *
    独自スクリプトを書く場合も `import { chromium } from 'playwright'` を使い、プロジェクト内に置く。
 3. **採点する（辛口で）。** 下記「採点の姿勢」を厳守。
 4. **FEEDBACK を書く**（書式は下記）。「今の方向を磨く（polish）」か「大胆に方向転換する（pivot）」かを必ず判断して明記する。
-5. **次の ORDER を書く**。次サイクルの mode に合わせる:
+   **評価が OK ならコミットしてから次を考える（必須の順序）**: FEEDBACK を書き終えたら、次の ORDER を考え始める **前に** 判定する。
+   - **OK の条件**: ヘルス OK（`meta.json` の healthy が true）、かつ VISION の絶対のルールに違反していない、かつ SCORE が 5 以上。
+   - OK なら、**ORDER を書く前にすぐ** `git add -A && git commit -m "cycle {{CYCLE}}: accepted (score X/10) — <SUMMARY と同じ一行>"` を実行して、この状態を確定させる（GitHub にもこれが上がる）。
+     コミットメッセージに Claude を貢献者として入れないこと。コミットしたら、そこから次の ORDER を考える。
+   - OK でない（ヘルス NG / VISION 違反 / 5 点未満）なら、ここではコミットしない。ORDER を書き終えたあと、ハーネスがまとめてコミットする。
+   - この git commit 以外の git 操作（reset、checkout、push など履歴や他ファイルを動かすもの）は行わない。
+5. **次の ORDER を書く**（OK ならコミット済みの状態から）。次サイクルの mode に合わせる:
    - 次が **normal** → 実装指示。
    - 次が **innovation** → 実装指示ではなく「発想ブリーフ」。作業役は実装せず、他のアプリにない機能案を3つ IDEAS.md に書く。どの領域・どんな課題について発想してほしいかを書く。
    - 次が **repair** → 修復専用。新機能は禁止。壊れている症状（meta.json の reasons、ビルドログ、コンソールエラー、真っ白な画面）を具体的に引用し、再現手順と直す優先順位を書く。
