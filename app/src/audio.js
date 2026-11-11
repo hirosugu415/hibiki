@@ -100,7 +100,7 @@ export function createAudio() {
     }
   }
 
-  function voice(freq, bright, vel, pan) {
+  function voice(freq, bright, vel, pan, decay = 1) {
     const t = ctx.currentTime;
     trim();
     const out = ctx.createGain();
@@ -112,7 +112,7 @@ export function createAudio() {
     if (pn) { pn.pan.value = pan; filt.connect(pn); pn.connect(out); } else filt.connect(out);
     out.connect(bus);
 
-    const tau = 0.55 + (1 - bright) * 0.35;
+    const tau = (0.55 + (1 - bright) * 0.35) * decay;
     const partials = [
       { r: 1, g: 1, d: 1 },
       { r: 2, g: 0.18 + 0.4 * bright, d: 0.55 },
@@ -147,15 +147,15 @@ export function createAudio() {
   }
 
   // x: 0–1（左→右）、bright: 0–1（下→上）
-  function play(freq, bright, vel = 1, x = 0.5) {
+  function play(freq, bright, vel = 1, x = 0.5, decay = 1) {
     if (unavailable || muted || !gesture) return;
     try {
-      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5); } }); return; }
+      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay); } }); return; }
       if (ctx.state !== 'running') {
-        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5); publish(); }).catch(() => {});
+        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay); publish(); }).catch(() => {});
         return;
       }
-      voice(freq, bright, vel, (x * 2 - 1) * 0.5);
+      voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay);
     } catch { /* 音が出せなくても波紋は動く */ }
   }
 

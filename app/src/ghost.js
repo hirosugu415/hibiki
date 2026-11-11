@@ -18,10 +18,22 @@ export function createGhost(api, { demo }) {
   const xOf = (idx) => (idx + 0.5) / 10 + (Math.random() - 0.5) * 0.02;
   const yOf = () => { phase += 0.9; return 0.5 + 0.18 * Math.sin(phase) + (Math.random() - 0.5) * 0.06; };
 
+  // 最初の一幕（デモ）: 石の手前で一音 → 横で一音 → 石をそっとずらす → 長押し
+  function firstAct() {
+    const st = api.stone ? api.stone() : null;
+    if (!st) { later(() => hold(xOf(7), 0.46, 3000), 200); return; }
+    const x1 = Math.max(0.06, st.x - st.rx - 0.1), y1 = st.y - 0.02;
+    const x2 = Math.min(0.94, st.x + st.rx + 0.16), y2 = Math.max(0.2, st.y - st.ry * 2.2);
+    later(() => { if (alive) { lastIdx = 3; api.tap(x1, y1, 0.75); } }, 0);
+    later(() => { if (alive) { lastIdx = 7; api.tap(x2, y2, 0.6); } }, 2300);
+    later(() => { if (alive) { api.nudge(0.08, -0.03); } }, 4300);
+    later(() => { if (alive) hold(xOf(7), Math.max(0.22, st.y - 0.2), 3000); }, 6200);
+  }
+
   function playMotif() {
     if (!alive) return;
-    const first = demo && motifN === 0; // 最初のモチーフは 2 音のあと、長押しを 1 回
-    const m = MOTIFS[motifN++ % MOTIFS.length].slice(0, first ? 2 : undefined);
+    if (demo && motifN === 0) { motifN++; firstAct(); return; }
+    const m = MOTIFS[motifN++ % MOTIFS.length];
     let t = 0;
     m.forEach((idx, i) => {
       later(() => { if (!alive) return; lastIdx = idx; api.tap(xOf(idx), yOf(), 0.55 + Math.random() * 0.3); }, t);
@@ -29,7 +41,6 @@ export function createGhost(api, { demo }) {
     });
     later(() => {
       if (!alive) return;
-      if (first) { hold(xOf(7), 0.46, 3000); return; }
       if (motifN % 3 === 0) stroke(); else later(playMotif, 1200);
     }, t + 150);
   }

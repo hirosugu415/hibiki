@@ -6,7 +6,7 @@ void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 const SIM = `#version 300 es
 precision highp float; precision highp int;
 uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDamp; uniform float uGlowDecay;
-uniform vec4 uSplat[16]; uniform int uCount;
+uniform vec4 uSplat[16]; uniform int uCount; uniform vec4 uStone;
 out vec4 o;
 void main(){
   ivec2 p = ivec2(gl_FragCoord.xy);
@@ -17,13 +17,22 @@ void main(){
   vec3 D4 = texelFetch(uState, clamp(p + ivec2( 0,-1), ivec2(0), mx), 0).rgb; float d = D4.r;
   vec3 U4 = texelFetch(uState, clamp(p + ivec2( 0, 1), ivec2(0), mx), 0).rgb; float u = U4.r;
   float lap = l + r + d + u - 4.0 * c.r;
+  // 媒質マスク（A チャンネル）: 0=水, 1=石。少し歪んだ小石の形、縁は約 3 セルで柔らかく
+  float mk = 0.0;
+  if (uStone.w > 0.5) {
+    vec2 sd = (vec2(p) + 0.5) - uStone.xy;
+    float ang = atan(sd.y, sd.x);
+    float sr = uStone.z * (1.0 + 0.055 * sin(3.0 * ang + 1.3) + 0.025 * sin(5.0 * ang + 0.4));
+    mk = 1.0 - smoothstep(sr - 1.6, sr + 1.6, length(sd));
+  }
+  float wet = 1.0 - mk;
   float ed = min(min(float(p.x), float(mx.x - p.x)), min(float(p.y), float(mx.y - p.y)));
   float sponge = 1.0 - smoothstep(0.0, 12.0, ed);
   float damp = uDamp - sponge * 0.028;
-  float v = (c.g + uK * lap) * damp;
+  float v = (c.g + uK * wet * lap) * damp;
   v -= sign(v) * min(abs(v), 0.00006);
   // 高さへの弱い拡散: 格子の分散で生まれる高波数の尾（縁の二重線・ちぎれ）だけを静かに均す
-  float h = (c.r + v + 0.03 * lap) * 0.9992;
+  float h = (c.r + v + 0.03 * wet * lap) * 0.9992;
   // 光の滲み: 近傍へ拡散しつつ約 1.5 秒で消える（波とは別チャンネル）
   float glow = mix(c3.b, (L4.b + R4.b + D4.b + U4.b) * 0.25, 0.35) * uGlowDecay;
   for (int i = 0; i < 16; i++) {
@@ -34,13 +43,13 @@ void main(){
     h += s.w * gs;
     glow += s.w * gs * 1.6;
   }
-  o = vec4(h, v, glow, 1.0);
+  o = vec4(h * wet, v * wet, glow * wet, mk);
 }`;
 
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -60,17 +69,19 @@ vec3 knee(vec3 x){
 void main(){
   vec2 uv = vUv;
   vec2 tx = uTexel;
-  vec3 hs = texture(uState, uv).rgb;
+  vec4 hs4 = texture(uState, uv); vec3 hs = hs4.rgb;
   float h = hs.r;
   // 勾配は 2 セル幅の中心差分 1 本。読み取りは計 5 回のまま、.rgb で受けて glow(b) の勾配も同時に得る
-  vec3 tR = texture(uState, uv + vec2(tx.x * 2.0, 0.0)).rgb, tL = texture(uState, uv - vec2(tx.x * 2.0, 0.0)).rgb;
-  vec3 tU = texture(uState, uv + vec2(0.0, tx.y * 2.0)).rgb, tD = texture(uState, uv - vec2(0.0, tx.y * 2.0)).rgb;
+  vec4 tR = texture(uState, uv + vec2(tx.x * 2.0, 0.0)), tL = texture(uState, uv - vec2(tx.x * 2.0, 0.0));
+  vec4 tU = texture(uState, uv + vec2(0.0, tx.y * 2.0)), tD = texture(uState, uv - vec2(0.0, tx.y * 2.0));
+  float m = hs4.a;
+  vec2 gm = vec2(tR.a - tL.a, tU.a - tD.a) * 0.25; // 媒質マスクの勾配（石の縁で立つ。内向き）
   vec2 g = vec2(tR.r - tL.r, tU.r - tD.r) * 0.25;
   vec2 gg = vec2(tR.b - tL.b, tU.b - tD.b) * 0.25;
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
-  vec2 q = uv + g * 2.4 * uLook.x + gg * LENS;
+  vec2 q = uv + g * 2.4 * uLook.x + gg * LENS + gm * 0.06;
   vec2 pc = (q - vec2(0.5, 0.40)) * asp;
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
@@ -98,6 +109,14 @@ void main(){
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
   col = knee(col);
+
+  // 石: 暗いガラス質。塗りつぶさず、縁にだけ水の光が回り込む
+  float eb = min(length(gm) * 5.0, 1.0);
+  float facing = max(dot(-normalize(gm + vec2(1e-5)), normalize(vec2(-0.45, 0.6))), 0.0);
+  vec3 glass = uDeep * 0.42 + uMid * 0.05 + uMid * 0.05 * (sin(q.x * asp.x * 11.0 + q.y * 8.0) * 0.5 + 0.5) * (1.0 - eb);
+  glass += uAcc * 0.035 * smoothstep(0.55, 1.0, m) * (0.5 + 0.5 * q.y);
+  col = mix(col, glass, m * 0.93);
+  col += uAcc * eb * (0.08 + 0.2 * facing + 0.35 * uPulse) * (1.0 - m * 0.35);
 
   vec2 vc = (uv - 0.5) * vec2(1.0, 1.15);
   col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
@@ -149,7 +168,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -165,7 +184,7 @@ export function createGL(canvas) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, f);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
       const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-      gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
       return { t, f, ok };
     };
     const freeTargets = () => {
@@ -199,6 +218,10 @@ export function createGL(canvas) {
       pending = Math.min(16, queue.length / 4);
     }
 
+    // 石: ux, uy は 0–1（uy は下が 0）、rPx は CSS ピクセル半径
+    function setStone(ux, uy, rPx) { stone.x = ux; stone.y = uy; stone.r = rPx; stone.on = 1; }
+    function firePulse() { pulse = 1; }
+
     function step(withSplats) {
       gl.useProgram(sim.pr);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[1 - cur]);
@@ -211,6 +234,7 @@ export function createGL(canvas) {
       gl.uniform1f(sim.u.uGlowDecay, look[5]);
       const n = withSplats ? Math.min(16, queue.length / 4) : 0;
       if (n) { const b = queue.splice(0, n * 4); splats.set(b); }
+      gl.uniform4f(sim.u.uStone, stone.x * W, stone.y * H, stone.r * W / lastCss[0], stone.on);
       gl.uniform1i(sim.u.uCount, n);
       if (n) gl.uniform4fv(sim.u.uSplat, splats);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -242,6 +266,7 @@ export function createGL(canvas) {
       if (n === 0 && pending) n = 1;
       for (let i = 0; i < n; i++) step(true);
       time += dt;
+      pulse = Math.max(0, pulse - dt / 1.4);
       gl.useProgram(ren.pr);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -255,13 +280,14 @@ export function createGL(canvas) {
       gl.uniform3fv(ren.u.uAcc, pal.accent);
       gl.uniform4f(ren.u.uLook, look[0], look[1], look[2], look[3]);
       gl.uniform1f(ren.u.uRimW, look[4]);
+      gl.uniform1f(ren.u.uPulse, pulse * pulse);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame };
+    return { kind: 'webgl2', resize, splat, frame, setStone, firePulse };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back'); } catch { /* noop */ }
     return null;

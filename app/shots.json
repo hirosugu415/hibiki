@@ -28,6 +28,24 @@
       ]
     },
     {
+      "name": "stone-shadow",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "clickAt": [
+            330,
+            480
+          ]
+        },
+        {
+          "wait": 1100
+        }
+      ]
+    },
+    {
       "name": "echo",
       "url": "/?demo=1",
       "steps": [
@@ -100,4 +118,4 @@
       ]
     }
   ]
-}
+}

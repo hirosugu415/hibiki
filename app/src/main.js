@@ -65,6 +65,24 @@ audio.setMood(mood);
 window.addEventListener('pointerdown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
 window.addEventListener('keydown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
 
+// ---- 石: 水に浮かぶ暗い石。波を反射・回折させ、ドラッグで動かせる ----
+const stone = { x: 0.5, y: 0.6, tx: 0.5, ty: 0.6, grab: null, hitT: 0 };
+document.body.dataset.stones = '0';
+document.body.dataset.stoneHits = '0';
+const stoneR = () => Math.max(0.07 * Math.min(viewW, viewH), 44); // CSS px
+function clampStone(x, y) {
+  const r = stoneR(), rx = r / viewW + 0.015;
+  const top = (84 + r) / viewH, bottom = 1 - (112 + r) / viewH;
+  return [Math.min(1 - rx, Math.max(rx, x)), Math.min(Math.max(top, bottom), Math.max(top, y))];
+}
+function pushStone() {
+  if (!backend || !backend.setStone) return;
+  backend.setStone(stone.x, 1 - stone.y, stoneR());
+  document.body.dataset.stones = '1';
+  document.body.dataset.stone = stone.x.toFixed(3) + ',' + stone.y.toFixed(3);
+}
+function placeStone() { [stone.x, stone.y] = clampStone(stone.x, stone.y); stone.tx = stone.x; stone.ty = stone.y; pushStone(); }
+
 // ---- ループ制御（静止時は止めて CPU/GPU を休ませる） ----
 let running = false, last = 0, keepUntil = 0;
 function wake(ms) {
@@ -82,6 +100,13 @@ function tick(now) {
     if (Math.abs(d) > 0.0005) { pal[key][i] += d * k; moving = true; } else pal[key][i] = target[key][i];
   }
   if (moving) applyCss();
+  { // 石の追従（軽い慣性）
+    const dx = stone.tx - stone.x, dy = stone.ty - stone.y;
+    if (Math.abs(dx) > 0.0002 || Math.abs(dy) > 0.0002) {
+      const ks = 1 - Math.exp(-dt / 0.07);
+      stone.x += dx * ks; stone.y += dy * ks; pushStone(); moving = true;
+    } else if (dx || dy) { stone.x = stone.tx; stone.y = stone.ty; pushStone(); }
+  }
   try { backend.frame(dt, pal); } catch { /* 描画失敗でも落とさない */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
@@ -145,9 +170,27 @@ function echoRing(x, yTop, st) {
   }
   setTimeout(done, dur + 600);
 }
+// 波が石に届く頃（距離÷波速の概算）に、石が低くそっと鳴る。1 タップにつき最大 1 回。
+function stoneEcho(x, yTop) {
+  if (!backend || backend.kind !== 'webgl2') return;
+  const r = stoneR(), dist = Math.max(0, Math.hypot((x - stone.x) * viewW, (yTop - stone.y) * viewH) - r);
+  const speed = 0.68 * 95 * (viewW / 420); // sim の波速 ≈ √0.47 セル/ステップ × 95Hz
+  const delay = Math.min(4000, dist / speed * 1000);
+  const hz = noteFreq(target, noteIndex(x));
+  setTimeout(() => {
+    const now = performance.now();
+    if (now - stone.hitT < 180) return;
+    stone.hitT = now;
+    const n = (+document.body.dataset.stoneHits || 0) + 1;
+    document.body.dataset.stoneHits = String(n);
+    audio.play(hz >= 200 ? hz / 2 : hz, 0.2, 0.34, stone.x, 0.55);
+    backend.firePulse(); wake(1600);
+  }, delay);
+}
 function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   note(x, yTop, vel);
+  stoneEcho(x, yTop);
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
 }
@@ -224,6 +267,11 @@ function onDown(e) {
   try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
   if (!touched) { touched = true; store.set('hint', '1'); hint.classList.add('gone'); }
   ghost.retreat();
+  if (!stone.grab && backend && backend.setStone && Math.hypot(e.clientX - stone.x * viewW, e.clientY - stone.y * viewH) <= stoneR() + 10) {
+    stone.grab = { id: e.pointerId, ox: stone.x - e.clientX / viewW, oy: stone.y - e.clientY / viewH };
+    grabPing();
+    return;
+  }
   const x = e.clientX / viewW, y = e.clientY / viewH;
   const old = pointers.get(e.pointerId);
   if (old) onUp(e);
@@ -247,7 +295,22 @@ function strokeTo(p, x, y, fromGhost) {
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }
   p.x = x; p.y = y;
 }
+// 石を掴んだ瞬間のわずかな波（縁のすぐ外に小さく 4 点）と、縁の光
+function grabPing() {
+  const r = stoneR() * 1.18;
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + 0.6;
+    ripple(stone.x + Math.cos(a) * r / viewW, stone.y + Math.sin(a) * r / viewH, 0.07, 0.01, 1500);
+  }
+  backend.firePulse(); wake(1600);
+}
 function onMove(e) {
+  if (stone.grab && stone.grab.id === e.pointerId) {
+    e.preventDefault(); lastTouch = performance.now();
+    [stone.tx, stone.ty] = clampStone(e.clientX / viewW + stone.grab.ox, e.clientY / viewH + stone.grab.oy);
+    wake(600);
+    return;
+  }
   const p = pointers.get(e.pointerId);
   if (!p) return;
   e.preventDefault();
@@ -257,12 +320,14 @@ function onMove(e) {
   for (const ev of (evs.length ? evs : [e])) strokeTo(p, ev.clientX / viewW, ev.clientY / viewH, false);
 }
 function onUp(e) {
+  if (stone.grab && stone.grab.id === e.pointerId) { stone.grab = null; return; }
   const p = pointers.get(e.pointerId);
   if (p && p.timer) clearTimeout(p.timer);
   pointers.delete(e.pointerId);
   fountainStop(e.pointerId, e.type === 'pointerup');
 }
 function releaseAll() {
+  stone.grab = null;
   for (const [id, p] of pointers) { if (p.timer) clearTimeout(p.timer); pointers.delete(id); }
   fountainStop();
 }
@@ -281,7 +346,15 @@ bindCanvas(canvas);
 // ---- 幽霊の指 ----
 const ghostPtr = { x: 0.5, y: 0.5, idx: 0, t: 0 };
 const ghost = createGhost({
+  stone() { return { x: stone.x, y: stone.y, rx: stoneR() / viewW, ry: stoneR() / viewH }; },
+  nudge(dx, dy) { // 石をそっとずらす（掴んで離すだけの小さな移動）
+    [stone.tx, stone.ty] = clampStone(stone.x + dx, stone.y + dy);
+    grabPing(); wake(1800);
+  },
   tap(x, y, vel) {
+    // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
+    const sr = stoneR() * 1.25;
+    if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;
     dotShow(x, y);
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
     tap(x, y, vel);
@@ -344,6 +417,7 @@ let rt = 0;
 function onResize() {
   if (!backend) return;
   sizeBackend();
+  placeStone();
   wake(400);
 }
 window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(onResize, 80); });
@@ -353,6 +427,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', () =
 
 if (backend) {
   sizeBackend();
+  placeStone();
   wake(1200);
   // 起動直後に、音なしの小さな一滴で水面が「生きている」ことを示す
   if (!DEMO) setTimeout(() => ripple(0.5, 0.52, 0.2, 0.014), 350);
