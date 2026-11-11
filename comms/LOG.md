@@ -34,3 +34,4 @@
 - [cycle 025] mode=normal | score 6/10 | health=ok | polish | 夜光虫が復活し輪の縁に光の点線が乗り前進。静止画は豊かになったが音と変化はまだ
 - [cycle 025] mode=normal | score 3/10 | health=NG | polish | 撮影が起動失敗でヘルスNG（上限3点）。app 自体は probe で健全、夜光虫の前進は維持
 - [cycle 026] mode=repair | score 3/10 | health=ok | polish | 撮影が途中で落ちメタ空でヘルスNG（上限3点）。app は probe で健全、見た目は c25 のまま
+- [cycle 027] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (4ab8dbd2) へ自動ロールバックした
