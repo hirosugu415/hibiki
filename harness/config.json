@@ -12,7 +12,7 @@
   },
   "claude": {
     "command": "claude",
-    "model": null,
+    "model": "sonnet",
     "effort": null,
     "maxBudgetUsd": null,
     "timeoutMinutes": 60,
@@ -26,7 +26,17 @@
   "screenshots": {
     "settleMs": 1500,
     "fullPage": true,
-    "ignoreConsolePatterns": ["favicon"]
+    "ignoreConsolePatterns": [
+      "favicon"
+    ],
+    "video": {
+      "enabled": true,
+      "durationSec": 14,
+      "viewports": [
+        "desktop"
+      ],
+      "maxWidth": 960
+    }
   },
   "repair": {
     "rollbackAfterFailures": 3

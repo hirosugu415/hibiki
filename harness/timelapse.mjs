@@ -56,6 +56,7 @@ const cycles = [...nums].sort((a, b) => a - b).map((n) => {
     logline: log.main ?? '',
     notes: log.harness,
     feedback: fbBody,
+    videos: embed ? [] : (meta?.videos ?? []).map((v) => ({ viewport: v.viewport, src: `cycle-${pad}/${v.file}`, sec: v.durationSec })),
     screens: (meta?.screens ?? []).map((s) => ({ name: s.name, viewport: s.viewport, blank: !!s.blank, src: imgSrc(pad, s.file) })),
   };
 });
@@ -131,6 +132,7 @@ button:hover{border-color:var(--acc)}button.on{background:var(--acc);color:#0d0e
 .acc>summary small{color:var(--muted);font-weight:400}
 .shots{display:flex;gap:10px;align-items:flex-start;padding:0 10px 10px}
 .shots figure{margin:0}.shots img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px;cursor:zoom-in;background:#000}
+.shots video{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#000}
 .shots .desktop{flex:1 1 0;min-width:0}.shots .mobile{flex:0 0 28%}.shots .blank img{outline:2px solid var(--ng)}
 figcaption{font-size:11px;color:var(--muted);margin-top:2px}
 .empty{padding:20px 6px;color:var(--muted)}
@@ -196,10 +198,27 @@ function renderViewer() {
     [['2200', 'ゆっくり'], ['1100', '普通'], ['500', '速い'], ['250', '最速']].map(([v, t]) => h('option', { value: v }, t)));
   speed.value = store.get('speed', '1100');
   viewer.append(h('div', { class: 'vhead' }, h('h3', {}, 'cycle ' + c.pad), c.score != null && h('span', { class: 'score' }, String(c.score), h('small', {}, '/10')),
-    h('div', { class: 'tools' }, prevBtn, nextBtn, play, speed, h('span', { class: 'sp' }),
+    h('div', { class: 'tools' }, prevBtn, nextBtn, play, speed,
+      hasVideos && h('button', { id: 'vplay', class: vmode ? 'on' : '', onclick: toggleVideoPlay, title: '各サイクルの demo 動画を順に連続再生' }, vmode ? '■ 動画停止' : '🎬 動画再生'),
+      h('span', { class: 'sp' }),
       h('button', { onclick: () => toggleAll(true) }, '全て開く'), h('button', { onclick: () => toggleAll(false) }, '全て閉じる'))));
+  if (c.videos.length) {
+    const vopen = vmode || openNames.has('動画');
+    const vdet = h('details', { class: 'acc', 'data-name': '動画', open: vopen },
+      h('summary', {}, '動画（demo）', h('small', {}, c.videos.map((v) => v.viewport + ' ' + v.sec + 's').join(' · '))),
+      h('div', { class: 'shots' }, c.videos.map((v) => {
+        const vid = h('video', { controls: true, playsinline: true, loop: !vmode, preload: 'metadata', 'data-vsrc': v.src });
+        vid.muted = true;
+        if (vmode) vid.addEventListener('ended', () => { const j = nextVideoIdx(cur); if (j < 0) { vmode = false; renderViewer(); } else select(j, { scroll: true }); });
+        return h('figure', { class: v.viewport }, vid, h('figcaption', {}, v.viewport));
+      })));
+    const loadVideos = () => vdet.querySelectorAll('video[data-vsrc]').forEach((vd) => { vd.src = vd.dataset.vsrc; vd.removeAttribute('data-vsrc'); if (vmode || vdet.dataset.play) vd.play().catch(() => {}); });
+    vdet.addEventListener('toggle', () => { if (vdet.open) { openNames.add('動画'); vdet.dataset.play = '1'; loadVideos(); } else openNames.delete('動画'); store.set('open', [...openNames]); });
+    viewer.append(vdet);
+    if (vopen) loadVideos();
+  }
   const names = [...new Set(c.screens.map((s) => s.name))];
-  if (!names.length) { viewer.append(h('p', { class: 'empty' }, c.n === 0 ? 'cycle 0 はアプリが空のためスクショはありません。' : 'このサイクルにはスクショがありません。')); return; }
+  if (!names.length) { if (!c.videos.length) viewer.append(h('p', { class: 'empty' }, c.n === 0 ? 'cycle 0 はアプリが空のためスクショはありません。' : 'このサイクルにはスクショがありません。')); return; }
   const anyOpen = names.some((n) => openNames.has(n));
   names.forEach((name, i) => {
     const shots = c.screens.filter((s) => s.name === name);
@@ -229,8 +248,18 @@ function select(i, { scroll = false } = {}) {
   renderViewer();
 }
 function step(d) { select(Math.min(C.length - 1, Math.max(0, cur + d)), { scroll: true }); }
+const hasVideos = C.some((c) => c.videos.length);
+let vmode = false;
+function nextVideoIdx(from) { for (let i = from + 1; i < C.length; i++) if (C[i].videos.length) return i; return -1; }
+function toggleVideoPlay() {
+  if (vmode) { vmode = false; renderViewer(); return; }
+  stopPlay(); vmode = true;
+  const j = C[cur].videos.length && nextVideoIdx(cur) >= 0 ? cur : C.findIndex((c) => c.videos.length);
+  if (j !== cur) select(j, { scroll: true }); else renderViewer();
+}
 function startPlay() {
   if (timer) return;
+  vmode = false;
   if (cur >= C.length - 1) select(C.findIndex((c) => c.screens.length) , { scroll: true });
   timer = setInterval(() => { if (cur >= C.length - 1) { stopPlay(); renderPlayBtn(); return; } step(1); }, Number(store.get('speed', '1100')));
   renderPlayBtn();

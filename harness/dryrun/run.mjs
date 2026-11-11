@@ -111,6 +111,7 @@ for (let c = 1; c <= CYCLES; c++) {
   const expectBroken = BREAK && Number(BREAK) === c;
   if (!expectBroken) check(`cycle ${c}: スクショ（デスクトップ/スマホ）`, ex(`${d}/desktop-home.png`) && ex(`${d}/mobile-home.png`) && meta?.screens?.length >= 2, `${meta?.screens?.length ?? 0} 枚`);
   else check(`cycle ${c}: ビルド失敗のためスクショ無し・build.log あり`, !ex(`${d}/desktop-home.png`) && ex(`${d}/build.log`));
+  if (!expectBroken) check(`cycle ${c}: demo 動画 (video-desktop.webm) が録画された`, ex(`${d}/video-desktop.webm`) && meta?.videos?.length >= 1 && meta.videos[0].bytes > 1000, JSON.stringify(meta?.videos ?? []));
   check(`cycle ${c}: healthy=${expectBroken ? 'false(意図的に破壊)' : 'true'}`, expectBroken ? meta?.healthy === false : meta?.healthy === true, (meta?.reasons || []).join(' / '));
 }
 const logText = ex('comms/LOG.md') ? fs.readFileSync(path.join(SB, 'comms/LOG.md'), 'utf8') : '';

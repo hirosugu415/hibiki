@@ -130,6 +130,39 @@ export function isBlankPng(file) {
   } catch (e) { return { blank: false, colors: -1, error: String(e) }; }
 }
 
+/** demo モードの動き（幽霊の指の演奏）を数秒録画して video-<viewport>.webm に残す。失敗しても健全性には影響しない。 */
+export async function recordDemoVideos(browser, baseUrl, cfg, dir, meta) {
+  const v = cfg.screenshots.video;
+  if (!v?.enabled) return;
+  meta.videos = [];
+  const demo = cfg.app.demoQuery ? '?' + cfg.app.demoQuery : '';
+  for (const name of v.viewports ?? ['desktop']) {
+    const vp = cfg.screenshots.viewports.find((x) => x.name === name);
+    if (!vp) continue;
+    const tmp = path.join(dir, '.video-tmp');
+    let ctx;
+    try {
+      const k = Math.min(1, (v.maxWidth ?? 960) / vp.width);
+      const size = { width: Math.round((vp.width * k) / 2) * 2, height: Math.round((vp.height * k) / 2) * 2 };
+      ctx = await browser.newContext({ ...contextOptions(vp), recordVideo: { dir: tmp, size } });
+      const page = await ctx.newPage();
+      const video = page.video();
+      await page.goto(new URL('/' + demo, baseUrl + '/').toString(), { waitUntil: 'load', timeout: 15000 });
+      await page.waitForTimeout((v.durationSec ?? 14) * 1000);
+      await ctx.close();
+      ctx = null;
+      const out = `video-${name}.webm`;
+      fs.renameSync(await video.path(), path.join(dir, out));
+      meta.videos.push({ viewport: name, file: out, durationSec: v.durationSec ?? 14, bytes: fs.statSync(path.join(dir, out)).size });
+    } catch (e) {
+      meta.warnings.push(`[video-${name}] 録画できませんでした: ${String(e.message || e).split('\n')[0]}`);
+    } finally {
+      try { await ctx?.close(); } catch {}
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+}
+
 export function loadScreens() {
   const j = readJson(path.join(APP, 'shots.json'));
   const screens = Array.isArray(j?.screens) && j.screens.length ? j.screens : [{ name: 'home', url: '/', steps: [] }];
@@ -143,7 +176,7 @@ export async function captureCycle(cycle, cfg) {
   const dir = shotsDir(cycle);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
-  const meta = { cycle, at: new Date().toISOString(), build: null, screens: [], consoleErrors: [], warnings: [], healthy: false, reasons: [] };
+  const meta = { cycle, at: new Date().toISOString(), build: null, screens: [], consoleErrors: [], warnings: [], videos: [], healthy: false, reasons: [] };
 
   log(`cycle ${cycle}: app をビルド中 …`);
   meta.build = await buildApp(cfg, dir);
@@ -193,6 +226,7 @@ export async function captureCycle(cycle, cfg) {
         await ctx.close();
       }
     }
+    await recordDemoVideos(browser, preview.url, cfg, dir, meta);
   } catch (e) {
     meta.reasons.push('撮影処理の失敗: ' + String(e.message || e).split('\n')[0]);
   } finally {

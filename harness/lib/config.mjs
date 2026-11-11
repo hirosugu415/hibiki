@@ -18,10 +18,11 @@ export const DEFAULTS = {
       { name: 'mobile', width: 390, height: 844, isMobile: true, hasTouch: true },
     ],
     ignoreConsolePatterns: ['favicon'],
+    video: { enabled: true, durationSec: 14, viewports: ['desktop'], maxWidth: 960 },
   },
   repair: { rollbackAfterFailures: 3 },
   git: { push: true, remote: 'origin', branch: 'main', pushTimeoutSec: 90 },
-  dryRun: { pollIntervalSec: 1, cycleDelaySec: 0, maxCycles: 2, innovationEvery: 2, retry: { waitMinutes: 0.02 }, screenshots: { settleMs: 300 } },
+  dryRun: { pollIntervalSec: 1, cycleDelaySec: 0, maxCycles: 2, innovationEvery: 2, retry: { waitMinutes: 0.02 }, screenshots: { settleMs: 300, video: { durationSec: 1 } } },
 };
 
 const merge = (a, b) => {
