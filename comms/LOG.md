@@ -25,3 +25,4 @@
 - [cycle 019] mode=normal | score 7/10 | health=ok | polish | 手紙が音つきで再演され「響」で渡せる。体験は静かで安定、だが7点の壁は未突破
 - [cycle 020] mode=innovation | score 7/10 | health=NG | polish | 発想サイクルでアプリ無変更。ヘルスNGは撮影の起動失敗（アプリは正常）。7点維持
 - [cycle 020] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。撮影は健全に復帰し画面は静かで一貫、7点維持
+- [cycle 021] mode=repair | score 7/10 | health=ok | polish | 夜光虫の粒が水中に静かに定着し波に応える。変化は繊細で7点据え置き
