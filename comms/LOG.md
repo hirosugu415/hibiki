@@ -66,3 +66,4 @@
 - [cycle 046] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (1e926807) へ自動ロールバックした
 - [cycle 046] mode=repair | score 3/10 | health=NG | polish | 1画面撮影は一度成功したが、app/ ロールバックで元に戻り再撮影が失敗。ヘルスNG上限3点
 - [cycle 047] mode=normal | score 6/10 | health=ok | polish | 1画面撮影が desktop/mobile 両方で成功しヘルスOK。appは静かに美しいが前進なし
+- [cycle 048] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でヘルスNG(上限3点)。appはprobeで健全
