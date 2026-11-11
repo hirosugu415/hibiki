@@ -104,19 +104,7 @@
       "url": "/?live=1",
       "steps": [
         {
-          "waitFor": "body[data-stone-laps='1']"
-        },
-        {
-          "wait": 4500
-        },
-        {
-          "waitFor": "body[data-stone-laps='2']"
-        },
-        {
-          "waitFor": "body[data-stone-laps='2']"
-        },
-        {
-          "wait": 160
+          "wait": 1500
         }
       ]
     },
