@@ -49,12 +49,11 @@ vec3 knee(vec3 x){
 void main(){
   vec2 uv = vUv;
   vec2 tx = uTexel;
-  float h  = texture(uState, uv).r;
-  vec2 g1 = vec2(texture(uState, uv + vec2(tx.x, 0.0)).r - texture(uState, uv - vec2(tx.x, 0.0)).r,
-                 texture(uState, uv + vec2(0.0, tx.y)).r - texture(uState, uv - vec2(0.0, tx.y)).r) * 0.5;
-  vec2 g3 = vec2(texture(uState, uv + vec2(tx.x * 3.0, 0.0)).r - texture(uState, uv - vec2(tx.x * 3.0, 0.0)).r,
-                 texture(uState, uv + vec2(0.0, tx.y * 3.0)).r - texture(uState, uv - vec2(0.0, tx.y * 3.0)).r) / 6.0;
-  vec2 g = mix(g1, g3, 0.55);
+  vec3 hs = texture(uState, uv).rgb;
+  float h = hs.r;
+  // 勾配は 2 セル幅の中心差分 1 本（以前の 1px/3px 混合の近似）。テクスチャ読み取りは計 5 回
+  vec2 g = vec2(texture(uState, uv + vec2(tx.x * 2.0, 0.0)).r - texture(uState, uv - vec2(tx.x * 2.0, 0.0)).r,
+                texture(uState, uv + vec2(0.0, tx.y * 2.0)).r - texture(uState, uv - vec2(0.0, tx.y * 2.0)).r) * 0.25;
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
@@ -73,7 +72,7 @@ void main(){
   float slope = max(length(g) * 12.0 - 0.02, 0.0);
   float rim = 1.0 - exp(-slope * 3.0 / uRimW);
   float hp = max(h, 0.0);
-  float gl = texture(uState, uv).b;
+  float gl = hs.b;
   vec3 add = uAcc * (rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * 3.0 + hp * 0.5)
            + uMid * max(-h, 0.0) * 0.7
            + uAcc * (gl * 0.9 + gl * gl * 1.4);
@@ -111,6 +110,8 @@ function program(gl, frag) {
 
 const STEP_HZ = 180;
 const LONG_SIDE_CELLS = 420;
+const MAX_LONG_PX = 1024; // 内部描画の長辺の上限（CSS で拡大。バイリニアで滑らか）
+const MAX_STEPS = 4;
 
 export function createGL(canvas) {
   try {
@@ -129,7 +130,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -154,7 +155,8 @@ export function createGL(canvas) {
     };
 
     function resize(cssW, cssH, dpr) {
-      const px = Math.min(dpr, 2);
+      lastCss = [cssW, cssH, dpr];
+      const px = Math.min(Math.min(dpr, 2), MAX_LONG_PX / Math.max(cssW, cssH)) * quality;
       const cw = Math.max(1, Math.round(cssW * px)), ch = Math.max(1, Math.round(cssH * px));
       if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
       const s = LONG_SIDE_CELLS / Math.max(cssW, cssH);
@@ -197,11 +199,26 @@ export function createGL(canvas) {
       pending = Math.min(16, queue.length / 4);
     }
 
+    // 適応品質: 直近のフレーム時間が長いときだけ内部解像度を段階的に下げる（戻さない）
+    let ftSum = 0, ftN = 0, warm = 20;
+    function adapt(dt) {
+      if (warm > 0) { warm--; return; } // 起動直後（シェーダー初回コンパイル等）は測らない
+      if (dt <= 0 || dt >= 0.5) return; // 休止明けの外れ値は無視
+      ftSum += dt; ftN++;
+      if (ftN < 8) return;
+      const avg = ftSum / ftN; ftSum = 0; ftN = 0;
+      if (avg > 0.04 && quality > 0.5) {
+        quality = quality > 0.75 ? 0.75 : 0.5;
+        resize(lastCss[0], lastCss[1], lastCss[2]);
+      }
+    }
+
     function frame(dt, pal) {
       if (lost || !tex.length) return;
+      adapt(dt);
       if (pal.look) look = pal.look;
       acc += dt;
-      let n = Math.min(Math.floor(acc * STEP_HZ), 7);
+      let n = Math.min(Math.floor(acc * STEP_HZ), MAX_STEPS);
       acc = Math.min(acc - n / STEP_HZ, 1 / STEP_HZ);
       if (n === 0 && pending) n = 1;
       for (let i = 0; i < n; i++) step(true);
