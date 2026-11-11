@@ -17,3 +17,4 @@
 - [cycle 012] mode=innovation | score 7/10 | health=ok | polish | app は v11 のまま（発想サイクル）。長押し三幕は良いが初画面は依然空虚
 - [cycle 013] mode=normal | score 7/10 | health=ok | polish | 浮かぶ石が初画面の焦点になり回折も見えた。ただし証拠撮影のタイミングが悪く、石の質感は黒い穴寄り
 - [cycle 014] mode=normal | score 7/10 | health=ok | polish | 石が濡れた小石に読め、回折の証拠も撮れた。だが石はまだ反応を返さない飾り寄り
+- [cycle 015] mode=normal | score 7/10 | health=ok | polish | 波が石をゆっくり押し、触れる→波→石が動くループが成立。静かで過不足なし
