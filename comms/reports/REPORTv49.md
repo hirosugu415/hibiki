@@ -1,23 +1,26 @@
 # REPORT v49  (mode: repair)
 ## やったこと
-1. 現状確認: 完了。shots.json は1画面（touched, `/?demo=1`）・有効な JSON（JSON.parse で screens=1 を確認）。
-2. `npm run build` を1回だけ実行: 成功（vite build, 12 modules, 51ms）。出力サイズ: index.html 4.50 kB (gzip 1.54) / CSS 7.27 kB (gzip 2.28) / JS 39.23 kB (gzip 16.18)。
-3. app/ は無変更: 完了。`git diff --stat -- app` と `git status --short app` はいずれも空。
+1. 現状確認: 完了。`app/shots.json` は1画面（`touched`、url `/?demo=1`、steps は wait 600 → clickAt [190,400] → wait 100）で、JSON として有効（`JSON.parse` で screens=1 を確認）。
+2. `npm run build` を1回だけ実行: 完了。成功（vite v8.3.8、12 modules、53ms）。出力サイズ: index.html 4.50 kB（gzip 1.54 kB）、CSS 7.27 kB（gzip 2.28 kB）、JS 39.23 kB（gzip 16.18 kB）。
+3. app/ は無変更: 完了。`git diff --stat -- app` は空。`git status` の差分は `comms/STATE.json`（ハーネス側）のみ。
 
 ## ORDER からの逸脱
 なし
 
 ## 動作確認
-- shots.json の検証とビルドのみ。ORDER の指示どおり chromium / playwright / probe / dev サーバーは起動していない（残留プロセスなし）。
+- shots.json の内容確認と JSON.parse による検証。
+- build 1回のみ（成功）。
+- chromium・playwright・probe・dev サーバーは起動していない。そのため残留プロセスは無い。画面の目視確認もしていない（ORDER どおり）。
 
 ## デモモード
-変更なし。`?demo=1` で幽霊の指が演奏し、(190,400) のタップ後に波紋が出る（c47 から不変）。
+変更なし。`?demo=1` の挙動は c47 のまま（今回は実機確認していない）。
 
 ## 既知の問題・妥協点
-- 撮影側の chromium 起動失敗（間欠的）は app からは対処できず、今回も未確認。今回の撮影結果次第。
+- c48 の撮影失敗は chromium 起動側の間欠的な問題で、作業役からは原因調査も対処もできない（ORDER で起動禁止）。今回の green 可否は撮影側の環境次第。
 
 ## 変更した主なファイル
-- comms/reports/REPORTv49.md のみ
+- `comms/reports/REPORTv49.md` のみ（app/ は変更なし）。
 
 ## 司令塔への申し送り
-- 撮影が green になれば2サイクル連続 green を確認し、その後の normal で CSS 中心の小さな磨きに進むのがよさそう。
+- 撮影が green になれば 2 サイクル連続 green の確認 → 次の normal で CSS 中心の小さな磨き、の方針で問題なし。
+- shots.json は 1 画面のまま維持している。
