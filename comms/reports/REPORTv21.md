@@ -13,7 +13,7 @@
 ## 動作確認
 - `npm run build` 成功。全 probe で `consoleErrors: []`。
 - desktop `?demo=1`: 1.5 秒の idle で `dataset.glimmer=48`。タップ [640,400] 後 650ms の `desktop-ring.png` で輪の縁に点線の光（`shots/cycle-021/probe/`）。mobile も同様（`glimmer=32`、[195,420]）。
-- 非 demo で 1 タップ（desktop、2.0 秒上限）: `glints` 0 → 29（3.5 秒待ち 37→ 上限変更前）。mobile 0 → 32。`glintLast` 更新（例 `592,271`）、`audio=running`。2 回目のタップで更に増加（desktop 64）。
+- 非 demo で 1 タップ（desktop、2.0 秒上限）: `glints` 0 → 37（到達上限 2.6 秒のとき）、上限を 2.0 秒にしてからは 1 タップ+1.5 秒で 29。mobile（2.6 秒のとき）0 → 32。`glintLast` 更新（例 `592,271`）、`audio=running`。2 回目のタップで更に増加（desktop 64）。
 - 60 秒放置（`?demo=1`、desktop）: 例外 0、`render=webgl2`、rAF 1440 フレーム、`glints=739`。`webglcontextlost` は出ていない（エラーリスナーで例外 0。contextlost イベントそのものは監視していないが、描画は終始正常）。
 - rAF 停止: 非 demo で 1 タップ後 19 秒で rAF 数が 448 のまま 1.8 秒間増えず（粒が静止中に回し続けない）。
 - letter-play（`desktop-first.png`）: 手紙の輪 2 つとヒント「だれかの水面」が写る。暁: 暖色の淡い粒、破綻なし。
