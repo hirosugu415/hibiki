@@ -391,6 +391,31 @@ function scheduleDrop() {
 }
 if (!DEMO) scheduleDrop();
 
+// ---- 石のさざ波: 水に浮いて揺れている手がかり。無音・stoneHits は増やさない。触れている間は出さない ----
+let stoneLaps = 0;
+document.body.dataset.stoneLaps = '0';
+function stoneLap() {
+  if (document.hidden || !backend || backend.kind !== 'webgl2') return false;
+  if (stone.grab || fountain || pointers.size || performance.now() - lastTouch < 3500) return false;
+  const r = stoneR() * 1.06, N = 18;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    ripple(stone.x + Math.cos(a) * r / viewW, stone.y + Math.sin(a) * r / viewH, 0.1, 0.014, 2600);
+  }
+  stoneLaps++;
+  document.body.dataset.stoneLaps = String(stoneLaps);
+  return true;
+}
+function scheduleLap(ms) {
+  setTimeout(() => {
+    let ok = false;
+    try { ok = stoneLap(); } catch { /* noop */ }
+    // 出せなかったら少し待って再試行。出せたら 8〜14 秒後（2 回目だけは 8〜11 秒）
+    scheduleLap(ok ? 8000 + Math.random() * (stoneLaps === 1 ? 3000 : 6000) : 3000);
+  }, ms);
+}
+if (!DEMO) scheduleLap(2000);
+
 // ---- UI: ムード・ミュート ----
 const seg = document.querySelector('.seg');
 function selectMood(id, persist = true) {

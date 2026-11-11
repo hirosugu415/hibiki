@@ -35,13 +35,25 @@
           "wait": 1200
         },
         {
-          "clickAt": [
-            330,
-            480
-          ]
+          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
         },
         {
-          "wait": 1100
+          "wait": 450
+        }
+      ]
+    },
+    {
+      "name": "stone-shadow2",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
+        },
+        {
+          "wait": 900
         }
       ]
     },
@@ -101,7 +113,13 @@
       "url": "/?live=1",
       "steps": [
         {
-          "wait": 11000
+          "wait": 9500
+        },
+        {
+          "waitFor": "body[data-stone-laps='2']"
+        },
+        {
+          "wait": 160
         }
       ]
     },
@@ -109,6 +127,9 @@
       "name": "hold",
       "url": "/?demo=1",
       "steps": [
+        {
+          "wait": 6200
+        },
         {
           "waitFor": "body[data-holding='1']"
         },

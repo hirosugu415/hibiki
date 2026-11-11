@@ -49,7 +49,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -81,7 +81,18 @@ void main(){
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
-  vec2 q = uv + g * 2.4 * uLook.x + gg * LENS + gm * 0.06;
+  // 石の幾何（sim と同じ歪んだ円）。dpx は縁からの外向き距離 (CSS px)
+  vec2 spc = (uv - uStoneC.xy) * asp;
+  float sl = length(spc);
+  float sang = atan(spc.y, spc.x);
+  float sRy = max(uStoneC.z, 1e-4);
+  float sr = sRy * (1.0 + 0.055 * sin(3.0 * sang + 1.3) + 0.025 * sin(5.0 * sang + 0.4));
+  float dpx = (sl - sr) / sRy * uStoneC.w;
+  vec2 sn = spc / max(sl, 1e-5);
+  float has = step(0.5, uStoneC.w);
+  // 縁の外 6〜10px で背景を少しだけゆがませる（水が石に寄る屈折）
+  float bend = has * smoothstep(-2.0, 1.5, dpx) * exp(-max(dpx, 0.0) / 6.5);
+  vec2 q = uv + g * 2.4 * uLook.x + gg * LENS + gm * 0.06 + sn / asp * 0.0075 * bend;
   vec2 pc = (q - vec2(0.5, 0.40)) * asp;
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
@@ -110,13 +121,31 @@ void main(){
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
   col = knee(col);
 
-  // 石: 暗いガラス質。塗りつぶさず、縁にだけ水の光が回り込む
-  float eb = min(length(gm) * 5.0, 1.0);
-  float facing = max(dot(-normalize(gm + vec2(1e-5)), normalize(vec2(-0.45, 0.6))), 0.0);
-  vec3 glass = uDeep * 0.42 + uMid * 0.05 + uMid * 0.05 * (sin(q.x * asp.x * 11.0 + q.y * 8.0) * 0.5 + 0.5) * (1.0 - eb);
-  glass += uAcc * 0.035 * smoothstep(0.55, 1.0, m) * (0.5 + 0.5 * q.y);
-  col = mix(col, glass, m * 0.93);
-  col += uAcc * eb * (0.08 + 0.2 * facing + 0.35 * uPulse) * (1.0 - m * 0.35);
+  // 石: 水に濡れた小石。上寄りがわずかに明るく、下は水に沈む。左上に細い光の弧、右下はほぼ無し。波が当たった側の縁だけ光る
+  vec2 lp = spc / sRy;                       // 石の局所座標（半径 1）
+  float tY = clamp(lp.y * 0.5 + 0.5, 0.0, 1.0);
+  vec3 top = uDeep * 0.7 + uMid * 0.34;
+  vec3 bot = uDeep * 0.30 + uMid * 0.03;
+  vec3 stoneC = mix(bot, top, smoothstep(0.0, 1.0, tY));
+  float mott = sin(lp.x * 6.5 + lp.y * 2.6 + 1.1) * sin(lp.y * 5.2 - lp.x * 1.9 + 0.4) * 0.5 + 0.5;
+  stoneC += uMid * 0.05 * mott * (0.4 + 0.6 * tY);
+  float wetline = smoothstep(-0.55, -0.1, lp.y);   // 水際より下は沈んで暗く
+  stoneC *= mix(0.74, 1.0, wetline);
+  // 濡れた艶: 左上寄りのごく淡い面の光
+  vec2 gp = lp - vec2(-0.38, 0.42);
+  stoneC += mix(uAcc, vec3(1.0), 0.45) * 0.085 * exp(-dot(gp, gp) * 5.5) * wetline;
+  stoneC += uAcc * 0.02 * smoothstep(0.55, 1.0, m);
+  col = mix(col, stoneC, m * 0.95);
+
+  float facing = max(dot(sn, normalize(vec2(-0.55, 0.72))), 0.0);
+  float inB = exp(-pow((dpx + 1.1) / 1.7, 2.0)) * has;     // 縁のすぐ内側の細い帯
+  float outB = exp(-pow((dpx - 1.6) / 2.6, 2.0)) * has;    // 縁のすぐ外側（波の光が回り込む）
+  vec3 arcC = mix(uAcc, vec3(1.0), 0.55);
+  col += arcC * inB * (0.55 * pow(facing, 3.0) + 0.05 + 0.04 * (1.0 - facing)) ;
+  float meniscus = exp(-pow((dpx - 3.2) / 2.2, 2.0)) * has;   // 縁の外側の影（水が石に寄る暗い溝）
+  col *= 1.0 - 0.16 * meniscus * (1.0 - 0.7 * facing);
+  col += uAcc * outB * (gl * 0.9 + (0.25 + 0.5 * facing) * 0.07 + 0.3 * uPulse * (0.4 + 0.6 * facing));
+  col += uAcc * inB * (0.12 * uPulse + gl * 0.5);
 
   vec2 vc = (uv - 0.5) * vec2(1.0, 1.15);
   col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
@@ -281,6 +310,7 @@ export function createGL(canvas) {
       gl.uniform4f(ren.u.uLook, look[0], look[1], look[2], look[3]);
       gl.uniform1f(ren.u.uRimW, look[4]);
       gl.uniform1f(ren.u.uPulse, pulse * pulse);
+      gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
