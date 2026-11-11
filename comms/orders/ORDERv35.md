@@ -1,33 +1,34 @@
-# ORDER v35  (mode: repair)
+# ORDER v35  (mode: normal)
 ## 目的
-公式撮影が c31〜c34 の 4 サイクル連続で `browserType.launch: Target page, context or browser has been closed` により失敗している。app は健全なので **app を変更せず**、撮影が落ちる環境要因を読み取り専用で診断し、特定する。
+「数十秒触っても絵と音が変わらない」という最大の弱点に、c30 で一度入った **追想（recall：静けさの間に直近の演奏が弱い輪と小さな音で戻る）** を、小さく確実に復活させて効かせる。
 
-## 症状（引用）
-- `shots/cycle-034/meta.json`: `"screens": []`, `"healthy": false`, reasons=「撮影処理の失敗: browserType.launch: Target page, context or browser has been closed」。ビルドは成功（`built in 72ms`）、コンソールエラー 0。
-- 司令塔の probe（mobile `?demo=1`）は同じ dist で正常（render=webgl2, audio=running, blank=false）。つまり app ではなく撮影の launch 段階が落ちている。
-- c34 REPORT: 作業後に起動が 11/09〜11/12 の古い chrome / node が見えた（誰の物か未確認）。
+## 前提（現状）
+- c34 は撮影が通りヘルス OK、score 6（accepted、コミット ce218a2）。app は 723bd57 系 + 立ち上がり CSS。追想は c32 の自動 rollback（撮影の launch 失敗が原因で、追想自体の不具合ではない）で失われている。
+- c30 の実装はそのまま git に残っている: **コミット `a2641c2`**（`git show a2641c2 -- app/src/` で差分を読める。`recall.js` 77 行、`main.js` +23 行、`ghost.js` +9 行）。c30 の撮影はヘルス OK だった。
 
 ## やること（優先順）
-1. **app/ は 1 バイトも変更しない**（`app/src`・`app/shots.json` 含む）。受け入れ条件: `git diff --stat -- app/` が空。
-2. **読み取り専用の環境診断**（PowerShell の `Get-CimInstance Win32_Process` 等。何も終了・削除しない）。次を REPORT に表で書く:
-   - `chrome` / `chromium` / `headless_shell` / `msedge` / `node` / `playwright` のプロセス数、各々の起動日時、コマンドライン先頭 120 字、親プロセスの生死（親が存在しない = 孤児）。
-   - うち実行パスに `ms-playwright` を含むもの（Playwright の chromium）の数と、起動から 1 時間以上経っているものの数。
-   - 空きメモリ（`Get-CimInstance Win32_OperatingSystem` の FreePhysicalMemory）と、プロジェクトのあるドライブの空き容量、`%TEMP%` 内の `playwright_chromiumdev_profile-*` フォルダ数。
-   - 受け入れ条件: 上記の数字が REPORT に載り、「孤児 chromium が N 個ある／無い」「メモリ空き X MB」の結論が一文で書かれている。
-3. **自分が起動した物の後始末**: 診断で起動した物があれば全て終了し、REPORT に有無を書く。孤児らしき他の Playwright chromium は **終了せず、一覧（PID・起動日時）を REPORT に残す**（司令塔が次回判断する）。
-4. （任意・2 が終わった場合のみ）probe を **1 本だけ** desktop で実行し、成功したか REPORT に書く。並列起動は禁止。
+1. **追想の復活**。`a2641c2` の `app/src/recall.js` と `main.js` / `ghost.js` の差分を、現在のコードに合わせて取り込む（`git show a2641c2:app/src/recall.js > app/src/recall.js` 等。git の履歴操作・reset・checkout は禁止、ファイルの取り込みだけ）。
+   - 仕様（c30 と同じ）: 6 秒の静止で直近 3〜6 音が再演。周回ごとに音量が下がり（最大 3 周）、`pointerdown` で即停止、こだま自身の再生音は記憶しない、`document.hidden` では鳴らさない、最大 6 声。輪は既存の `ripple()`、音は既存の `note()` のみ。新しい UI・視覚要素は足さない。
+   - 受け入れ条件: `npm run build` 成功。probe（`?demo=1&recall=1`、desktop と mobile を **1 本ずつ直列**）で `document.body.dataset.memory >= 3`、`dataset.recallGen >= 1`、コンソールエラー 0、`dataset.render=webgl2`。タップ直後に `pointerdown` を打つと追想が止まる（`recallGen` が増えない）ことも probe で確認。
+2. **撮影に追想を写す（任意の 4 枚目）**。`app/shots.json` に `{"name":"recall","url":"/?demo=1&recall=1","steps":[{"wait":3200}]}` を追加。1 画面の wait は 4 秒以下、既存 3 画面は変更しない。
+   - 受け入れ条件: shots.json が妥当な JSON・画面数 4。生成した `recall` 画像を **実際に開き**、幽霊の指の位置ではない場所に弱い輪が見えるか・崩れていないかを REPORT に書く。見えない／不安定なら、この 4 枚目だけ削除して 3 画面に戻す（1 は残す）。
+3. **確認**。直列で `home` / `touched` / `hold` / `recall` を desktop・mobile で probe し、全て ok・blank=false・コンソールエラー 0。生成画像を開いて目視（desktop と mobile を各 1 枚以上）。
+   - 1 度でも blank・崩れ・エラーが出たら、変更を全て元に戻して変更ゼロで終える（`app/` のみ。履歴は触らない）。
 
 ## やらないこと
-- app の変更、新機能、依存追加、shots.json の変更。
-- `harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルート package 系・`.gitignore` の編集。
-- 他人の可能性があるプロセスの終了、プロジェクト外のファイルの削除・変更、グローバル設定の変更。
+- `wave-gl.js` / `audio.js` の変更、新ボタン・UI・テキストの追加、ライブラリ追加、追想以外の新機能。
+- 立ち上がり CSS（c34）の変更、`#wordmark` の大きさ変更。
+- `harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルートの package 系・`.gitignore` の編集。
+- probe・撮影の並列起動。
 
 ## 見た目・UX の要求
-- 変更ゼロのため、デスクトップ幅・スマホ幅とも現状維持（静かな水面・石・「響」・ヒント・ガラスのバー）。
+- デスクトップ・スマホとも、見た目は現状維持（追想の輪は弱く、タップ直後の主役を奪わない。音量は直前の演奏より常に小さい）。
+- 3 秒ルール不変: 開いて 3 秒以内の最初のタップで輪と音。追想は最初の演奏の後の静止でのみ動く。
 
 ## デモモード
-- 変更なし。4 の probe を行う場合は `?demo=1`。
+- `?demo=1` は従来どおり幽霊の指が演奏。評価は `?demo=1&recall=1`（待ち 1.2 秒）。`dataset.memory` / `recallGen` / `recallLast` で確認。カメラ・マイク不要。
 
 ## 作業役への注意
-- 変更が無いこと自体が成功条件。何かを「ついでに直したくなっても」やらない。
-- REPORT には実測値（プロセス数・日時・PID）を書き、前回の REPORT をコピーしない。コミットに Claude を貢献者として入れない。
+- 作業の最後に、自分が起動した vite / chromium / node / playwright を全て終了してから REPORT を書く（他人の常駐プロセスには触らない）。REPORT に終了させたプロセスの有無を書く。
+- 撮影の launch 失敗が直近 4 サイクル続いた。app が原因ではないが、変更は `app/src/recall.js`・`main.js`・`ghost.js`・`shots.json` に限定し、確認できなければ戻す。
+- REPORT は今のコードで実際に確認した事実（probe の dataset 値、開いて見た画像の内容）を書く。前回の REPORT をコピーしない。コミットに Claude を貢献者として入れない。
