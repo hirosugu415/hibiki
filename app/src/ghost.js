@@ -24,11 +24,11 @@ export function createGhost(api, { demo }) {
     let t = 0;
     m.forEach((idx, i) => {
       later(() => { if (!alive) return; lastIdx = idx; api.tap(xOf(idx), yOf(), 0.55 + Math.random() * 0.3); }, t);
-      t += (i % 2 ? 620 : 780) + Math.random() * 120;
+      t += (i % 2 ? 1250 : 1500) + Math.random() * 250;
     });
     later(() => {
       if (!alive) return;
-      if (motifN % 2 === 0) stroke(); else later(playMotif, 700);
+      if (motifN % 3 === 0) stroke(); else later(playMotif, 1200);
     }, t + 150);
   }
 
@@ -36,15 +36,15 @@ export function createGhost(api, { demo }) {
   function stroke() {
     const dir = lastIdx > 5 ? -1 : 1;
     const x0 = xOf(lastIdx), x1 = Math.min(0.92, Math.max(0.08, x0 + dir * (0.22 + Math.random() * 0.1)));
-    const y0 = yOf(), N = 12;
+    const y0 = yOf(), N = 10;
     api.tap(x0, y0, 0.5);
     for (let i = 1; i <= N; i++) {
       later(() => {
         if (!alive) return;
         const k = i / N;
         api.drag(x0 + (x1 - x0) * k, y0 - Math.sin(k * Math.PI) * 0.14 - k * 0.06);
-        if (i === N) { api.dotHide(); later(playMotif, 900); }
-      }, i * 58);
+        if (i === N) { api.dotHide(); later(playMotif, 1600); }
+      }, i * 70);
     }
   }
 

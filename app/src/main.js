@@ -1,5 +1,5 @@
 import './style.css';
-import { MOODS, MOOD_ORDER, noteFreq, noteIndex } from './moods.js';
+import { MOODS, MOOD_ORDER, NOTE_COUNT, noteFreq, noteIndex } from './moods.js';
 import { createGL } from './wave-gl.js';
 import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
@@ -43,7 +43,8 @@ if (!backend) { document.body.dataset.render = 'none'; }
 document.body.dataset.render = backend ? backend.kind : 'none';
 
 // ---- パレット（ムード切替で約 1 秒クロスフェード） ----
-const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...MOODS.calm.accent] };
+const PKEYS = ['deep', 'mid', 'accent', 'look'];
+const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...MOODS.calm.accent], look: [...MOODS.calm.look] };
 let mood = MOODS[store.get('mood')] || MOODS.calm;
 let target = mood;
 const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -53,7 +54,7 @@ function applyCss() {
   r.setProperty('--accent', to255(pal.accent));
   r.setProperty('--deep', to255(pal.deep));
 }
-function snapPalette(m) { for (const k of ['deep', 'mid', 'accent']) for (let i = 0; i < 3; i++) pal[k][i] = m[k][i]; applyCss(); }
+function snapPalette(m) { for (const k of PKEYS) for (let i = 0; i < pal[k].length; i++) pal[k][i] = m[k][i]; applyCss(); }
 snapPalette(mood);
 
 // ---- 音 ----
@@ -74,7 +75,7 @@ function tick(now) {
   last = now;
   const k = 1 - Math.exp(-dt / 0.3);
   let moving = false;
-  for (const key of ['deep', 'mid', 'accent']) for (let i = 0; i < 3; i++) {
+  for (const key of PKEYS) for (let i = 0; i < pal[key].length; i++) {
     const d = target[key][i] - pal[key][i];
     if (Math.abs(d) > 0.0005) { pal[key][i] += d * k; moving = true; } else pal[key][i] = target[key][i];
   }
@@ -97,9 +98,33 @@ function note(x, yTop, vel) {
   const m = target;
   audio.play(noteFreq(m, noteIndex(x)), Math.min(1, Math.max(0, 1 - yTop + m.bright)), vel, x);
 }
+// 触れた瞬間の光の滲み。色は音高（x）に応じて、アクセントの周りでわずかに変える。
+const mix = (a, b, t) => a + (b - a) * t;
+function flash(x, yTop, vel) {
+  if (!document.body || !target) return;
+  const a = pal.accent, k = noteIndex(x) / (NOTE_COUNT - 1); // 0=低 … 1=高
+  const white = 0.1 + 0.34 * k; // 高い音ほど白寄り
+  const c = a.map((v) => Math.round(mix(v, 1, white) * 255));
+  const warm = (0.5 - k) * 0.12; // 低い音は少しだけ暖色/深め
+  const rgb = [c[0] + warm * 255, c[1], c[2] - warm * 255].map((v) => Math.max(0, Math.min(255, Math.round(v))));
+  const size = 150 + 70 * vel;
+  const el = document.createElement('div');
+  el.className = 'flash';
+  el.style.cssText = `left:${x * viewW}px;top:${yTop * viewH}px;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;` +
+    `background:radial-gradient(closest-side, rgb(${rgb.join(' ')} / ${(0.5 + 0.2 * k).toFixed(2)}), rgb(${rgb.join(' ')} / .2) 45%, transparent)`;
+  document.body.appendChild(el);
+  const done = () => el.remove();
+  if (el.animate) {
+    const an = el.animate([{ opacity: 0, transform: 'scale(.35)' }, { opacity: 1, transform: 'scale(.8)', offset: .18 }, { opacity: 0, transform: 'scale(1.25)' }],
+      { duration: 460, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+    an.onfinish = done; an.oncancel = done;
+  } else setTimeout(done, 460);
+  setTimeout(done, 900);
+}
 function tap(x, yTop, vel = 1) {
-  ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
+  ripple(x, yTop, 0.3 + 0.2 * vel, 0.018);
   note(x, yTop, vel);
+  flash(x, yTop, vel);
 }
 
 const pointers = new Map();
@@ -115,11 +140,13 @@ function onDown(e) {
 }
 function strokeTo(p, x, y, fromGhost) {
   const dx = (x - p.x) * viewW / Math.min(viewW, viewH), dy = (y - p.y) * viewH / Math.min(viewW, viewH);
-  const dist = Math.hypot(dx, dy), step = 0.022;
-  const n = Math.max(1, Math.ceil(dist / step));
+  const dist = Math.hypot(dx, dy), step = 0.03;
+  // 連続した1本の筋: 距離に比例して注入し（遅いほど弱く）、同時波源は最大 10 に間引く
+  const n = Math.max(1, Math.min(10, Math.ceil(dist / step)));
+  const amp = (fromGhost ? 0.11 : 0.16) * Math.min(1, dist / (n * step));
   for (let i = 1; i <= n; i++) {
     const k = i / n;
-    ripple(p.x + (x - p.x) * k, p.y + (y - p.y) * k, 0.045, 0.012);
+    ripple(p.x + (x - p.x) * k, p.y + (y - p.y) * k, amp, 0.02);
   }
   const idx = noteIndex(x), now = performance.now();
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }

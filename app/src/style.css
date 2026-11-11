@@ -32,13 +32,19 @@ body { position: fixed; inset: 0; }
   position: fixed; z-index: 2; margin: 0; left: 0; right: 0; top: 60%;
   text-align: center; pointer-events: none;
   font-size: 15px; font-weight: 300; letter-spacing: .28em; text-indent: .28em;
-  color: rgb(255 255 255 / .6);
-  text-shadow: 0 0 28px rgb(var(--accent) / .5);
-  animation: breathe 3.6s ease-in-out infinite;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(var(--deep) / .55), 0 1px 14px rgb(var(--deep) / .9), 0 0 28px rgb(var(--deep) / .6), 0 0 36px rgb(var(--accent) / .35);
+  animation: breathe 3.8s ease-in-out infinite;
   transition: opacity .7s var(--ease), transform .7s var(--ease);
 }
 #hint.gone { opacity: 0 !important; transform: translateY(-6px); animation: none; }
-@keyframes breathe { 0%, 100% { opacity: .38 } 50% { opacity: .72 } }
+@keyframes breathe { 0%, 100% { opacity: .6 } 50% { opacity: .98 } }
+
+/* 触れた瞬間の光の滲み（JS が生成） */
+.flash {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0;
+  mix-blend-mode: screen; will-change: transform, opacity;
+}
 
 #ghost-dot {
   position: fixed; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px;
@@ -95,7 +101,7 @@ body { position: fixed; inset: 0; }
 #mute[aria-pressed="true"] { color: rgb(255 255 255 / .96); }
 
 @media (prefers-reduced-motion: reduce) {
-  #hint { animation: none; opacity: .6; }
+  #hint { animation: none; opacity: .85; }
   .ind { transition-duration: .01s; }
   #bar button, #ghost-dot { transition-duration: .01s; }
 }

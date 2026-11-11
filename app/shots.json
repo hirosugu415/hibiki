@@ -1,7 +1,7 @@
-{
-  "screens": [
-    { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 2500 } ] },
-    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [640, 380] }, { "wait": 500 } ] },
-    { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1500 } ] }
-  ]
-}
+{ "screens": [
+  { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 2500 } ] },
+  { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [640, 380] }, { "wait": 120 } ] },
+  { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1500 } ] },
+  { "name": "mood-dawn", "url": "/?demo=1", "steps": [ { "click": "#mood-dawn" }, { "wait": 1500 } ] },
+  { "name": "calm-after", "url": "/?demo=1", "steps": [ { "wait": 9000 } ] }
+] }

@@ -5,36 +5,41 @@ void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 
 const SIM = `#version 300 es
 precision highp float; precision highp int;
-uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDamp;
+uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDamp; uniform float uGlowDecay;
 uniform vec4 uSplat[16]; uniform int uCount;
 out vec4 o;
 void main(){
   ivec2 p = ivec2(gl_FragCoord.xy);
   ivec2 mx = uSize - 1;
-  vec2 c = texelFetch(uState, p, 0).rg;
-  float l = texelFetch(uState, clamp(p + ivec2(-1, 0), ivec2(0), mx), 0).r;
-  float r = texelFetch(uState, clamp(p + ivec2( 1, 0), ivec2(0), mx), 0).r;
-  float d = texelFetch(uState, clamp(p + ivec2( 0,-1), ivec2(0), mx), 0).r;
-  float u = texelFetch(uState, clamp(p + ivec2( 0, 1), ivec2(0), mx), 0).r;
+  vec3 c3 = texelFetch(uState, p, 0).rgb; vec2 c = c3.rg;
+  vec3 L4 = texelFetch(uState, clamp(p + ivec2(-1, 0), ivec2(0), mx), 0).rgb; float l = L4.r;
+  vec3 R4 = texelFetch(uState, clamp(p + ivec2( 1, 0), ivec2(0), mx), 0).rgb; float r = R4.r;
+  vec3 D4 = texelFetch(uState, clamp(p + ivec2( 0,-1), ivec2(0), mx), 0).rgb; float d = D4.r;
+  vec3 U4 = texelFetch(uState, clamp(p + ivec2( 0, 1), ivec2(0), mx), 0).rgb; float u = U4.r;
   float lap = l + r + d + u - 4.0 * c.r;
   float ed = min(min(float(p.x), float(mx.x - p.x)), min(float(p.y), float(mx.y - p.y)));
   float sponge = 1.0 - smoothstep(0.0, 12.0, ed);
   float damp = uDamp - sponge * 0.028;
   float v = (c.g + uK * lap) * damp;
-  float h = (c.r + v) * 0.9997;
+  v -= sign(v) * min(abs(v), 0.00006);
+  float h = (c.r + v) * 0.9992;
+  // 光の滲み: 近傍へ拡散しつつ約 1.5 秒で消える（波とは別チャンネル）
+  float glow = mix(c3.b, (L4.b + R4.b + D4.b + U4.b) * 0.25, 0.35) * uGlowDecay;
   for (int i = 0; i < 16; i++) {
     if (i >= uCount) break;
     vec4 s = uSplat[i];
     vec2 dd = (vec2(p) + 0.5) - s.xy;
-    h += s.w * exp(-dot(dd, dd) / (2.0 * s.z * s.z));
+    float gs = exp(-dot(dd, dd) / (2.0 * s.z * s.z));
+    h += s.w * gs;
+    glow += s.w * gs * 1.6;
   }
-  o = vec4(h, v, 0.0, 1.0);
+  o = vec4(h, v, glow, 1.0);
 }`;
 
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW;
 in vec2 vUv; out vec4 o;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 knee(vec3 x){
@@ -43,14 +48,17 @@ vec3 knee(vec3 x){
 }
 void main(){
   vec2 uv = vUv;
+  vec2 tx = uTexel;
   float h  = texture(uState, uv).r;
-  float hx = texture(uState, uv + vec2(uTexel.x, 0.0)).r - texture(uState, uv - vec2(uTexel.x, 0.0)).r;
-  float hy = texture(uState, uv + vec2(0.0, uTexel.y)).r - texture(uState, uv - vec2(0.0, uTexel.y)).r;
-  vec2 g = vec2(hx, hy) * 0.5;
+  vec2 g1 = vec2(texture(uState, uv + vec2(tx.x, 0.0)).r - texture(uState, uv - vec2(tx.x, 0.0)).r,
+                 texture(uState, uv + vec2(0.0, tx.y)).r - texture(uState, uv - vec2(0.0, tx.y)).r) * 0.5;
+  vec2 g3 = vec2(texture(uState, uv + vec2(tx.x * 3.0, 0.0)).r - texture(uState, uv - vec2(tx.x * 3.0, 0.0)).r,
+                 texture(uState, uv + vec2(0.0, tx.y * 3.0)).r - texture(uState, uv - vec2(0.0, tx.y * 3.0)).r) / 6.0;
+  vec2 g = mix(g1, g3, 0.55);
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
-  vec2 q = uv + g * 2.4;
+  vec2 q = uv + g * 2.4 * uLook.x;
   vec2 pc = (q - vec2(0.5, 0.40)) * asp;
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
@@ -61,10 +69,14 @@ void main(){
   vec3 L = normalize(vec3(-0.35, 0.55, 0.75));
   vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
   float spec = pow(max(dot(n, H), 0.0), 90.0);
-  float slope = length(g) * 9.0;
-  float rim = 1.0 - exp(-slope * 3.2);
-  vec3 add = uAcc * (rim * 0.8 + spec * 2.2 + max(h, 0.0) * 1.1)
-           + uMid * max(-h, 0.0) * 0.9;
+  // 小さな波は閾値で静かに消し、新しい波だけが明るく残る
+  float slope = max(length(g) * 12.0 - 0.02, 0.0);
+  float rim = 1.0 - exp(-slope * 3.0 / uRimW);
+  float hp = max(h, 0.0);
+  float gl = texture(uState, uv).b;
+  vec3 add = uAcc * (rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * 3.0 + hp * 0.5)
+           + uMid * max(-h, 0.0) * 0.7
+           + uAcc * (gl * 0.9 + gl * gl * 1.4);
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
   col = knee(col);
@@ -117,8 +129,9 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
+    const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
     const makeTarget = () => {
       const t = gl.createTexture();
@@ -154,17 +167,15 @@ export function createGL(canvas) {
         if (!t.ok) return false;
         tex.push(t.t); fbo.push(t.f);
       }
-      cur = 0; pending = 0;
+      cur = 0; pending = 0; queue.length = 0;
       return true;
     }
 
     // ux, uy: 0–1（uy は下が 0）。radiusShort: 短辺に対する半径の比。
     function splat(ux, uy, amp, radiusShort) {
-      if (pending >= 16 || !W) return;
-      const o = pending * 4;
-      splats[o] = ux * W; splats[o + 1] = uy * H;
-      splats[o + 2] = Math.max(1.2, radiusShort * Math.min(W, H)); splats[o + 3] = amp;
-      pending++;
+      if (!W || queue.length >= 400) return;
+      queue.push(ux * W, uy * H, Math.max(1.2, radiusShort * Math.min(W, H)), amp);
+      pending = Math.min(16, queue.length / 4);
     }
 
     function step(withSplats) {
@@ -175,22 +186,25 @@ export function createGL(canvas) {
       gl.uniform1i(sim.u.uState, 0);
       gl.uniform2i(sim.u.uSize, W, H);
       gl.uniform1f(sim.u.uK, 0.47);
-      gl.uniform1f(sim.u.uDamp, 0.9964);
-      const n = withSplats ? pending : 0;
+      gl.uniform1f(sim.u.uDamp, look[3]);
+      gl.uniform1f(sim.u.uGlowDecay, look[5]);
+      const n = withSplats ? Math.min(16, queue.length / 4) : 0;
+      if (n) { const b = queue.splice(0, n * 4); splats.set(b); }
       gl.uniform1i(sim.u.uCount, n);
       if (n) gl.uniform4fv(sim.u.uSplat, splats);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       cur = 1 - cur;
-      if (withSplats) pending = 0;
+      pending = Math.min(16, queue.length / 4);
     }
 
     function frame(dt, pal) {
       if (lost || !tex.length) return;
+      if (pal.look) look = pal.look;
       acc += dt;
       let n = Math.min(Math.floor(acc * STEP_HZ), 7);
       acc = Math.min(acc - n / STEP_HZ, 1 / STEP_HZ);
       if (n === 0 && pending) n = 1;
-      for (let i = 0; i < n; i++) step(i === 0);
+      for (let i = 0; i < n; i++) step(true);
       time += dt;
       gl.useProgram(ren.pr);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -203,6 +217,8 @@ export function createGL(canvas) {
       gl.uniform3fv(ren.u.uDeep, pal.deep);
       gl.uniform3fv(ren.u.uMid, pal.mid);
       gl.uniform3fv(ren.u.uAcc, pal.accent);
+      gl.uniform4f(ren.u.uLook, look[0], look[1], look[2], look[3]);
+      gl.uniform1f(ren.u.uRimW, look[4]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
