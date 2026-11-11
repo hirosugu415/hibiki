@@ -87,3 +87,4 @@
 - [cycle 061] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。mobile PNGは健全だがlaunch失敗でscreens空、ヘルスNG上限3点
 - [cycle 062] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。shots/cycle-062 は build.log のみで撮影が全滅、ヘルスNG上限3点
 - [cycle 063] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。PNG2枚は健全だがlaunch失敗でscreens空、ヘルスNG上限3点
+- [cycle 064] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (e7522817) へ自動ロールバックした
