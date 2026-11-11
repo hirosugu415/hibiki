@@ -5,7 +5,7 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 800
+          "wait": 600
         }
       ]
     },
@@ -71,7 +71,7 @@
           ]
         },
         {
-          "wait": 5700
+          "wait": 4500
         }
       ]
     },
@@ -131,7 +131,7 @@
           "waitFor": "body[data-holding='1']"
         },
         {
-          "wait": 1800
+          "wait": 1500
         }
       ]
     },
@@ -151,6 +151,24 @@
       ]
     },
     {
+      "name": "glimmer-ring",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "clickAt": [
+            640,
+            400
+          ]
+        },
+        {
+          "wait": 650
+        }
+      ]
+    },
+    {
       "name": "letter-play",
       "url": "/?demo=1&pre=1",
       "steps": [
@@ -158,13 +176,13 @@
           "goto": "/?demo=1#w=PHn_AItg_xSzn_8V"
         },
         {
-          "wait": 700
+          "wait": 800
         },
         {
           "shot": "first"
         },
         {
-          "wait": 2600
+          "wait": 2200
         }
       ]
     },
