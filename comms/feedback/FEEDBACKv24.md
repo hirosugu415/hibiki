@@ -1,24 +1,25 @@
-SCORE: 3/10
+SCORE: 6/10
 DIRECTION: polish
-SUMMARY: 撮影は初めて1枚(home)まで進んだが途中で途切れ meta 無し。app は健全、上限3点
+SUMMARY: 撮影が復旧しヘルスOK。app は c19 状態のまま健全で静かに美しいが前進は無い
 # FEEDBACK v24
 
 ## VISION 適合（絶対のルールを守れているか）
-**守れている（app は c19 状態のまま）。** `shots/cycle-024/desktop-home.png`: 左上「響」、中央に濡れた石、右に細い同心の光輪、微粒子、下部に「触れてみてください」と凪／夜／暁＋音量のガラス質ピル。余白・階層・配色は一貫し、初見で何をするか分かる。自分の probe（mobile, `/?demo=1`）でも非ブランク・`render=webgl2`・`audio=running`・`stoneHits=1`・`stonePush=1`、コンソールエラー 0。
+**守れている。** `desktop-home.png` / `mobile-home.png`: 左上の「響」、中央に縁だけ光る石、右に細い同心の光輪、まばらな微粒子、下部に短い一言「触れてみてください」と凪／夜／暁＋音量のガラス質ピル。文字は最小で、初見でも触れば良いと分かる。`mobile-home.png`（390×844）でピルは親指の届く下部に収まり、はみ出し・崩れ無し。`mood-night`（`desktop-mood-night.png` / `mobile-mood-night.png`）は紫のパレットとピルの選択状態が一貫していて、ムード切替の質感も揃っている。違反は見当たらない。
 
 ## 採点の根拠
-- `shots/cycle-024/` には `build.log`（ビルド成功）と `desktop-home.png` の1枚しか無く、`meta.json`・`console-errors.log`・他の画面・`diff.*` が無い。撮影は今回 `chromium.launch` を越えて1枚撮れたが、その後に途切れて公式のヘルス判定が出ていない。ヘルス未確認のため、規則どおり上限 3 点。
-- REPORT v24 の「shots.json を 5 枚に削減」は `app/shots.json` の中身と一致（home/touched/echo/mood-night/hold、wait 合計 8.9 秒）。ただし REPORT 自身が認めるとおり、5枚の撮影そのものは未検証。
-- 体験の質は c19 水準（実質 7 相当）だが、前進は 0。夜光虫は c22 のロールバックで失われたまま。
+- 良い点: ヘルス OK（`meta.json` healthy=true、全 10 枚 blank=false、コンソールエラー 0、ビルド成功）。輪は細く滑らかでジャギー・白飛び無し（`desktop-touched.png` の (300,380) 周り）。石は塗り円盤でなく縁の光＋暗いガラス質で「泡ボタン」に見えない。ピルのアイコン（波・月・日の出・スピーカー）は線の太さと質感が揃っている。
+- 悪い点: `desktop-echo.png` / `desktop-hold.png` / `mobile-hold.png` は水面に輪がほぼ無く、静止画としては「空っぽ」寄り（hold は離したあとの撮影で泉の連続輪が写っていない）。`mobile-touched.png` の輪は右端で切れて半分しか見えない。石は常に同じ位置で、画面は 5 枚並べるとほぼ同一に見え、見る価値の変化が乏しい。「響」ワードマークは小さく、Apple 製品のような存在感のあるタイポグラフィの階層とまでは言えない。
+- REPORT との照合: REPORT の「shots.json を 5 枚に削減、wait 合計 8.9 秒」は `diff.stat.txt`・実際の撮影 5 枚と一致。app は未変更という主張も diff（app/shots.json のみ）と一致。誇張無し。
+- 点数: 同一の app が c17〜c21 で 7 と評価されていたが、今回の証拠（echo・hold の静止画が空、mobile の輪の欠け）を辛口に見て 6。前進が無いので上げる根拠は無い。
 
 ## 動作確認で分かったこと
-- probe（mobile 390 幅, `/?demo=1`, 1.5秒待ち→タップ→0.5秒）: エラー 0、非ブランク。dataset は `stones=1, stoneHits=1, stonePush=1, mood=calm`。アプリは壊れていない。
-- 撮影が途切れたのはアプリ起因ではない（コンソールエラー 0、probe 正常）。`wave-gl.js` は DPR 上限 2・長辺ピクセル上限を既に持つ。
+- 公式撮影が 10 枚とも成功したため、今回は追加 probe を行わなかった。dataset の確認（`render=webgl2`・`audio=running`・`stoneHits` 等）は前回までの probe 結果と同じ app（c19 状態、`app/src` に `glimmer.js` 無し）であることを `ls app/src` で確認。
+- 撮影起動失敗（c19・c20・c22・c23）は shots.json を 9→5 枚に減らした後に解消した。原因はおそらく撮影時間・負荷。今後 shots.json は 5 枚・合計 wait 10 秒以下を上限として維持する。
 
 ## 方向性の判断
-polish。方向転換の理由は無い（健全時 7 で安定。今は環境障害）。app の変更は引き続き凍結。
+polish。c10〜c21 の 7 点は安定していた（横ばいの主因は応答の深さ・導線の弱さ）が、c22〜c24 の 3 点は環境障害由来であり、方向の失敗ではない。今は壊さずに小さく前へ進めるのが最優先。夜光虫（c21 採用、c22 のロールバックで失われた）を、リスクを抑えた最小スコープで復元する。
 
 ## 次に最も効くこと
-1. app を触らない。
-2. `shots.json` を 3 枚（home / touched / mood-night）まで減らし、`eval` 付きの長い hold 画面を外す。撮影が途中で途切れても最初の数枚が証拠になるよう、重要な順に並べる。
-3. 撮影が healthy に戻ったら、次の normal で夜光虫を小さく再発行する。
+1. 夜光虫（水中の鋭い光の点）を、見た目と波への応答のみの最小版で復元する（音は今回やらない）。静止画が空っぽに見える問題に直接効く。
+2. 撮影の `echo`（水面が空に見える）を、夜光虫が輪の縁で点灯する `glimmer-ring` に置き換える（枚数は 5 枚のまま）。
+3. mobile で輪が右端で切れて見えるタップ位置（`touched` 画面）を、画面内に収まる位置へ直す（shots.json のみで可）。
