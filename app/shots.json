@@ -18,7 +18,7 @@
         },
         {
           "clickAt": [
-            640,
+            300,
             380
           ]
         },
@@ -96,6 +96,24 @@
         },
         {
           "wait": 1500
+        }
+      ]
+    },
+    {
+      "name": "stone-push",
+      "url": "/?live=1",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.03*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "eval": "document.body.dataset.stone+' push='+document.body.dataset.stonePush"
         }
       ]
     },
