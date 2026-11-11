@@ -1,33 +1,37 @@
-# ORDER v25  (mode: repair)
+# ORDER v25  (mode: normal)
 
 ## 目的
-app を無変更のまま、撮影が途中で途切れても証拠が残るよう `app/shots.json` を最小の3枚にする。
+c21 で採用し c22 のロールバックで失われた「夜光虫（水中の鋭い光の点）」を、見た目と波への応答だけの最小版で復元し、静止画が空っぽに見える弱点を消す。
 
-## 症状（引用）
-- `shots/cycle-024/` に `desktop-home.png` と `build.log` のみ。`meta.json` が無く、ヘルス判定が出ていない（c19・c20・c22・c23 では `browserType.launch: Target page, context or browser has been closed`）。
-- 今回は起動を越えて home が撮れたので、撮影が進んでいる途中で途切れた可能性がある（`touched` 以降の click・wait・eval で止まった疑い）。
-- アプリ側は無実: probe（mobile, `/?demo=1`）で非ブランク、`render=webgl2`、`audio=running`、consoleErrors 空、build 成功。
+## 背景
+c24 はヘルス OK（score 6、全 10 枚撮影成功）。app は c19 状態で `app/src/glimmer.js` が無い。撮影起動失敗は `shots.json` を 5 枚・wait 合計 10 秒以下に絞ってから解消した。**この規模は絶対に超えない。** 過去の実装は `git log --all --oneline -- app/src/glimmer.js` で探せる（読み取りのみ。`git checkout` で app を戻すのは禁止、必要なら内容を読んで書き直す）。仕様の元は `comms/orders/ORDERv21.md` の項目 1・2。
 
 ## やること（優先順）
-1. **作業開始時の確認**: `git status` と `npm run build` を実行し、事実だけ REPORT に書く。`app/src/glimmer.js` が無いこと。
-   - 受け入れ条件: build 成功、`glimmer.js` 不在。
-2. **`app/shots.json` を 3 枚にする**: 順に `home`（wait 1500 のみ）、`touched`（wait 800 → clickAt [300,380] → wait 150）、`mood-night`（click `#mood-night` → wait 1000）。`echo`・`hold` は削除。`eval` 不使用、`waitFor` 不使用、全 URL に `?demo=1`。
-   - 受け入れ条件: JSON.parse が通る、`name` が一意、全体の wait 合計 4 秒以下。
-3. **probe で1回確認**: `shots.json` の3画面と同じ手順を `node harness/tools/probe.mjs <steps.json>` で desktop・mobile 各1回実行し、各 shot が非ブランクで consoleErrors が空であること。
-   - 受け入れ条件: 6 枚とも `ok:true`・`blank:false`。
+1. **`app/src/glimmer.js` を新規作成し、水中に光の粒を置く。**（GL・シェーダー・状態テクスチャには触らない）
+   - Canvas2D 1 枚（`#aura` の近くの層、`mix-blend-mode: screen`、`pointer-events: none`）。desktop 48 粒 / mobile（幅 ≤ 600）32 粒。シード固定の疑似乱数（毎回同じ配置）。バー・ヒント・「響」の上には置かない。
+   - 静止時: 半径 1〜2.5px の鋭い点、青白の 1 色（ムードのアクセントから導出）、明るさ 0.12〜0.55、粒ごとに位相をずらしてゆっくり呼吸。ぼかしたハローは付けない（`#aura` のボケ粒と区別するため）。
+   - 受け入れ条件: `?demo=1` 起動 1.5 秒の静止画（desktop・mobile）で、水中に鋭い淡い点が複数見え、白飛び・雪やゴミに見える明るさ・縁付きの円盤が無い。`document.body.dataset.glimmer` = 粒の総数（desktop 48 / mobile 32）。
+2. **波に応えて光り、わずかに押される。** `tap()`・泉（長押し）・離しの輪から `glimmer.hit(x, y, power)` を呼ぶ。到達時刻 = 距離 ÷ 波速（石・砂州で使っている CPU 見積もりと同じ式）で粒を点灯（約 1.2 秒で減衰）し、外側へ少し押し、ゆっくり元へ戻す。
+   - 受け入れ条件: タップ 650ms 後の静止画で、輪の縁に沿って光の点が弧状に並んで瞬いている。`dataset.glints`（累計点灯数）が 1 タップで 3 以上増える。
+3. **`app/shots.json` を整える（枚数は 5 のまま）。** `echo` を `glimmer-ring`（`/?demo=1` → wait 1200 → clickAt → wait 650）に置き換える。clickAt は **viewport 幅に応じて画面内に収まる位置**（desktop は [640,400]、mobile は [195,420]）にする。shots.json は `clickAt` を 1 つの固定座標でしか持てないため、`touched` と `glimmer-ring` はそれぞれ desktop 向けの座標のままで構わないが、mobile で輪が右端で切れないよう、`touched` の座標は [195,380] 程度（両幅で画面内）に変更する。`hold` は現行の eval 付きのまま維持。
+   - 受け入れ条件: JSON.parse が通る、name 一意、5 枚、`waitFor` 不使用、wait 合計 10 秒以下、全 URL に `?demo=1`。
 
 ## やらないこと
-- `app/src/` の変更、新機能、見た目の変更、夜光虫の復元。
-- `harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルートの package 系・`.gitignore` の編集、外部通信、新規ライブラリ。
-- 撮影途切れの原因を app に探しに行くこと。
+- 粒の音（鈴）。今回は見た目と応答のみ。音は次サイクル以降。
+- 新しいボタン・文言・バーや「響」の変更。`wave-gl.js`・状態テクスチャの変更。常時 rAF の追加（描画は既存の `wake()` が回っている間だけ。静止中に rAF を回し続けない）。
+- 粒のキャラクター化（魚・虫・目・尾）。
+- 撮影枚数・待機の増加。`harness/`・`comms/STATE.json`・`comms/LOG.md`・`comms/VISION.md`・ルートの package 系の編集。外部通信・新規ライブラリ。
 
 ## 見た目・UX の要求
-- 変更なし。desktop 1280×800・mobile 390×844 とも現状（左上「響」、下部の凪／夜／暁ピル、石、輪、「触れてみてください」）を維持。
+- 粒の明るさ上限 0.55、色はムードごとにアクセントから導出した青白 1 色（暁は暖色寄りで可）。小さく鋭く、まばら。画面全体がキラキラせず、Apple の壁紙のような静けさを保つ。
+- desktop 1280×800・mobile 390×844 の両方で、粒がバー・ヒント・「響」・石に重ならず、タップを妨げない。最初のタップで光の輪と音が 3 秒以内に返る既存体験を変えない。
+- 輪の縁の点灯は「点線の光が乗る」程度。輪そのものの描画を隠さない。
 
 ## デモモード
-- `?demo=1` で幽霊の指が自動演奏。カメラ・マイク不要。例: `[{"goto":"/?demo=1"},{"wait":1500},{"shot":"home"},{"clickAt":[300,380]},{"wait":150},{"shot":"touched"},{"click":"#mood-night"},{"wait":1000},{"shot":"mood-night"}]`。mobile は `--viewport mobile`。
+- `?demo=1` の幽霊の指の打は `tap()` を通るので、追加の演出なしで粒が光る。probe 例: `[{"goto":"/?demo=1"},{"wait":1500},{"shot":"idle"},{"eval":"document.body.dataset.glimmer"},{"clickAt":[640,400]},{"wait":650},{"shot":"ring"},{"wait":900},{"eval":"document.body.dataset.glints"}]`。mobile は `--viewport mobile` でタップ [195,420]。
 
 ## 作業役への注意
-- 「修復」の名で機能を足さない・app を壊さない（c21 の再発防止）。作業量は小さく、shots.json の削減と確認だけで終える。
-- コミットに Claude を貢献者として入れない。
-- healthy=true に戻れば、司令塔が次の normal で夜光虫を小さく再発行する。
+- 失敗しやすい点: 粒が雪・ゴミに見える、`#aura` と混ざる、石やバーの下に粒が出る。上限値を守る。
+- ビルド成功、コンソールエラー 0 を確認してから終える。`?demo=1` で 30 秒放置して例外・`webglcontextlost` が無く、静止中に rAF が回り続けないことを REPORT に事実として書く。
+- 撮影が重くなると起動失敗が再発する。粒の描画は軽く（粒数固定、`wake()` 中のみ）。重いと感じたら粒数を減らす。
+- REPORT には実行した probe、`dataset` の実測値、見た目の自己評価（汚れに見えないか）を事実で書く。誇張しない。コミットに Claude を貢献者として入れない。
