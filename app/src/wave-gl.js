@@ -46,7 +46,7 @@ in vec2 vUv; out vec4 o;
 #define LENS 0.0
 #define EDGE_K 40.0
 #define EDGE_AT 0.2
-#define EDGE_W 0.08
+#define EDGE_W 0.035
 #define EDGE_I 1.5
 #define TAIL1 0.22
 #define TAIL2 0.0
@@ -82,7 +82,7 @@ void main(){
   vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
   float spec = pow(max(dot(n, H), 0.0), 90.0);
   // 小さな波は閾値で静かに消し、新しい波だけが明るく残る
-  float slope = max(length(g) * 12.0 - 0.02, 0.0);
+  float slope = max(length(g) * 12.0 - 0.006, 0.0);
   float rim = 1.0 - exp(-(slope / (1.0 + slope * 0.9)) * 3.0 / uRimW);
   float hp = max(h, 0.0);
   float gl = hs.b;
@@ -127,7 +127,7 @@ function program(gl, frag) {
   return { pr, u };
 }
 
-const STEP_HZ = 180;
+const STEP_HZ = 95;
 const LONG_SIDE_CELLS = 420;
 const MAX_LONG_PX = 1024; // 内部描画の長辺の上限（CSS で拡大。バイリニアで滑らか）
 const MAX_STEPS = 4;

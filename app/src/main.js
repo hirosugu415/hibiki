@@ -146,7 +146,7 @@ function echoRing(x, yTop, st) {
   setTimeout(done, dur + 600);
 }
 function tap(x, yTop, vel = 1, record = true) {
-  ripple(x, yTop, 0.3 + 0.2 * vel, 0.018);
+  ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   note(x, yTop, vel);
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
@@ -164,7 +164,48 @@ const echo = createEcho({
   onChange(n, p) { document.body.dataset.echoes = String(n); document.body.dataset.echoPending = String(p); },
 });
 
+// ---- 長押しの泉: 動かさずに 260ms 押し続けると、その点から輪が湧き続け、音が伸びる ----
+const HOLD_MS = 260;
+document.body.dataset.holding = '0';
+let fountain = null; // { owner, ref, timer, voice }
+function fountainTick(f) {
+  f.timer = 0;
+  if (fountain !== f) return;
+  const k = noteIndex(f.ref.x) / (NOTE_COUNT - 1); // 0=低 … 1=高
+  // 低い音ほどゆったり・太く、高い音ほど細かく
+  ripple(f.ref.x, f.ref.y, 0.2, mix(0.022, 0.014, k), 1400);
+  if (f.owner === 'ghost') dotShow(f.ref.x, f.ref.y);
+  f.timer = setTimeout(() => fountainTick(f), mix(340, 230, k));
+}
+function fountainStart(owner, ref) {
+  if (!backend || fountain) return;
+  const f = fountain = { owner, ref, timer: 0, voice: null };
+  const m = target, hz = noteFreq(m, noteIndex(ref.x));
+  f.voice = audio.voiceHold(hz, Math.min(1, Math.max(0, 1 - ref.y + m.bright)), (ref.x * 2 - 1) * 0.5);
+  document.body.dataset.holding = '1';
+  document.body.dataset.holdHz = hz.toFixed(1);
+  fountainTick(f);
+}
+function fountainStop(owner) {
+  const f = fountain;
+  if (!f || (owner !== undefined && f.owner !== owner)) return;
+  fountain = null;
+  if (f.timer) clearTimeout(f.timer);
+  if (f.voice) f.voice.release();
+  document.body.dataset.holding = '0';
+  delete document.body.dataset.holdHz;
+}
+
 const pointers = new Map();
+function armHold(id, p) {
+  const wait = () => {
+    p.timer = 0;
+    if (pointers.get(id) !== p) return;
+    const still = performance.now() - Math.max(p.t0, p.moveT);
+    if (still >= HOLD_MS) fountainStart(id, p); else p.timer = setTimeout(wait, HOLD_MS - still + 5);
+  };
+  p.timer = setTimeout(wait, HOLD_MS + 5);
+}
 function onDown(e) {
   if (e.button > 0 && e.pointerType === 'mouse') return;
   e.preventDefault();
@@ -172,8 +213,13 @@ function onDown(e) {
   if (!touched) { touched = true; store.set('hint', '1'); hint.classList.add('gone'); }
   ghost.retreat();
   const x = e.clientX / viewW, y = e.clientY / viewH;
-  pointers.set(e.pointerId, { x, y, idx: noteIndex(x), t: performance.now() });
+  const old = pointers.get(e.pointerId);
+  if (old) onUp(e);
+  const now = performance.now();
+  const p = { x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
+  pointers.set(e.pointerId, p);
   tap(x, y, 1);
+  armHold(e.pointerId, p);
 }
 function strokeTo(p, x, y, fromGhost) {
   const dx = (x - p.x) * viewW / Math.min(viewW, viewH), dy = (y - p.y) * viewH / Math.min(viewW, viewH);
@@ -194,15 +240,28 @@ function onMove(e) {
   if (!p) return;
   e.preventDefault();
   lastTouch = performance.now();
+  if (Math.hypot(e.clientX - p.lx, e.clientY - p.ly) > 4) { p.moveT = lastTouch; p.lx = e.clientX; p.ly = e.clientY; }
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   for (const ev of (evs.length ? evs : [e])) strokeTo(p, ev.clientX / viewW, ev.clientY / viewH, false);
 }
-function onUp(e) { pointers.delete(e.pointerId); }
+function onUp(e) {
+  const p = pointers.get(e.pointerId);
+  if (p && p.timer) clearTimeout(p.timer);
+  pointers.delete(e.pointerId);
+  fountainStop(e.pointerId);
+}
+function releaseAll() {
+  for (const [id, p] of pointers) { if (p.timer) clearTimeout(p.timer); pointers.delete(id); }
+  fountainStop();
+}
+window.addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
 function bindCanvas(el) {
   el.addEventListener('pointerdown', onDown);
   el.addEventListener('pointermove', onMove);
   el.addEventListener('pointerup', onUp);
   el.addEventListener('pointercancel', onUp);
+  el.addEventListener('lostpointercapture', onUp);
   el.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 bindCanvas(canvas);
@@ -216,6 +275,8 @@ const ghost = createGhost({
     tap(x, y, vel);
   },
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
+  holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
+  holdEnd() { fountainStop('ghost'); },
   dotHide() { dot.classList.remove('show'); },
 }, { demo: DEMO });
 function dotShow(x, y) {

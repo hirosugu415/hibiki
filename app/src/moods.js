@@ -8,21 +8,21 @@ export const MOODS = {
     scale: [0, 2, 4, 7, 9], root: 261.63, // C 長調ペンタトニック
     wetShort: 0.34, wetLong: 0.12, echo: 0.22, bright: 0,
     // look: [屈折, リム光, 鏡面, 減衰/ステップ, リム幅]
-    look: [1.0, 0.95, 2.2, 0.9955, 1.0, 0.9915],
+    look: [1.0, 0.95, 2.2, 0.9974, 1.0, 0.9915],
   },
   night: {
     id: 'night', label: '夜',
     deep: rgb(5, 3, 18), mid: rgb(34, 20, 88), accent: rgb(178, 152, 255),
     scale: [0, 3, 5, 7, 10], root: 220.0, // A 短調ペンタトニック
     wetShort: 0.1, wetLong: 0.5, echo: 0.3, bright: -0.1,
-    look: [0.45, 0.7, 3.0, 0.9968, 0.8, 0.9940],
+    look: [0.45, 0.7, 3.0, 0.9979, 0.8, 0.9940],
   },
   dawn: {
     id: 'dawn', label: '暁',
     deep: rgb(80, 20, 46), mid: rgb(236, 138, 94), accent: rgb(255, 214, 140),
     scale: [0, 2, 4, 7, 9], root: 293.66, // D 長調、やや高く明るめ
     wetShort: 0.3, wetLong: 0.14, echo: 0.2, bright: 0.18,
-    look: [0.8, 1.35, 1.2, 0.9955, 2.2, 0.9915],
+    look: [0.8, 1.35, 1.2, 0.9974, 2.2, 0.9915],
   },
 };
 export const MOOD_ORDER = ['calm', 'night', 'dawn'];

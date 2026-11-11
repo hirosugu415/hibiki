@@ -159,8 +159,62 @@ export function createAudio() {
     } catch { /* 音が出せなくても波紋は動く */ }
   }
 
+
+  // 持続する声（長押しの泉）。サステイン + 5Hz・約 ±0.3% のビブラート。release() で 0.6 秒以内に必ず止まる。
+  function voiceHold(freq, bright, pan = 0) {
+    if (unavailable || muted || !gesture || !ctx || ctx.state !== 'running') return null;
+    try {
+      const t = ctx.currentTime;
+      trim();
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(0, t);
+      out.gain.linearRampToValueAtTime(1, t + 0.22);
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass'; filt.Q.value = 0.4;
+      filt.frequency.value = 900 + 6000 * Math.pow(bright, 1.4);
+      const pn = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      if (pn) { pn.pan.value = pan; filt.connect(pn); pn.connect(out); } else filt.connect(out);
+      out.connect(bus);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5;
+      const lfoG = ctx.createGain(); lfoG.gain.value = 5; // cents（約 0.3%）
+      lfo.connect(lfoG);
+      const oscs = [lfo];
+      const peak = 0.075;
+      for (const p of [{ r: 1, g: 1 }, { r: 2, g: 0.16 + 0.3 * bright }, { r: 3.01, g: 0.04 + 0.12 * bright }]) {
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.value = freq * p.r;
+        lfoG.connect(o.detune);
+        const g = ctx.createGain(); g.gain.value = peak * p.g;
+        o.connect(g); g.connect(filt);
+        o.start(t); oscs.push(o);
+      }
+      lfo.start(t);
+      let done = false;
+      const rec = {
+        out,
+        stop: (at) => oscs.forEach((o) => { try { o.stop(at); } catch { /* noop */ } }),
+      };
+      voices.push(rec);
+      oscs[1].onended = () => {
+        const i = voices.indexOf(rec); if (i >= 0) voices.splice(i, 1);
+        try { out.disconnect(); filt.disconnect(); } catch { /* noop */ }
+      };
+      return {
+        release() {
+          if (done) return; done = true;
+          try {
+            const n = ctx.currentTime;
+            if (out.gain.cancelAndHoldAtTime) out.gain.cancelAndHoldAtTime(n); else out.gain.cancelScheduledValues(n);
+            out.gain.setTargetAtTime(0, n, 0.12);
+            rec.stop(n + 0.62);
+          } catch { /* noop */ }
+        },
+      };
+    } catch { return null; }
+  }
+
   function applyPendingMood() { if (ctx && pendingMood) { setMood(pendingMood); pendingMood = null; } }
 
   publish();
-  return { unlock, play, setMood, setMuted, applyPendingMood, get muted() { return muted; } };
+  return { unlock, play, voiceHold, setMood, setMuted, applyPendingMood, get muted() { return muted; } };
 }

@@ -13,14 +13,15 @@ export function createGhost(api, { demo }) {
   let alive = false;
   let motifN = 0, phase = 0, lastIdx = 4;
   const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
-  const clear = () => { timers.forEach(clearTimeout); timers = []; api.dotHide(); };
+  const clear = () => { timers.forEach(clearTimeout); timers = []; api.dotHide(); if (api.holdEnd) api.holdEnd(); };
 
   const xOf = (idx) => (idx + 0.5) / 10 + (Math.random() - 0.5) * 0.02;
   const yOf = () => { phase += 0.9; return 0.5 + 0.18 * Math.sin(phase) + (Math.random() - 0.5) * 0.06; };
 
   function playMotif() {
     if (!alive) return;
-    const m = MOTIFS[motifN++ % MOTIFS.length];
+    const first = demo && motifN === 0; // 最初のモチーフは 2 音のあと、長押しを 1 回
+    const m = MOTIFS[motifN++ % MOTIFS.length].slice(0, first ? 2 : undefined);
     let t = 0;
     m.forEach((idx, i) => {
       later(() => { if (!alive) return; lastIdx = idx; api.tap(xOf(idx), yOf(), 0.55 + Math.random() * 0.3); }, t);
@@ -28,8 +29,16 @@ export function createGhost(api, { demo }) {
     });
     later(() => {
       if (!alive) return;
+      if (first) { hold(xOf(7), 0.46, 3000); return; }
       if (motifN % 3 === 0) stroke(); else later(playMotif, 1200);
     }, t + 150);
+  }
+
+  // 長押し: 泉が湧き、離すと静まる
+  function hold(x, y, ms) {
+    api.tap(x, y, 0.7);
+    later(() => { if (alive) api.holdStart(x, y); }, 280);
+    later(() => { api.holdEnd(); api.dotHide(); later(playMotif, 2200); }, ms);
   }
 
   // 短いドラッグの軌跡
