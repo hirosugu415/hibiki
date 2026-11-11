@@ -13,3 +13,4 @@
 - [cycle 008] mode=innovation | score 6/10 | health=ok | polish | アプリは v7 から不変（発想サイクル）。flash の円盤が泡状に残り、質感改善が最優先
 - [cycle 009] mode=normal | score 6/10 | health=ok | polish | 泡の円盤は消え光の輪になった。だが輪は太く霞み、波は約1秒で消え遊びが浅い
 - [cycle 010] mode=normal | score 7/10 | health=ok | polish | 長押しの泉が成立し、細い輪が整然と同心円で湧く。初の明確な前進
+- [cycle 011] mode=normal | score 7/10 | health=ok | polish | 離しの大きなひと輪が水らしく決まり、こだまも柔らかく。泉は撮影で証拠化
