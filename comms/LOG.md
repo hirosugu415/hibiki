@@ -60,3 +60,4 @@
 - [cycle 041] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。デスクトップ2枚で撮影が途切れmeta無し(ヘルスNG上限3点)。appはprobeで健全
 - [cycle 042] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でmeta無し(ヘルスNG上限3点)。appはprobeで健全
 - [cycle 043] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (1e926807) へ自動ロールバックした
+- [cycle 043] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。デスクトップ3枚の後に撮影launch失敗(ヘルスNG上限3点)。appはprobeで健全
