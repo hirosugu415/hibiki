@@ -37,6 +37,7 @@ body { position: fixed; inset: 0; }
 
 /* ---- 生きた環境: 呼吸する光と漂う塵（transform / opacity のみ） ---- */
 #aura { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; contain: strict; }
+#glimmer { position: fixed; left: 0; top: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
 #aura .glow {
   position: absolute; border-radius: 50%; mix-blend-mode: screen; will-change: transform, opacity;
   background: radial-gradient(closest-side, rgb(var(--accent) / var(--a, .18)), rgb(var(--accent) / calc(var(--a, .18) * .4)) 45%, transparent);
