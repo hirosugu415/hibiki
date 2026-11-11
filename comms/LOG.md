@@ -15,3 +15,4 @@
 - [cycle 010] mode=normal | score 7/10 | health=ok | polish | 長押しの泉が成立し、細い輪が整然と同心円で湧く。初の明確な前進
 - [cycle 011] mode=normal | score 7/10 | health=ok | polish | 離しの大きなひと輪が水らしく決まり、こだまも柔らかく。泉は撮影で証拠化
 - [cycle 012] mode=innovation | score 7/10 | health=ok | polish | app は v11 のまま（発想サイクル）。長押し三幕は良いが初画面は依然空虚
+- [cycle 013] mode=normal | score 7/10 | health=ok | polish | 浮かぶ石が初画面の焦点になり回折も見えた。ただし証拠撮影のタイミングが悪く、石の質感は黒い穴寄り
