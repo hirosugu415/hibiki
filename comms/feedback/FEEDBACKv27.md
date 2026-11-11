@@ -1,25 +1,27 @@
-SCORE: 3/10
+SCORE: 6/10
 DIRECTION: polish
-SUMMARY: 撮影が起動失敗で証拠ゼロ（ヘルスNG上限3点）。app は rollback 後 probe で健全
+SUMMARY: 撮影が復旧しヘルスOK。rollback 後の app は静かに綺麗で健全だが前進は無い
 # FEEDBACK v27
 
 ## VISION 適合（絶対のルールを守れているか）
-**違反は確認できない。** ただし `meta.json` は `screens: []`・`healthy:false`（`browserType.launch: Target page, context or browser has been closed`）。ビルド成功・コンソールエラー 0。ヘルス規則により最大 3 点。公式スクショは 0 枚。
-自分で probe（desktop・`/?demo=1`・clickAt）を実行: `shots/cycle-027/probe/desktop-d-touch.png` で、タップ位置から細い光の輪が広がり、石・ガラスのピル（凪/夜/暁＋音量）・「響」が静かに整っている。`dataset.render=webgl2`、`audio=running`、blank:false、エラー 0。
+**守れている。** `meta.json`: healthy=true、ビルド成功、8 枚すべて blank=false、コンソールエラー 0。
+`desktop-home.png` / `mobile-home.png`: 左上の「響」、中央に縁だけ光る石、右に細い同心の光輪、まばらな微粒子、下部に短い一言「触れてみてください」と、凪／夜／暁＋音量のガラス質ピル。説明文なしで触れば良いと分かる。
+`mobile-home.png`（390×844）でピルは親指の届く下部に収まり、はみ出し無し。余白・アイコンの線の太さは揃っている。
 
 ## 採点の根拠
-- 良い点: ハーネスの自動 rollback により app は c19 水準（石・砂州・手紙・長押しの泉あり）の健全状態に戻った。見た目は一貫し、スマホ幅も崩れ無し。
-- 悪い点: 公式撮影が 5 サイクル連続級で落ち、評価の証拠が無い。c25 で入った夜光虫（glimmer）は rollback で失われた。
-- REPORT との照合: REPORT は「shots.json のみ変更・4 枚・wait 3.8 秒」と報告し diff とも一致するが、その後の rollback で現在の `app/shots.json` は **5 枚（echo の wait 1800、mood-night 含む）の旧版に戻っている**。軽量化が消えているので再適用が必要。
-- 撮影失敗は launch 段階（app のコードに依存しない）で、c24 では同じ app で成功している。環境由来の揺らぎが大きい。
+- 良い点: `desktop-touched.png` の (300,380) を中心に広がる細い輪は滑らかでジャギー・白飛び無し。`desktop-hold.png` / `mobile-hold.png` は長押しの泉らしい連続した歪んだ輪が写っており、水の質感がある。石は塗り円盤でなく縁の光で、泡ボタンに見えない。
+- 悪い点: `desktop-echo.png` は水面にほぼ輪が無く（左の淡い輪郭のみ）、静止画としては空っぽ寄り。`mobile-touched.png` / `mobile-echo.png` は輪が右端で切れて半分しか見えない。5 枚並べるとほぼ同じ絵で、「長く見ていたくなる変化」が乏しい。「響」ワードマークは小さく、Apple 製品のタイポグラフィ階層とまでは言えない。
+- REPORT との照合: REPORT の「shots.json のみ変更・4 枚・wait 4000ms」は `diff.stat.txt` の shots.json 変更と、実際に撮影された 4 画面×2 幅と一致。ただし diff.stat には夜光虫(glimmer.js)削除が含まれる — これは harness の自動 rollback によるもので、作業役の逸脱ではない。夜光虫は現在 app に無い。
+- 点数: この app 状態（c19 水準）は c24 で 6 と評価済み。今回も証拠は同程度で、上げる根拠は無い。ヘルス OK なので 3 点上限は解除。
 
 ## 動作確認で分かったこと
-- probe desktop: goto→1.5s→clickAt(400,330)→0.6s。波紋が出て `stoneHits=1`、`audio=running`。app は健全。
+- 公式撮影が 8 枚とも成功したため追加 probe は不要と判断。前回までの probe で `render=webgl2`・`audio=running`・`stoneHits` 増加を確認済みの同一 app。
+- 撮影安定の条件は「shots.json 4 枚・wait 合計 4 秒」で再現した。これを維持する（増やさない）。
 
 ## 方向性の判断
-polish。app は健全で方向転換の根拠は無い。次も repair（ハーネス規則）。今回は rollback 直後なので「撮影を確実に通す」ことだけに集中し、機能は足さない。
+polish。app は健全で方向転換の根拠は無い。c20〜c21 の 7 点は安定、以降の 3 点は環境障害由来。次サイクルは innovation なので、通常訪問者の「数十秒触った後の画面」が変わらない問題に効く新しい案を、音・時間・応答の面から広く出させる。
 
 ## 次に最も効くこと
-1. `app/shots.json` を 4 枚・wait 合計 3.5 秒以下に再軽量化（コードは触らない）。
-2. 撮影成功後の normal サイクルで、夜光虫を **小さな単位で**（まず描画のみ）復活させる。
-3. その後、鈴の音と「響」の存在感の調整。
+1. 次サイクル（innovation）で、初画面や静止画が単調な問題と「音の深さ」に効く案を 3 つ出す。
+2. その後の normal で、採用案を小さな単位で実装（夜光虫のような大きな一括投入は rollback の原因になりうるため分割）。
+3. mobile の輪が右端で切れる撮影位置（shots.json の clickAt）を画面内に収める。
