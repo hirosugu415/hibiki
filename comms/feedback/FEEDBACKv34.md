@@ -1,24 +1,27 @@
-SCORE: 3/10
+SCORE: 6/10
 DIRECTION: polish
-SUMMARY: 立ち上がりCSSは入ったが公式撮影がまた起動失敗(画像ゼロ・ヘルスNG上限3点)。appはprobeで健全
+SUMMARY: 撮影が復旧しヘルスOK。立ち上がりCSSは静かに入り崩れ無しだが、静止画は前回と同じ6点
 # FEEDBACK v34
 
 ## VISION 適合（絶対のルールを守れているか）
-**違反の兆候なし（ただし公式証拠は 0 枚）。** `shots/cycle-034/meta.json` は build ok・`screens: []`・healthy=false、reasons=「browserType.launch: Target page, context or browser has been closed」。c22・c25〜c33 と同種の launch 失敗で、画面数削減(c33)も CSS のみの変更(c34)も効いていない。自分の probe（mobile `?demo=1`、1.3 秒待ち→(190,400) タップ）では、`mobile-c-home.png` に「響」・石・幽霊の指の輪・「触れてみてください」・ガラスのバーが 390 幅に収まり、ぼかし・半透明の残りなし。`render=webgl2, audio=running`、blank=false。builder の `desktop-home.png`（1280×800）も同様に静かで整っている。
+**違反なし。** `shots/cycle-034/meta.json` は build ok・6 画面すべて blank=false・consoleErrors=[]・healthy=true。
+- `desktop-home.png`（1280×800）: 開いて 1.3 秒後、左上の「響」、中央下の「触れてみてください」、ガラスのバー（凪／夜／暁／音）、石、幽霊の指の輪がすべて通常の濃さで揃い、ぼかし・半透明の残りなし。文字なしでも「水面に触れる」と伝わる。
+- `mobile-home.png`（390×844）: 同じ要素が崩れずに収まり、ヒントとバーは重ならず、バーは親指の届く下部。タップ領域も十分。
+- `desktop-touched.png` / `mobile-touched.png` / `*-hold.png`: タップ地点から滑らかな輪が広がり、長押しでは干渉した複数の輪と光点が写る。ジャギー・白飛び無し。
 
 ## 採点の根拠
-- ヘルス NG のため規定により最大 3 点。
-- REPORT v34 の主張（style.css + shots.json のみ、diff.stat と一致、wordmark/hint/bar の立ち上がり）は diff.patch と一致。opacity を 1 に戻した逸脱は妥当。ただし letter-spacing アニメは ORDER の「transform/opacity/filter のみ」の趣旨からは外れる（固定配置なのでシフトは無く許容）。
-- 良い点: 静かで一貫、スマホ幅も崩れない。悪い点: 6 点帯からの前進が無く、静止画の情報は「石・輪・バー」のみ。立ち上がりは静止画では見えず評価に効かない。
+- 良い点: 余白・階層・配色が一貫して静か。バーのガラス質・角丸・アイコンが揃う。両幅で崩れ無し。REPORT の主張（style.css と shots.json のみ、wordmark / hint / bar の立ち上がり）は diff.patch と一致し、1.3 秒後の静止画が通常表示であることもスクショで確認できた。opacity を 1 に戻した逸脱は妥当（color 側に alpha があるため）。
+- 悪い点: 立ち上がりアニメは静止画に写らず、評価上は c27・c29・c30 の 6 点から何も動かない。「響」は 30px で小さく、静止画の情報は「石・輪・バー」だけ。夜・暁の字とスピーカーアイコンは背景の青に沈み気味。数十秒触っても絵と音が同じ、という根本の弱さは未解決（追想は rollback で失われたまま）。
+- letter-spacing のアニメは ORDER の「transform / opacity / filter のみ」から外れる（固定配置でシフト無しのため許容）。0.3 秒時点の desktop 画像は未確認と REPORT 自身が認めている。
 
 ## 動作確認で分かったこと
-- probe mobile: goto→wait→shot→clickAt→shot→eval 全 ok、audio=running、render=webgl2、コンソールエラー無し。
-- 起動失敗は app 非依存。builder は「自分が起動した物は無い／古い chrome・node が常駐している」と報告しており、これは **launch 失敗の原因候補（過去の失敗撮影で残った孤児 chromium）**。まだ誰も数えていない。
+- 公式撮影の再実行で 6 画面とも通った。c31〜c33 の launch 失敗は環境要因で、今回の build / 撮影は健全。
+- 前回（中断前）の自分の FEEDBACK は撮影失敗時点の画面なしで書かれていた。この版は再撮影後の証拠で書き直した。
 
 ## 方向性の判断
-polish。方向性ではなく環境の問題。次は repair モードだが、app は健全なので **app を触らず診断に徹する**のが最善。
+polish。実画面のスコアは 6 で横ばい（c27・c29・c30・c34）だが、c31〜c33 の 3 点は環境失敗であり設計の行き詰まりではない。ここで pivot する根拠はまだ無い。ただし「数十秒触っても変わらない」弱点に効く追想を戻して、時間軸の深みを足す。c36 の innovation で、静止画に写る新しい軸を発想させる。
 
 ## 次に最も効くこと
-1. （builder）読み取りのみで環境診断し、launch 失敗の原因を特定して REPORT に書く（孤児 chromium / 空きメモリ / 一時フォルダ）。
-2. app/ は変更ゼロで終える（変更が無ければ rollback も起きない）。
-3. 撮影が通ったら、次の normal で「響」と石の静止画での情報量を磨く。
+1. 追想（recall）を c30 の実装（a2641c2）から小さく復活させ、時間と記憶で絵と音が変わるようにする。
+2. 追想が静止画で確認できるよう、評価用 `?demo=1&recall=1` と 4 枚目の撮影画面を足す（撮影が落ちたら撤回）。
+3. 「響」とバーの可読性（夜・暁の字のコントラスト）は次の normal で磨く。
