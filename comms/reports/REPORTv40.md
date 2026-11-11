@@ -1,29 +1,34 @@
 # REPORT v40  (mode: repair)
+
 ## やったこと
-1. app/ 無変更 + build 1 回: **完了**。`cd app && npm run build` 成功（12 modules transformed、index.html 4.50 kB / CSS 7.61 kB / JS 39.23 kB、built in 57ms）。`git diff --stat -- app` は空。
-2. chromium・playwright・probe を起動しない: **完了**。いずれも起動していない。
-3. 事実だけの REPORT: **完了**。
+- 項目1（app 無変更で build を 1 回だけ実行）: **完了**
+  - `cd app && npm run build` → 成功（vite v8.3.8、12 modules、`built in 60ms`）。
+  - `git diff --stat -- app` → 空（app/ に差分なし）。
+- 項目2（chromium・playwright・probe を起動しない）: **完了**。このターンでは chromium / playwright / `probe.mjs` を一切起動していない。
+- 項目3（確認した事実だけを REPORT に書く）: **完了**（本書）。
 
 ## ORDER からの逸脱
 なし
 
 ## 動作確認
-事実:
-- build 成功（上記）。
-- `git diff --stat -- app` 出力なし（app 無変更）。
-- `git status --short`: ` M comms/STATE.json` のみ（ハーネス管理ファイル。私は触っていない）。
+事実（このターンで実際に実行して確認したもの）:
+- `npm run build`: 成功。出力は `dist/index.html` 4.50 kB、CSS 7.61 kB、JS 39.23 kB。エラー・警告なし。
+- `git diff --stat -- app`: 空。
+- `git status --short`: ` M comms/STATE.json` のみ（ハーネス側の更新。私は触っていない）。
 
-未確認（起動していないため）: 画面の見た目、コンソールエラー、デモモードの実動作。
+確認していないこと:
+- 画面の見た目、コンソールエラー、デモモードの動作は、ブラウザを起動していないので**確認していない**。
 
 ## デモモード
-変更なし。確認は公式撮影に任せる。
+変更なし。ブラウザを起動していないため、このターンでは動作確認していない。確認は公式撮影に任せる。
 
 ## 既知の問題・妥協点
-- 撮影が healthy=true に戻るかは私からは確認できない。ORDER の診断（c38・c39 の chromium 起動失敗は app 起因ではない）は、私自身は検証していない。
+- c38・c39 の `healthy:false` の原因は、ORDER の記述によれば撮影側の chromium 起動失敗（`browserType.launch: Target page, context or browser has been closed`）。これは ORDER の見立てで、私は再現も検証もしていない（推測）。
+- app 側から直せる要素は見つかっていない。
 
 ## 変更した主なファイル
-- comms/reports/REPORTv40.md のみ
+なし（app/ も comms/ も、この REPORT 以外は未変更）。
 
 ## 司令塔への申し送り
-- 3 サイクル連続で撮影の `browserType.launch` が失敗するなら、ハーネス側（chromium 起動・残存プロセス）の問題の可能性が高い。ただし推測であり、私は調べていない。
-- 撮影が healthy になったら、ORDER の通り凪／夜／暁の色味差強化か追想の再導入を小さく検討するのがよい。
+- app は無変更のため、撮影が再び失敗する場合は app の問題ではなく撮影環境（chromium 起動）側の可能性が高い、というのが ORDER と同じ推測。ただし私はこのターンで検証していない。
+- 撮影が healthy=true になったら、ORDER の通り凪／夜／暁の色味差の強化、または追想の再導入を小さく検討するのがよいと思う。
