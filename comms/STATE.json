@@ -1,0 +1,12 @@
+{
+  "cycle": 0,
+  "turn": "commander",
+  "mode": "normal",
+  "nextMode": "normal",
+  "repairStreak": 0,
+  "lastHealthyCommit": "30ed0486264a1c9fdd6fc14ae027a460467a7a3a",
+  "waitUntil": 0,
+  "notes": [],
+  "done": false,
+  "updatedAt": "2026-11-11T11:39:59.301Z"
+}
