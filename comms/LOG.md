@@ -44,3 +44,4 @@
 - [cycle 030] mode=normal | score 6/10 | health=ok | polish | 撮影は正常でヘルスOK。追想が入ってもappは静かな水面のまま6点で横ばい、追想は静止画に写らない
 - [cycle 031] mode=repair | score 3/10 | health=NG | polish | 撮影起動の失敗でヘルスNG・画像ゼロ。appは無変更で健全（自分のprobeで確認）、規定により3点
 - [cycle 032] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (723bd572) へ自動ロールバックした
+- [cycle 032] mode=repair | score 3/10 | health=ok | polish | 撮影起動失敗でヘルスNG（上限3点）。rollback後のappは probe で健全・静かに美しいが、追想は失われた
