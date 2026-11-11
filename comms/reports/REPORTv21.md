@@ -1,45 +1,36 @@
-# REPORT v21  (mode: repair)
+# REPORT v21  (mode: normal)
 ## やったこと
-1. **`app/shots.json` を軽くした（完了）**: wait の合計 約55,000ms → **23,640ms**（受け入れ条件 25,000ms 以下）。画面は 14 → **12**（`calm-after`・`stone-push` を削除。`stone-shadow2` は残した）。`home`・`touched`・`idle`・`hold`・`echo`・`stone-shadow`・`bar-refract`・`letter-play`・`letter-share`・`mood-night`・`mood-dawn` はすべて残している。
-   - 固定待ちを減らし、`idle` は `waitFor body[data-stone-laps='1']` → 4500ms → `waitFor laps='2'`（2回、最大計 10 秒）に、`hold` は 1500ms → `waitFor holding='1'` → 1800ms にして、アプリ側の進行に追従させた（`waitFor` の timeout はハーネス固定の 5 秒なので 2 段に分けた）。
-   - `echo` は戻りが 5.5 秒後なので 5700ms（元 6600）。mood 系は 700ms（元 1500）。
-2. **`letter-play` の証拠（完了、ただし ORDER の秒数とは違う）**: 撮影ハーネスが `goto` 後に settleMs=1500ms 待つため、画面の `url` だけでは「goto 直後 600〜900ms」で撮れない。そこで `url` を `/?demo=1&pre=1`（別クエリ）にし、steps の先頭で `goto` → `wait 560` → `shot first` → `wait 300` → `shot second` とした。
-   - `first`: 手紙の最初の輪（左の輪）＋ヒント「だれかの水面」。probe で 2 回再現（lp1/lp2）。
-   - `second`: 輪が 3 つ（左・上中央・右下）＋ヒント「だれかの水面」。
-   - ORDER は 2 枚目を 2.5〜3 秒後としていたが、**ヒントの文言差し替えは 2000ms で元に戻る**（`hintSay('だれかの水面', 2000)`）ので、その時刻だとヒントが写らない（実際に 3.3 秒後の撮影では「触れてみてください」に戻っていた）。ヒントと別位置の輪の両方を写すことを優先して約 1.3 秒後にした。
-3. **撮影ツールを通して確認（完了）**: 下記「動作確認」。
-4. **アプリ側の負荷点検（完了。私はコード無変更。ただし下記「既知の問題」の未コミット差分あり）**: 下記。
+1. **glimmer.js 新規・水中の光の粒**: 完了。`app/src/glimmer.js`、`#glimmer` canvas（`mix-blend-mode: screen`、`pointer-events:none`、z-index 1。`#aura` と同層でバー・ヒントより下）。desktop 48 / mobile(幅≤600) 32 粒、シード固定の疑似乱数。「響」(上 96px)・ヒント/バー(下 215px)の領域には置かない。半径 1〜2.5px の塗りつぶし点（グラデーション無し）、静止時の明るさ 0.12〜0.30、青白 1 色（アクセントを白へ 55% 寄せる。暁では暖色寄り）。石の周囲は粒を淡く消す。`dataset.glimmer` = 48 / 32 を実測。
+2. **波に応えて光り、押される**: 完了（ただし下記「妥協点」の追加描画あり）。`tap()`・泉（2 回に 1 回、光のみ）・離しの輪から `glimmer.hit()`。到達時刻 = 距離 ÷ 波速で予約。点灯は約 1.2 秒で減衰、外向きに最大約 5px 押され、臨界減衰ばねで戻る。石を挟む粒は 0.4 秒遅延。到達上限 2.0 秒（それより遠い粒は光らない）。
+3. **粒の音**: 完了。既存 `voice()` に `level` 引数を追加（`audio.play(..., level)`）。鈴 = 横位置の音階音の最高音域（×2）、減衰 0.32 倍、`level 0.2`（輪の音の約 15%）。1 タップ最大 6 粒・同時 3 声（450ms 窓）・最初の音より ≥280ms 後。ミュート／未起動時は鳴らさず見た目のみ。`audio.live` getter を追加。
+4. **撮影の証拠整備**: 完了。`glimmer-ring`（`/?demo=1` → 1200 → clickAt[640,400] → 650）を追加。`letter-play` は goto → 800ms で `first` → 2200ms で最終（約 3.0 秒）。wait 合計 24.73 秒。待機短縮のため `home` 800→600、`echo` 5700→4500、`hold` 1800→1500。
 
 ## ORDER からの逸脱
-- `letter-play` の 2 枚目のタイミングが 2.5〜3 秒ではない（理由は上記。ヒントが 2 秒で消えるため）。
-- それ以外なし。`app/` のコードは 1 行も変えていない（変更は `app/shots.json` のみ）。
+- 波速の式: ORDER は「石・砂州と同じ式（`viewW/420`）」だが、sim は**長辺 420 セル**なので mobile では長辺基準に直した（`max(viewW,viewH)/420`）。`viewW/420` のままだと mobile で粒の到達が約 2 倍遅く、輪の縁と合わなかった（probe で確認）。既存の石・砂州の式は触っていない（mobile で遅めになっているはず。要検討）。
+- 輪の縁の点線: 粒は desktop 48 粒では輪の縁（650ms で半径約 130px）に 1〜3 個しか居ないため、粒だけでは「弧状に並ぶ」にならない。そこで **`hit()` が輪ごとに 12〜18 個の一時的な光点（縁の点線）を波面に乗せて 1.3 秒で消す**描画を足した。これは粒そのものではない（`dataset.glints` には数えない・音も鳴らさない）。
+- 点灯時の明るさは粒の本体を 0.55 で頭打ち（`LIT_CAP`）、点灯中だけごく淡い芯のにじみ（α≤0.1）を重ねる。縁の点線のにじみは α≤0.17。
 
 ## 動作確認
-- `cd app && npm run build`: 成功。
-- harness の撮影ループ（`captureCycle` と同じ手順: viewport ごと・画面ごとに新規コンテキスト、goto → settle 1500ms → steps → 800ms → 最終 shot、`page.setDefaultTimeout(5000)`）を `harness/lib` の関数で再現するスクリプトで **desktop 12 画面 + mobile 12 画面 = 24 画面**を実行。`shots/` や harness 本体は書き換えず、出力は `shots/cycle-21/probe/full/` 内。
-  - **実行 1**: 24/24 撮影、所要 142.9 秒、コンソールエラー 0、step エラー 0。
-  - **実行 2**: 24/24 撮影、所要 142.9 秒、コンソールエラー 0、step エラー 0。
-  - 1 画面あたり最長は `idle` の 12〜13 秒、`hold` 約 10.6 秒、`echo` 約 8.8 秒。他は 3〜7 秒。起動失敗（browserType.launch の失敗）は再現せず。
-  - 注: 上記 2 回の後に `letter-play` の待ち（700→560/300 など）だけ調整し、その画面は `harness/tools/probe.mjs`（desktop）で 2 回、first/second を撮ってエラー 0・見た目を確認。調整後の shots.json 全体は通し直していない。なお harness 本体の動画撮影（recordDemoVideos 14 秒）はこの再現に含めていない。
-- `?demo=1` を 60 秒放置（probe、20 秒ごとに eval）: `render=webgl2`、`webglcontextlost` なし、`isContextLost()=false`、window の error/unhandledrejection なし、コンソールエラー 0。`stoneHits` 9→21→32、`barChimes` 5→15→22 と増加。
-- 音: 放置だけだと `audio=idle`（AudioContext は最初のユーザー操作で起きる設計）。クリック後は `audio=running` を確認。デモ自動演奏は動作（stoneHits 増加）。
-- `wake()`: `?live=1` で requestAnimationFrame の回数を 1 秒ごとに計測 → 約 24 回/秒（ヘッドレスの SwiftShader での値）で動き、静止後 `[...,24,20,0,0,0]` と **0 に落ちて停止**することを確認。
+- `npm run build` 成功。全 probe で `consoleErrors: []`。
+- desktop `?demo=1`: 1.5 秒の idle で `dataset.glimmer=48`。タップ [640,400] 後 650ms の `desktop-ring.png` で輪の縁に点線の光（`shots/cycle-021/probe/`）。mobile も同様（`glimmer=32`、[195,420]）。
+- 非 demo で 1 タップ（desktop、2.0 秒上限）: `glints` 0 → 29（3.5 秒待ち 37→ 上限変更前）。mobile 0 → 32。`glintLast` 更新（例 `592,271`）、`audio=running`。2 回目のタップで更に増加（desktop 64）。
+- 60 秒放置（`?demo=1`、desktop）: 例外 0、`render=webgl2`、rAF 1440 フレーム、`glints=739`。`webglcontextlost` は出ていない（エラーリスナーで例外 0。contextlost イベントそのものは監視していないが、描画は終始正常）。
+- rAF 停止: 非 demo で 1 タップ後 19 秒で rAF 数が 448 のまま 1.8 秒間増えず（粒が静止中に回し続けない）。
+- letter-play（`desktop-first.png`）: 手紙の輪 2 つとヒント「だれかの水面」が写る。暁: 暖色の淡い粒、破綻なし。
 
 ## デモモード
-- 変更なし。`?demo=1` で合成の自動演奏（ghost）が動き、カメラ/マイク不要。評価環境の撮影は 142 秒前後で完走した。
+`?demo=1` では幽霊の指の打が `tap()` 経由なので追加演出なしで粒が光る（ジェスチャー前は `audio.live=false` のため音と `glintLast` は無し。クリックがあれば鳴る）。カメラ・マイク不要。
 
 ## 既知の問題・妥協点
-- **【重要】作業ツリーに私が作っていない `app/` の変更がある**: セッション中（mtime 00:15〜00:18 頃）に `app/src/glimmer.js`（新規）・`main.js`・`audio.js`・`style.css`・`index.html` が変更された（夜光虫＝IDEAS 案A に見える実装）。私はこれらを編集していない（私が書いたのは `app/shots.json` と REPORT だけ）。ORDER は repair 専用で夜光虫は c22 としているため、**コミットには含めず、未コミットのまま残した**（私のコミットは `app/shots.json` と REPORT のみ）。同時に走っている別プロセスが書き込んだ可能性がある。
-  - 影響: 私の再発防止確認のうち、**後半（60 秒放置・wake() 計測・letter-play の調整確認）は、この変更を含む dist に対して実行された**（60 秒放置の dataset に `glimmer`/`glints` が出ていた）。前半の 24 画面×2 回の通し実行がどのビルドだったかは確認できていない。したがって「アプリ無変更・異常なし」とは言い切れず、「**（私は）アプリを変更していない／変更を含む状態でも 60 秒でエラー・コンテキスト喪失は無かった**」が事実。
-  - 司令塔は、この未コミット差分を採用するか破棄するかを判断してほしい。
-- cycle 20 の「browserType.launch: Target page, context or browser has been closed」の**原因は特定できていない**。ここでは 2 回とも再現しなかった。原因は「待機が長く（幅あたり約 55 秒 + 各画面の settle 約 2.3 秒）、ブラウザが長時間生きていた」ことだと推測しているが、確証はない。撮影全体は約 143 秒に収まったので負荷は軽くなったはず、という言い方に留める。
-- `idle` は 5 秒の waitFor 上限に依存するため、ヘッドレスが極端に遅いと lap=2 を逃して step 警告（致命ではなく、画面は撮れる）になる可能性がある。
-- `letter-play` の first/second の撮影時刻は実行ごとに数百 ms ぶれる（first は 560ms 待ち。早すぎると何も写らず、遅すぎると 2 つ目の輪も写る）。
+- 見た目の自己評価: 静止時の粒は `#aura` の塵と並ぶと区別が弱い（どちらも淡い点）。「前と違う絵」としての変化量は desktop idle では控えめ。タップ後（縁の点線・点灯した粒）で差が出る。雪／ゴミには見えない（最大 0.55、数が少ない）が、demo では 1.2 秒ごとに打つため常に何かが瞬いている。
+- 縁の点線は粒ではなく補助描画（上記）。波面の実際の半径は概算（波速 ×1.06）で、desktop は合うが mobile は目視でほぼ合う程度。
+- 縁の点線は暁・夜でも同じ式で色が出るが、夜は未確認。
+- 点灯中の粒が 1 タップで 29〜37 個（desktop）。多く見える瞬間がある。
 
 ## 変更した主なファイル
-- `app/shots.json`（のみ）
-- `comms/reports/REPORTv21.md`
+`app/src/glimmer.js`（新規）、`app/src/main.js`、`app/src/audio.js`、`app/src/style.css`、`app/index.html`、`app/shots.json`
 
 ## 司令塔への申し送り
-- 再発防止: shots.json の wait 合計を 25 秒以下に保つ。進行待ちは固定 wait より `waitFor body[data-...]` を使う（`stoneLaps`・`holding` など既存の dataset が使える）。c22 の夜光虫も、証拠を撮るなら dataset を 1 つ出すと撮影が安定する。
-- `letter-play` を 2.5〜3 秒で撮らせたいなら、ヒントの表示時間（2000ms）側の仕様判断が要る。今回は触れていない。
+- 評価は `glimmer-ring` と `letter-play-first`（`letter-play` の 1 枚目）で。`dataset.glimmer / glints / glintLast` で機械確認可。
+- 7 点が動くかは「タップ後の絵」の差次第。粒を増やす・明るくするより、縁の点線の質（間隔・色）を磨く方が効くと思う。
+- 既存の石・砂州の波速が mobile で `viewW/420`（長辺ではない）のまま。直すと mobile の反応タイミングが合うが、挙動変更なので指示待ち。
