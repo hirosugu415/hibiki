@@ -148,7 +148,7 @@ function echoRing(x, yTop, st) {
 function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.018);
   note(x, yTop, vel);
-  flash(x, yTop, vel);
+  if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
 }
 

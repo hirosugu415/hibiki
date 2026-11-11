@@ -42,6 +42,16 @@ precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
 uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW;
 in vec2 vUv; out vec4 o;
+#define FRESH 0.9
+#define LENS 0.0
+#define EDGE_K 40.0
+#define EDGE_AT 0.2
+#define EDGE_W 0.08
+#define EDGE_I 1.5
+#define TAIL1 0.22
+#define TAIL2 0.0
+#define CORE1 0.05
+#define CORE2 0.3
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 knee(vec3 x){
   vec3 t = max(x - 0.72, 0.0);
@@ -52,13 +62,15 @@ void main(){
   vec2 tx = uTexel;
   vec3 hs = texture(uState, uv).rgb;
   float h = hs.r;
-  // 勾配は 2 セル幅の中心差分 1 本（以前の 1px/3px 混合の近似）。テクスチャ読み取りは計 5 回
-  vec2 g = vec2(texture(uState, uv + vec2(tx.x * 2.0, 0.0)).r - texture(uState, uv - vec2(tx.x * 2.0, 0.0)).r,
-                texture(uState, uv + vec2(0.0, tx.y * 2.0)).r - texture(uState, uv - vec2(0.0, tx.y * 2.0)).r) * 0.25;
+  // 勾配は 2 セル幅の中心差分 1 本。読み取りは計 5 回のまま、.rgb で受けて glow(b) の勾配も同時に得る
+  vec3 tR = texture(uState, uv + vec2(tx.x * 2.0, 0.0)).rgb, tL = texture(uState, uv - vec2(tx.x * 2.0, 0.0)).rgb;
+  vec3 tU = texture(uState, uv + vec2(0.0, tx.y * 2.0)).rgb, tD = texture(uState, uv - vec2(0.0, tx.y * 2.0)).rgb;
+  vec2 g = vec2(tR.r - tL.r, tU.r - tD.r) * 0.25;
+  vec2 gg = vec2(tR.b - tL.b, tU.b - tD.b) * 0.25;
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
   vec2 asp = vec2(uRes.x / uRes.y, 1.0);
-  vec2 q = uv + g * 2.4 * uLook.x;
+  vec2 q = uv + g * 2.4 * uLook.x + gg * LENS;
   vec2 pc = (q - vec2(0.5, 0.40)) * asp;
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
@@ -71,12 +83,18 @@ void main(){
   float spec = pow(max(dot(n, H), 0.0), 90.0);
   // 小さな波は閾値で静かに消し、新しい波だけが明るく残る
   float slope = max(length(g) * 12.0 - 0.02, 0.0);
-  float rim = 1.0 - exp(-slope * 3.0 / uRimW);
+  float rim = 1.0 - exp(-(slope / (1.0 + slope * 0.9)) * 3.0 / uRimW);
   float hp = max(h, 0.0);
   float gl = hs.b;
-  vec3 add = uAcc * (rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * 3.0 + hp * 0.5)
+  // 光の滲みは塗りつぶさず、勾配の大きい所（水に落ちた光の屈折の縁）だけを細く明るくする
+  float ge = length(gg);
+  float gb = (gl - EDGE_AT) / EDGE_W;
+  float edge = exp(-gb * gb) * min(ge * EDGE_K, 1.0);
+  // 打鍵直後の核（glow が強い所）では、波の隆起そのものを塗りつぶさない。縁と尾だけが光り、波が広がるにつれ通常の描画へ戻る
+  float fresh = 1.0 - FRESH * smoothstep(0.0, 0.22, gl);
+  vec3 add = uAcc * ((rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * CORE2 + hp * CORE1) * fresh)
            + uMid * max(-h, 0.0) * 0.7
-           + uAcc * (gl * 1.15 + gl * gl * 1.4);
+           + uAcc * (edge * EDGE_I + gl * TAIL1 + gl * gl * TAIL2);
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
   col = knee(col);
