@@ -1,12 +1,12 @@
 {
   "cycle": 60,
-  "turn": "builder",
+  "turn": "commander",
   "mode": "repair",
-  "nextMode": "normal",
-  "repairStreak": 1,
+  "nextMode": "repair",
+  "repairStreak": 2,
   "lastHealthyCommit": "e75228176218690b7826d60daaa25f250103c21d",
   "waitUntil": 1794429800948,
   "notes": [],
   "done": false,
-  "updatedAt": "2026-11-11T20:42:50.948Z"
+  "updatedAt": "2026-11-11T20:43:43.459Z"
 }
