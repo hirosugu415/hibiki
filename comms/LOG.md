@@ -93,3 +93,4 @@
 - [cycle 066] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。desktop1枚のみ撮影後launch失敗でヘルスNG上限3点
 - [cycle 067] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (e7522817) へ自動ロールバックした
 - [cycle 067] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (e7522817) へ自動ロールバックした
+- [cycle 067] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でmeta空、ヘルスNG上限3点。probeではmobileも健全
