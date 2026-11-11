@@ -32,3 +32,4 @@
 - [cycle 024] mode=repair | score 3/10 | health=? | polish | 撮影は初めて1枚(home)まで進んだが途中で途切れ meta 無し。app は健全、上限3点
 - [cycle 024] mode=repair | score 6/10 | health=ok | polish | 撮影が復旧しヘルスOK。app は c19 状態のまま健全で静かに美しいが前進は無い
 - [cycle 025] mode=normal | score 6/10 | health=ok | polish | 夜光虫が復活し輪の縁に光の点線が乗り前進。静止画は豊かになったが音と変化はまだ
+- [cycle 025] mode=normal | score 3/10 | health=NG | polish | 撮影が起動失敗でヘルスNG（上限3点）。app 自体は probe で健全、夜光虫の前進は維持
