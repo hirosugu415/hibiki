@@ -68,3 +68,4 @@
 - [cycle 047] mode=normal | score 6/10 | health=ok | polish | 1画面撮影が desktop/mobile 両方で成功しヘルスOK。appは静かに美しいが前進なし
 - [cycle 048] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でヘルスNG(上限3点)。appはprobeで健全
 - [cycle 049] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (e7522817) へ自動ロールバックした
+- [cycle 049] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影は mobile 1枚のみで launch 失敗、ヘルスNG上限3点。appは健全

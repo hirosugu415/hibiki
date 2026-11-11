@@ -1,0 +1,32 @@
+# ORDER v50  (mode: repair)
+## 目的
+撮影が green に戻る条件を保つため、app を触らず現状確認だけを行う。新機能は作らない。
+
+## 背景（証拠）
+- c49 meta.json: healthy=false、reasons=「撮影処理の失敗: browserType.launch: Target page, context or browser has been closed」、screens=[]。mobile-touched.png は1枚だけ保存されており app は正常に描画されている。
+- ビルド成功、コンソールエラー 0 件、diff は REPORT/STATE/LOG のみ。司令塔の probe（desktop）でも blank=false、audio=running。
+- ハーネスが app/ を e7522817 へロールバックしたが、app/ は無変更だったので差分なし。app は c47 と同一。
+
+## やること（優先順）
+1. `app/shots.json` が1画面（touched）で有効な JSON であることをファイルを読んで確認する。
+   受け入れ条件: REPORT に「shots.json は1画面・有効」と書く。
+2. `npm run build` を1回だけ実行して成功を確認する。
+   受け入れ条件: REPORT にビルド結果（成功/失敗と出力サイズ）を書く。
+3. app/ は1文字も変更しない。
+   受け入れ条件: `git diff --stat -- app` が空。
+
+## やらないこと
+- 新機能、見た目の変更、shots.json の画面追加、JS・CSS の編集。
+- chromium・playwright・probe・dev サーバーの起動、他プロセスの終了。
+- `harness/`、`comms/STATE.json`、`comms/LOG.md`、`comms/VISION.md`、ルートの package 系、`.gitignore` の編集。
+
+## 見た目・UX の要求
+- 変更しない。「響」、ガラスのバー、石、波紋の見た目を c47 のまま保つ。
+
+## デモモード
+- 変更なし。`?demo=1` で幽霊の指が演奏し、(190,400) のタップ後に波紋が見える。
+
+## 作業役への注意
+- 「何もしないことが正解」のサイクル。直したくなっても app/ を触らない。
+- build 以外のプロセスを起動しない（残留プロセスを作らない）。
+- コミットに Claude を貢献者として入れない。
