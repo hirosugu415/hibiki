@@ -8,7 +8,7 @@ const MOTIFS = [
   [6, 8, 9, 8, 6, 4],
 ];
 
-export function createGhost(api, { demo, recall }) {
+export function createGhost(api, { demo }) {
   let timers = [];
   let alive = false;
   let motifN = 0, phase = 0, lastIdx = 4;
@@ -36,15 +36,8 @@ export function createGhost(api, { demo, recall }) {
     later(() => { if (alive) hold(xOf(7), Math.max(0.22, st.y - 0.2), 3000); }, 6200);
   }
 
-  // 評価用（?recall=1）: 短い 3 音のあと長めの休符を置き、追想が発火する静けさを作る
-  function recallPhrase() {
-    [3, 5, 7].forEach((idx, i) => later(() => { if (alive) { lastIdx = idx; api.tap(xOf(idx), 0.4 + i * 0.1, 0.7); } }, i * 500));
-    later(() => { api.dotHide(); later(playMotif, 5000); }, 1500);
-  }
-
   function playMotif() {
     if (!alive) return;
-    if (recall && motifN === 0) { motifN++; recallPhrase(); return; }
     if (demo && motifN === 0) { motifN++; firstAct(); return; }
     const m = MOTIFS[motifN++ % MOTIFS.length];
     let t = 0;

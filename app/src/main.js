@@ -5,12 +5,10 @@ import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
 import { createEcho } from './echo.js';
-import { createRecall } from './recall.js';
 import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
-const RECALL_PARAM = params.get('recall'); // 1 = 評価用に待ちを 1.2 秒へ短縮 / 0 = 無効
 
 const store = {
   get(k) { try { return localStorage.getItem('hibiki.' + k); } catch { return null; } },
@@ -67,7 +65,6 @@ const audio = createAudio();
 audio.setMood(mood);
 window.addEventListener('pointerdown', (e) => {
   lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood();
-  if (recall) recall.interrupt();
   if (!(e.target && e.target.closest && e.target.closest('#wordmark'))) letterVoice();
 }, { capture: true });
 window.addEventListener('keydown', () => { lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood(); }, { capture: true });
@@ -262,7 +259,7 @@ function tap(x, yTop, vel = 1, record = true) {
   stoneEcho(x, yTop);
   barChime(x, yTop);
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
-  if (record) { echo.record(x, yTop, vel); if (recall) recall.record(x, yTop, vel); }
+  if (record) echo.record(x, yTop, vel);
 }
 
 // ---- こだま: 触れた場所が数秒後にそっと戻る（自身は記録しない） ----
@@ -275,22 +272,6 @@ const echo = createEcho({
     echoRing(x, yTop, st);
   },
   onChange(n, p) { document.body.dataset.echoes = String(n); document.body.dataset.echoPending = String(p); },
-});
-
-// ---- 追想: 静けさの間に、直近の演奏が弱い輪と小さな音で戻る（輪の演出は足さない） ----
-document.body.dataset.memory = '0';
-document.body.dataset.recallGen = '0';
-const recall = RECALL_PARAM === '0' ? null : createRecall({
-  idleMs: RECALL_PARAM === '1' ? 1200 : 6000,
-  play(x, yTop, vel) {
-    ripple(x, yTop, 0.3 + 0.2 * vel, 0.018, 5000);
-    note(x, yTop, vel);
-  },
-  onChange(n, gen, last) {
-    document.body.dataset.memory = String(n);
-    document.body.dataset.recallGen = String(gen);
-    if (last) document.body.dataset.recallLast = last;
-  },
 });
 
 // ---- 長押しの泉: 動かさずに 260ms 押し続けると、その点から輪が湧き続け、音が伸びる ----
@@ -459,7 +440,7 @@ const ghost = createGhost({
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
   holdEnd(reward) { fountainStop('ghost', !!reward); },
   dotHide() { dot.classList.remove('show'); },
-}, { demo: DEMO, recall: DEMO && RECALL_PARAM === '1' });
+}, { demo: DEMO });
 function dotShow(x, y) {
   dot.style.transform = `translate(${x * viewW}px, ${y * viewH}px)`;
   dot.classList.add('show');
