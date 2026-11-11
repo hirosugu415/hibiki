@@ -58,3 +58,4 @@
 - [cycle 040] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (1e926807) へ自動ロールバックした
 - [cycle 040] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でヘルスNG(上限3点)。rollback後のappはprobeで健全
 - [cycle 041] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。デスクトップ2枚で撮影が途切れmeta無し(ヘルスNG上限3点)。appはprobeで健全
+- [cycle 042] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でmeta無し(ヘルスNG上限3点)。appはprobeで健全
