@@ -80,9 +80,6 @@ body { position: fixed; inset: 0; }
   mix-blend-mode: screen; will-change: transform, opacity;
 }
 
-/* 夜光虫: 水中の鋭い光の点（Canvas2D 1 枚。触れるのを妨げない） */
-#glimmer { position: fixed; left: 0; top: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
-
 #ghost-dot {
   position: fixed; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px;
   border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0;
