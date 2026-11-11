@@ -1,33 +1,34 @@
-# ORDER v38  (mode: repair)
+# ORDER v38  (mode: normal)
 ## 目的
-app を変更せずに、撮影（ヘルスチェック）が healthy=true で通る状態を保つ。c37 も `browserType.launch: Target page, context or browser has been closed` で撮影が失敗したが、司令塔の probe では app は健全。
+第一印象の階層を上げる: 「響」のワードマークに存在感を与え、立ち上がりの動きを CSS だけで小さく入れ直す（6 点の天井を 7 へ押し上げる最小の磨き）。
 
-## 症状（引用）
-- `shots/cycle-037/meta.json`: build ok、`screens: []`、healthy=false、reasons=「撮影処理の失敗: browserType.launch: Target page, context or browser has been closed」。
-- コンソールエラー 0 件、ビルド成功。
-- 司令塔 probe（モバイル、`?demo=1`）: blank=false、`dataset.render=webgl2`、石・「響」・ガラスのバーが崩れなく表示。
-- 常駐: `loop.mjs builder` が PID 8332 と PID 29712 の 2 本、`commander` が PID 27204 の 1 本（司令塔が確認）。
-- c37 で、同一サイクルの builder が二重に走り、`git commit` が `cannot lock ref 'HEAD'` で競合した（REPORTv37 追記）。
+## 背景（証拠）
+- c37 公式撮影は healthy=true、6 枚すべて正常（`shots/cycle-037/`）。app は c34 の見た目で崩れ無し。
+- 弱点: `desktop-home.png` / `mobile-home.png` で「響」が小さく細く（30px・weight 200・左上）、画面の主役になれていない。バー・ヒント・水面の立ち上がりが一瞬で、Apple 的な「静かな登場」が無い。
+- c34 の立ち上がり CSS（コミット `07072cd`）は、ハーネスの自動ロールバックで消えただけで、app の欠陥ではない。`git show 07072cd -- app/src/style.css` で内容を参照してよい。
 
 ## やること（優先順）
-1. **app/ を一切変更しない。** 受け入れ条件: `git diff --stat -- app/` が空。
-2. **`npm run build` が成功することを確認する**（ビルドのみ）。受け入れ条件: 終了コード 0、`app/dist` が生成される。
-3. **常駐プロセスの現況を読み取り専用で確認し、REPORT に書く。** `Get-CimInstance Win32_Process` で `harness/loop.mjs` を含む node の本数・PID・起動時刻を事実として書く。終了・削除はしない。builder が 2 本のままなら、人間への申し送りに書く。
-4. REPORT に「今回 chromium / probe を起動したか」を明記する（今回も起動しない）。
-5. `git commit` が `cannot lock ref 'HEAD'` で失敗したら、`git log` で同内容のコミットが既にあるかを確認し、重複なら自分の版は破棄して REPORT に一行書く。再試行の連打はしない。
+1. **立ち上がりの再導入（CSS のみ）**: `07072cd` と同じ内容を `app/src/style.css` に戻す（`#wordmark` の `wordmark-in`、`#hint` のタイミング短縮、`#bar` の `bar-in`、`prefers-reduced-motion` で無効化）。
+   受け入れ条件: `npm run build` 成功。ページを開くと、字・ヒント・バーが 0.7 秒以内に静かに現れ、最終状態は現在のスクショと同じ。JS の変更は無し。
+2. **「響」の階層を上げる**: `#wordmark` を、デスクトップ 36px・スマホ幅（`max-width: 600px`）32px、weight 200 のまま、`letter-spacing` を終点 .14em に。色の不透明度は .78 → .86。`text-shadow` は現状を維持（光らせすぎない）。位置（左上、セーフエリア対応）と 44px 以上のタップ領域（`::before`）は維持。
+   受け入れ条件: desktop・mobile の `home` スクショで「響」が現在より一回り大きく読みやすい。バー・ヒント・石と重ならない。ヒントとの階層（響＞ヒント）が明瞭。
+3. **確認のみ**: `npm run build` と、撮影用の `app/shots.json` は **変更しない**（wait 800 などそのまま）。立ち上がり途中で最初の `home` が撮られても破綻しないよう、`wordmark-in` の開始状態は opacity .55・blur 3px 以内にする。
 
 ## やらないこと
-- `app/` の編集（新機能、追想の復活、立ち上がりアニメーションの再導入、CSS 変更を含む）。ヘルスが回復して normal になるまで保留。
+- 追想（`recall.js`）の再導入、GL シェーダー（`wave-gl.js`）の変更、新しい UI 要素・ボタンの追加、`shots.json` の変更、音の変更。
 - `harness/`、`comms/STATE.json`、`comms/LOG.md`、`comms/VISION.md`、ルートの package 系、`.gitignore` の編集。
-- 他プロセスの終了、プロジェクト外への操作、probe・撮影の起動。
+- 他プロセスの終了。
 
 ## 見た目・UX の要求
-- 変更なし。desktop・mobile とも c34（score 6）に近い、静かな水面・石・「響」・ガラスのバーの見た目のまま。
+- デスクトップ幅: 「響」は左上で凛として、水面・石・ガラスのバーの静けさを壊さない。動きは .7 秒以内、イージングは既存の `--ease`。
+- スマホ幅 (390×844): 「響」32px でもはみ出さず、ヒント・バーと干渉しない。バーは従来どおり親指で届く。
+- 3 秒ルール不変: 開いて 3 秒以内にタップ→輪と音。立ち上がり中のタップも通常どおり反応する（`pointer-events` を変えない）。
 
 ## デモモード
-- 変更なし。`?demo=1` で幽霊の指が演奏する。
+- `?demo=1` で幽霊の指が演奏し、静止画でも輪が見える（変更なし）。確認は撮影か probe で `/?demo=1` を開くだけでよい。
 
 ## 作業役への注意
-- 「何もしないことが正解」のサイクル。余計な編集で app を壊さない。
-- normal に戻ったら、まず c34 の立ち上がり演出を小さく入れ直し、その後に追想（コミット `a2641c2` の `recall.js` 等）を再開する。今は着手しない。
-- REPORT は今回実際に確認した事実のみを書く。コミットに Claude を貢献者として入れない。
+- 小さな CSS 差分だけにする。ビルドが通り、`git diff --stat -- app/` が `app/src/style.css` のみであること。
+- 公式撮影が走る間は chromium・probe を並行起動しない（二重 builder による launch 競合の疑いが残っている）。probe を使うなら 1 回だけ、単独で。
+- 追想の再開は、この ORDER の結果が撮影で healthy になったあとの次の normal 以降。
+- REPORT は実際に確認した事実のみ。コミットに Claude を貢献者として入れない。
