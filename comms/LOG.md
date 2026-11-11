@@ -46,3 +46,4 @@
 - [cycle 032] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (723bd572) へ自動ロールバックした
 - [cycle 032] mode=repair | score 3/10 | health=ok | polish | 撮影起動失敗でヘルスNG（上限3点）。rollback後のappは probe で健全・静かに美しいが、追想は失われた
 - [cycle 033] mode=repair | score 3/10 | health=NG | polish | 公式撮影がまた起動失敗(画像ゼロ・ヘルスNG上限3点)。appはprobeで健全・静かに美しいが前進なし
+- [cycle 034] mode=normal | score 3/10 | health=? | polish | 立ち上がりCSSは入ったが公式撮影がまた起動失敗(画像ゼロ・ヘルスNG上限3点)。appはprobeで健全
