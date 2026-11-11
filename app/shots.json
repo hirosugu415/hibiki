@@ -1,6 +1,7 @@
 {
-  "_comment": "ハーネスが撮るスクリーンショット対象の宣言。builder が画面を増やしたら必ず更新すること。steps の書式は README の「steps」節を参照。",
   "screens": [
-    { "name": "home", "url": "/", "steps": [] }
+    { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 2500 } ] },
+    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [640, 380] }, { "wait": 500 } ] },
+    { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1500 } ] }
   ]
 }
