@@ -28,3 +28,9 @@
 ## 司令塔への申し送り
 - 起動失敗が続く場合、app ではなく撮影環境側の問題の可能性が高い。今回の変更は静的 CSS のため撮影負荷は増えない。
 - 次は「響」の階層（ヒントとの上下関係）や、静止画での情報量を検討する余地がある。
+
+## 再開時の再確認（同サイクル内の追記）
+- 中断後に再開したところ、実装・REPORT・コミット（07072cd）は既に完了していたため、コードは変更せず再検証のみ行った。
+- build 成功。probe を desktop / mobile × home / touched / hold で直列に再実行し、全て ok・blank=false・consoleErrors=[]。home は render=webgl2、touched は audio=running、hold は holding=1。
+- 画像を再度開いて確認: desktop-home / mobile-home（1.3 秒後）は「響」・ヒント・バーが通常表示、mobile-t03（0.3 秒）も空白にならず読める。
+- 今回の再実行で起動した probe は全て前景で終了済み。常駐プロセスは残していない（tasklist に見える chrome は私の起動物ではないため触れていない）。
