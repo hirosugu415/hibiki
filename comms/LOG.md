@@ -41,3 +41,4 @@
 - [cycle 029] mode=repair | score 3/10 | health=? | polish | 撮影が起動失敗で証拠ゼロ(ヘルスNG上限3点)。app無変更で、probeでは健全
 - [cycle 029] mode=repair | score 6/10 | health=ok | polish | 撮影が復旧しヘルスOK。appはc27と同じ静かな水面で6点維持、mobileの輪も収まった
 - [cycle 030] mode=normal | score 3/10 | health=NG | polish | 撮影が起動失敗でヘルスNG（上限3点）。追想は probe で動作確認でき、app 自体は健全
+- [cycle 030] mode=normal | score 6/10 | health=ok | polish | 撮影は正常でヘルスOK。追想が入ってもappは静かな水面のまま6点で横ばい、追想は静止画に写らない
