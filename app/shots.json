@@ -18,8 +18,8 @@
         },
         {
           "clickAt": [
-            190,
-            400
+            420,
+            360
           ]
         },
         {
@@ -28,20 +28,11 @@
       ]
     },
     {
-      "name": "echo",
-      "url": "/?demo=1",
+      "name": "recall",
+      "url": "/?demo=1&recall=1",
       "steps": [
         {
-          "wait": 400
-        },
-        {
-          "clickAt": [
-            210,
-            330
-          ]
-        },
-        {
-          "wait": 600
+          "wait": 3800
         }
       ]
     },
