@@ -29,3 +29,4 @@
 - [cycle 022] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (b62cc52c) へ自動ロールバックした
 - [cycle 022] mode=repair | score 3/10 | health=NG | polish | ヘルスNG（撮影の起動失敗）で証拠ゼロ。app は c19 状態へ戻り健全だが、夜光虫が失われた
 - [cycle 023] mode=repair | score 3/10 | health=NG | polish | 撮影が起動失敗でまた証拠ゼロ。app は無変更で健全、ヘルス規則で3点上限
+- [cycle 024] mode=repair | score 3/10 | health=? | polish | 撮影は初めて1枚(home)まで進んだが途中で途切れ meta 無し。app は健全、上限3点
