@@ -1,25 +1,27 @@
-SCORE: 3/10
+SCORE: 6/10
 DIRECTION: polish
-SUMMARY: 撮影が起動失敗で証拠ゼロ(ヘルスNG上限3点)。app無変更で、probeでは健全
+SUMMARY: 撮影が復旧しヘルスOK。appはc27と同じ静かな水面で6点維持、mobileの輪も収まった
 # FEEDBACK v29
 
 ## VISION 適合（絶対のルールを守れているか）
-**違反は確認できない（守れている）が、公式証拠が無い。** `shots/cycle-029/` には `build.log` しか無く、スクショ・`meta.json`・`console-errors.log`・`diff.*` が存在しない（撮影処理が `browserType.launch: Target page, context or browser has been closed` で失敗）。ビルドは成功（12 modules、js 39.23 kB）。
-自前の probe（`/?demo=1`、mobile 390×844）の `mobile-touched.png`: 左上「響」、水面、石、細い同心の光輪（石で歪む）、下部ガラス質ピル（凪／夜／暁＋音量）が全て画面内に収まり、輪も全周が見える。はみ出し・崩れ無し。
+**守れている。** `meta.json`: build ok、healthy=true、8 枚すべて blank=false、`consoleErrors: []`。
+- 3 秒ルール: `desktop-home.png` / `mobile-home.png` に「触れてみてください」の一言と、幽霊の指の同心の輪がすでに見えており、初見でも何をするか分かる。タップ後（`*-touched` / `*-echo`）に触れた位置から輪が広がっている。
+- スマホ幅 390×844: `mobile-home` / `mobile-echo` で「響」・石・輪・下部ガラスピル（凪／夜／暁＋音量）が全て画面内。c28 で指摘した輪が右端で切れる問題は、`mobile-echo.png` で輪が x≈15〜330 に収まり解消した。
+- UI 言語は日本語のみ（英語混在なし）。
 
 ## 採点の根拠
-- ヘルス NG（撮影の起動失敗）なので上限 3 点。
-- 良い点: REPORT の「app 差分 0、shots.json の clickAt のみ変更」は git 履歴（cdbae60）と一致。mobile で輪が収まる座標へ直った点は私の probe でも裏付けられた。
-- 悪い点: 撮影失敗は c20/c22/c23/c25/c26/c27/c28/c29 と頻発しており、app 起因ではない。直近 8 サイクル中 6 回が環境障害で、成果が評価されない。app の見た目の前進は c25 以降止まっている。
+- 良い点: `desktop-hold.png` の長押しの泉は、複数の輪が重なり石で歪み、水面の質感が一番出ている。ガラス質ピルの角丸・アイコン・配色は 1 本の系統で揃っており Apple 的な静けさがある。
+- 悪い点: 5 枚の静止画の差が小さい（深い青＋石＋輪の構成が変わらない）。`desktop-touched.png` は輪が画面左端で大きく切れ、タップ位置の周辺が空に見える。「響」は小さく階層が弱い。数十秒触っても絵と音が変わらない点は未解決。
+- 前回(c28)の 3 点は環境起因のヘルス NG による上限。app は c27 の 6 点と同一状態で、REPORT 通り app 差分は 0、変更は `shots.json` の clickAt のみ（diff.stat と一致）。点を上げる根拠（体験の前進）は無いので 6 のまま。
 
 ## 動作確認で分かったこと
-- probe 全ステップ ok、`blank=false`、dataset: `render=webgl2`, `audio=running`, `stones=1`, `stoneHits=2`, `echoPending=4`, `mood=calm`、コンソールエラー無し。→ app は健全。
-- 起動失敗は shots.json の中身（画面数や wait）とは無関係（launch 自体が落ちている）。軽くしても保証にならない。
+- probe（`/?demo=1`、mobile、[195,400] をクリック）: 全ステップ ok、blank=false、コンソールエラー無し。dataset: `render=webgl2`, `audio=running`, `stones=1`, `stoneHits=1`, `echoPending=4`, `mood=calm`。タップで音声が起動し、こだまが予約されている。
+- REPORT の「mobile echo の輪は全周画面内」は目視で一致。「touched の輪は小さい」はデスクトップでは当たらず、実際は既存の波と重なって大きく見えた（些細）。
 
 ## 方向性の判断
-polish。app は健全で方向転換の根拠無し。ただし再撮影で復旧した直近 2 回（c24, c27）は「app 無変更」だった。app を触らず再撮影を待つのが最も確実。
+polish。app は健全で、c24→c27→c29 と 6 点で安定している。直近の 3 点は全て撮影環境の起動失敗でありアプリの質の低下ではない。ここで pivot する根拠は無い。止まっているのは「触れていない間・数十秒後に何も変わらない」ことなので、予定通り案A「水の追想」を最小実装して時間軸の体験を足す。
 
 ## 次に最も効くこと
-1. c30: app も shots.json も触らず、再撮影で healthy になることを待つ（probe を残留プロセスなしで終えること）。
-2. 撮影が復旧したら、案A「水の追想」を小さく実装する normal サイクルへ戻る。
-3. 新機能を入れる際は wait・画面数を増やさない。
+1. c30（normal）: 案A「水の追想」を `recall.js` として小さく実装（静止 6 秒後に直近の音が変形・減衰して再演される）。
+2. 撮影が安定したら、`shots.json` に追想が写る 1 画面を入れる（wait 増加は最小に）。
+3. その後の候補: 案C 最小版（「響」の階層と最初の 3 秒）。
