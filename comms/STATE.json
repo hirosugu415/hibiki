@@ -1,12 +1,14 @@
 {
   "cycle": 22,
-  "turn": "builder",
+  "turn": "commander",
   "mode": "repair",
-  "nextMode": "normal",
-  "repairStreak": 2,
+  "nextMode": "repair",
+  "repairStreak": 0,
   "lastHealthyCommit": "b62cc52c37a8dc65d4101c1ca85e55aeb8022d5c",
   "waitUntil": 1794410759967,
-  "notes": [],
+  "notes": [
+    "修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (b62cc52c) へ自動ロールバックした。ロールバックされた機能は、より小さな単位で作り直すこと。"
+  ],
   "done": false,
-  "updatedAt": "2026-11-11T15:25:29.967Z"
+  "updatedAt": "2026-11-11T15:27:09.237Z"
 }

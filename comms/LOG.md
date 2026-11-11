@@ -27,3 +27,4 @@
 - [cycle 020] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。撮影は健全に復帰し画面は静かで一貫、7点維持
 - [cycle 021] mode=repair | score 7/10 | health=ok | polish | 夜光虫の粒が水中に静かに定着し波に応える。変化は繊細で7点据え置き
 - [cycle 022] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (b62cc52c) へ自動ロールバックした
+- [cycle 022] mode=repair | score 3/10 | health=NG | polish | ヘルスNG（撮影の起動失敗）で証拠ゼロ。app は c19 状態へ戻り健全だが、夜光虫が失われた
