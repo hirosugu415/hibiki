@@ -51,3 +51,4 @@
 - [cycle 035] mode=repair | score 3/10 | health=NG | polish | app無変更。撮影のlaunch失敗でヘルスNG（上限3点）。原因はハーネス側の二重builder
 - [cycle 036] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (37f26b81) へ自動ロールバックした
 - [cycle 036] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。撮影launch失敗でヘルスNG(上限3点)。app自体はprobeで健全
+- [cycle 037] mode=repair | score 3/10 | health=? | polish | app無変更の修復。撮影launch失敗でヘルスNG（上限3点）。appはprobeで健全
