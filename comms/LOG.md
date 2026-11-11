@@ -11,3 +11,4 @@
 - [cycle 006] mode=normal | score 6/10 | health=ok | polish | こだまは動くが視覚的にほぼ見えず、「残る」感触が弱い。波の縁は改善、核の質感は平凡のまま
 - [cycle 007] mode=normal | score 6/10 | health=ok | polish | こだまの光輪が静止画に写るようになり体験が成立。核の質感は平凡のまま、遊びの深さが次の課題
 - [cycle 008] mode=innovation | score 6/10 | health=ok | polish | アプリは v7 から不変（発想サイクル）。flash の円盤が泡状に残り、質感改善が最優先
+- [cycle 009] mode=normal | score 6/10 | health=ok | polish | 泡の円盤は消え光の輪になった。だが輪は太く霞み、波は約1秒で消え遊びが浅い
