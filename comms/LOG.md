@@ -19,3 +19,4 @@
 - [cycle 014] mode=normal | score 7/10 | health=ok | polish | 石が濡れた小石に読め、回折の証拠も撮れた。だが石はまだ反応を返さない飾り寄り
 - [cycle 015] mode=normal | score 7/10 | health=ok | polish | 波が石をゆっくり押し、触れる→波→石が動くループが成立。静かで過不足なし
 - [cycle 016] mode=innovation | score 7/10 | health=ok | polish | app 無変更の発想サイクル。v15 の 7 点水準を維持、壊れ無し。次は砂州で応答量を増やす
+- [cycle 017] mode=normal | score 7/10 | health=ok | polish | 砂州の屈折と鐘が成立（barChimes 6/21秒）。見た目は静かだが砂州は淡く、7点据え置き
