@@ -25,9 +25,16 @@ body { position: fixed; inset: 0; }
   transition: opacity .6s var(--ease);
   top: max(24px, calc(env(safe-area-inset-top) + 16px));
   left: max(28px, calc(env(safe-area-inset-left) + 22px));
-  font-size: 30px; font-weight: 200; letter-spacing: .12em; line-height: 1;
-  color: rgb(255 255 255 / .78);
+  font-size: 36px; font-weight: 200; letter-spacing: .14em; line-height: 1;
+  color: rgb(255 255 255 / .86);
   text-shadow: 0 0 22px rgb(var(--accent) / .5), 0 1px 10px rgb(var(--deep) / .5);
+  animation: wordmark-in .7s var(--ease) both;
+}
+@media (max-width: 600px) { #wordmark { font-size: 32px; } }
+/* 立ち上がり: 字は color 側に透明度があるので、opacity は 1 へ戻す（最終の見た目は color のまま） */
+@keyframes wordmark-in {
+  from { opacity: .55; filter: blur(3px); letter-spacing: .22em; }
+  to { opacity: 1; filter: blur(0); letter-spacing: .14em; }
 }
 /* 見た目はそのまま、当たり判定だけ 44px 以上に広げる */
 #wordmark::before { content: ''; position: absolute; inset: -9px -12px; }
@@ -67,11 +74,11 @@ body { position: fixed; inset: 0; }
   font-size: 15px; font-weight: 300; letter-spacing: .28em; text-indent: .28em;
   color: #fff;
   text-shadow: 0 1px 2px rgb(var(--deep) / .55), 0 1px 14px rgb(var(--deep) / .9), 0 0 28px rgb(var(--deep) / .6), 0 0 36px rgb(var(--accent) / .35);
-  animation: hint-in 1s var(--ease) .4s both, breathe 3.8s ease-in-out 1.4s infinite;
+  animation: hint-in .5s var(--ease) .3s both, breathe 3.8s ease-in-out .8s infinite;
   transition: opacity .6s var(--ease), transform .6s var(--ease);
 }
 #hint.gone { opacity: 0 !important; transform: translateY(8px); animation: none; transition-duration: .16s; }
-@keyframes hint-in { from { opacity: 0; transform: translateY(8px) } to { opacity: .6; transform: none } }
+@keyframes hint-in { from { opacity: 0; transform: translateY(6px) } to { opacity: .6; transform: none } }
 @keyframes breathe { 0%, 100% { opacity: .6 } 50% { opacity: .98 } }
 
 /* 触れた瞬間の光の滲み（JS が生成） */
@@ -103,7 +110,10 @@ body { position: fixed; inset: 0; }
     0 12px 40px rgb(0 0 0 / .38),
     0 2px 8px rgb(0 0 0 / .25);
   -webkit-user-select: none; user-select: none; touch-action: manipulation;
+  animation: bar-in .6s var(--ease) both;
 }
+/* translate は transform（中央寄せの translateX）と別プロパティなので干渉しない */
+@keyframes bar-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 .seg { position: relative; display: flex; }
 .ind {
   position: absolute; top: 0; left: 0; width: 76px; height: 48px; border-radius: 999px;
@@ -145,6 +155,7 @@ body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
 
 @media (prefers-reduced-motion: reduce) {
   #hint { animation: none; opacity: .85; }
+  #wordmark, #bar { animation: none; }
   #aura .glow, #aura i { animation: none; }
   #aura .glow { opacity: .8; }
   #aura i { opacity: calc(var(--o) * .7); }
