@@ -1,24 +1,29 @@
-# REPORT v28  (mode: repair)
+# REPORT v28  (mode: innovation)
 ## やったこと
-1. `app/shots.json` の軽量化: 完了。4 枚 (home / touched / echo / hold)、`mood-night` 無し、全 URL `/?demo=1`、`waitFor` 不使用。
-   - wait 実測 (node 集計): home 800 / touched 700 (600+100) / echo 1000 (400+600) / hold 800 (100+600+100) = **合計 3300ms**（上限 3500 以下）。
-   - JSON.parse OK、name 一意 (4/4)。hold の eval 文は既存のものを流用。
-   - 注: 開始時点の shots.json は既に 4 枚（合計 3.8s 相当）だったため、wait をさらに削って 3.5s 以下にした。
-2. ビルドと健全性: 完了（コードは未変更）。
+- IDEAS.md の既存内容（Cycle 4/8/12/16/20 の提案と決定）、FEEDBACKv27、`app/src` の構成を読んだ: 完了
+- `comms/IDEAS.md` の末尾に `## Cycle 28 — 提案 (builder)` を追記（既存の記述は未変更）: 完了
+  - 案A 水の追想（領域 S）: 静止後に直近の演奏が変形・減衰しながら再演される（`dataset.recallGen` 等）
+  - 案B 今日の水（領域 V）: 訪問ごとに違う光の向きの淡い帯が屈折しながら移る（`?seed=` と `dataset.lightAngle`）
+  - 案C 雫から始まる（領域 U）: 起動時の雫と輪で「響」が結像、以後は波で 1px 揺れる（`dataset.opening`）
+- 各案に、何が起きるか／他にない理由／VISION 適合／デモ評価（probe 例・dataset 名・合格条件）／最小スコープと退路／負荷を記載: 完了
+- 重複回避: 案A は Cycle 4 案A（残響の層）の発展形だが、採用済みのこだま（固定遅延・同音）とは別物として、静止が引き金・周回ごとの変形・減衰を明記。案B・C は既出と別領域（Cycle 20 案B「響の字が満ちる」は字の充填、案C はオープニングと揺れで別）。
+
 ## ORDER からの逸脱
-なし。ただし `app/shots.json` の変更は、私の編集直後にハーネスが「cycle 27: builder (repair) [harness auto-commit]」(0e167ab) として先にコミットしたため、cycle 28 名義の独立した diff には残っていない（内容は HEAD に入っている）。
+なし
+
 ## 動作確認
-- `cd app && npm run build`: 成功 (index.js 39.23kB, built in 112ms)。
-- `probe` で `/?demo=1` を 1.2s 待機して撮影:
-  - desktop: blank:false、consoleErrors []、`dataset.render=webgl2`、`dataset.audio=idle`（クリック無しのため。c27 の司令塔検証ではクリック後に running）。
-  - mobile: blank:false、consoleErrors []、`dataset.render=webgl2`、`dataset.audio=idle`。
-  - ※ probe の出力ファイル名は `shots/cycle-027/probe/` 配下に出た（ハーネス側の挙動。私は触っていない）。
+- app/ の差分は 0（`git diff --stat -- app` が空）。ビルド・probe は app を変更していないため実施せず。
+- 既存 dataset 名（`echoes`, `stoneHits` 等）と衝突しない名前を案に使った。
+
 ## デモモード
-`?demo=1` で合成入力。カメラ・マイク無しで WebGL2 描画が動く。音声は最初のタップで開始（idle→running）。
+- 案は全て `?demo=1` で評価可能。案A は `&recall=1`（待ち時間短縮）、案B は `&seed=N`、案C は `?demo=1` のみ。マイク・カメラ・センサー前提の案は無し。
+
 ## 既知の問題・妥協点
-- 公式撮影が落ちる原因は launch 段階の環境由来と見られ、shots.json の軽量化で解決する保証は無い。
-- 実際の公式撮影はこの作業役では再現できない（probe のみで確認）。
+- 3 案とも未実装で、コードでの検証はしていない。案Bはシェーダーを触るため、帯が汚れに見えるリスクが未検証。案Aの休符は ghost 台本の調整が必要。
+
 ## 変更した主なファイル
-- `app/shots.json` のみ（`src/` 無変更）。
+- `comms/IDEAS.md`（追記のみ）、`comms/reports/REPORTv28.md`
+
 ## 司令塔への申し送り
-- 撮影が通ったら normal サイクルで夜光虫を描画のみから小さく復活させるのが良い。それまで app コードは触らないのが安全。
+- 推しは案A（水の追想）: 時間と記憶で「触れていない間にも変化する」唯一の案で、UI 0・GL 0・`echo.js` の延長で小さく入る。次点は案C（「響」の階層と最初の 3 秒に効く）。
+- 実装時は 1 サイクル 1 案、夜光虫のような大きな一括投入は避ける。mobile の輪が右端で切れる shots.json の clickAt 修正は別途 normal で。
