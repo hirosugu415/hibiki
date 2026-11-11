@@ -144,3 +144,12 @@ body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
   .ind { transition-duration: .01s; }
   #bar button, #ghost-dot { transition-duration: .01s; }
 }
+
+/* こだまの戻りの光輪（JS が生成。細い縁と淡い芯。バーより下の層） */
+.echo-ring {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0;
+  border: 1.5px solid rgb(var(--accent) / calc(.85 * var(--o, 1)));
+  background: radial-gradient(closest-side, rgb(var(--accent) / calc(.42 * var(--o, 1))), rgb(var(--accent) / calc(.14 * var(--o, 1))) 55%, transparent);
+  box-shadow: 0 0 22px rgb(var(--accent) / calc(.4 * var(--o, 1))), inset 0 0 16px rgb(var(--accent) / calc(.3 * var(--o, 1)));
+  mix-blend-mode: screen; will-change: transform, opacity;
+}

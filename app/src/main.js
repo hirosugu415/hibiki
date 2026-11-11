@@ -113,7 +113,7 @@ function flash(x, yTop, vel, soft = 1) {
   const el = document.createElement('div');
   el.className = 'flash';
   el.style.cssText = `left:${x * viewW}px;top:${yTop * viewH}px;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;` +
-    `background:radial-gradient(closest-side, rgb(${rgb.join(' ')} / ${((0.5 + 0.2 * k) * soft).toFixed(2)}), rgb(${rgb.join(' ')} / ${(0.2 * soft).toFixed(2)}) 45%, transparent)`;
+    `background:radial-gradient(closest-side, rgb(${rgb.join(' ')} / ${((0.5 + 0.2 * k) * soft).toFixed(2)}), rgb(${rgb.join(' ')} / ${(0.3 * soft).toFixed(2)}) 50%, rgb(${rgb.join(' ')} / ${(0.1 * soft).toFixed(2)}) 78%, transparent)`;
   document.body.appendChild(el);
   const done = () => el.remove();
   if (el.animate) {
@@ -122,6 +122,28 @@ function flash(x, yTop, vel, soft = 1) {
     an.onfinish = done; an.oncancel = done;
   } else setTimeout(done, 460);
   setTimeout(done, 900);
+}
+// こだまの戻りの光輪: 波シミュレーションとは独立した CSS 要素（transform / opacity のみ）。数秒かけて広がって消える。
+const rings = [];
+const calmMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+function echoRing(x, yTop, st) {
+  if (!document.body) return;
+  while (rings.length >= 8) rings.shift().remove();
+  const size = Math.round(210 * st.ring), dur = st.ring < 1 ? 3200 : 2800;
+  const el = document.createElement('div');
+  el.className = 'echo-ring';
+  el.style.cssText = `left:${x * viewW}px;top:${yTop * viewH}px;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;--o:${st.ring < 1 ? 0.7 : 1}`;
+  document.body.appendChild(el);
+  rings.push(el);
+  const done = () => { el.remove(); const i = rings.indexOf(el); if (i >= 0) rings.splice(i, 1); };
+  const calm = calmMotion && calmMotion.matches;
+  if (el.animate) {
+    const fade = el.animate([{ opacity: 0 }, { opacity: 1, offset: .16 }, { opacity: .5, offset: .6 }, { opacity: 0 }], { duration: dur, easing: 'linear', fill: 'forwards' });
+    if (!calm) el.animate([{ transform: 'scale(.2)' }, { transform: 'scale(1)' }], { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+    else el.style.transform = 'scale(.7)';
+    fade.onfinish = done; fade.oncancel = done;
+  }
+  setTimeout(done, dur + 600);
 }
 function tap(x, yTop, vel = 1, record = true) {
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.018);
@@ -137,7 +159,7 @@ const echo = createEcho({
   play(x, yTop, vel, st) {
     ripple(x, yTop, (0.3 + 0.2 * vel) * st.amp, 0.018, 5000);
     note(x, yTop, vel * st.vel);
-    flash(x, yTop, vel, 0.4 * st.amp / 0.6);
+    echoRing(x, yTop, st);
   },
   onChange(n, p) { document.body.dataset.echoes = String(n); document.body.dataset.echoPending = String(p); },
 });

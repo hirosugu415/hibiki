@@ -76,7 +76,7 @@ void main(){
   float gl = hs.b;
   vec3 add = uAcc * (rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * 3.0 + hp * 0.5)
            + uMid * max(-h, 0.0) * 0.7
-           + uAcc * (gl * 0.9 + gl * gl * 1.4);
+           + uAcc * (gl * 1.15 + gl * gl * 1.4);
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
   col = knee(col);
