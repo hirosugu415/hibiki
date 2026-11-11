@@ -1,197 +1,27 @@
 {
   "screens": [
-    {
-      "name": "home",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 2500
-        }
-      ]
-    },
-    {
-      "name": "touched",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 1200
-        },
-        {
-          "clickAt": [
-            300,
-            380
-          ]
-        },
-        {
-          "wait": 120
-        }
-      ]
-    },
-    {
-      "name": "stone-shadow",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 1200
-        },
-        {
-          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
-        },
-        {
-          "wait": 450
-        }
-      ]
-    },
-    {
-      "name": "stone-shadow2",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 1200
-        },
-        {
-          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
-        },
-        {
-          "wait": 900
-        }
-      ]
-    },
-    {
-      "name": "echo",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 1200
-        },
-        {
-          "clickAt": [
-            400,
-            330
-          ]
-        },
-        {
-          "wait": 6600
-        }
-      ]
-    },
-    {
-      "name": "mood-night",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "click": "#mood-night"
-        },
-        {
-          "wait": 1500
-        }
-      ]
-    },
-    {
-      "name": "mood-dawn",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "click": "#mood-dawn"
-        },
-        {
-          "wait": 1500
-        }
-      ]
-    },
-    {
-      "name": "stone-push",
-      "url": "/?live=1",
-      "steps": [
-        {
-          "wait": 800
-        },
-        {
-          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.03*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
-        },
-        {
-          "wait": 3000
-        },
-        {
-          "eval": "document.body.dataset.stone+' push='+document.body.dataset.stonePush"
-        }
-      ]
-    },
-    {
-      "name": "calm-after",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 9000
-        }
-      ]
-    },
-    {
-      "name": "idle",
-      "url": "/?live=1",
-      "steps": [
-        {
-          "wait": 9500
-        },
-        {
-          "waitFor": "body[data-stone-laps='2']"
-        },
-        {
-          "wait": 160
-        }
-      ]
-    },
-    {
-      "name": "hold",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 6200
-        },
-        {
-          "waitFor": "body[data-holding='1']"
-        },
-        {
-          "wait": 2200
-        }
-      ]
-    },
-    {
-      "name": "bar-refract",
-      "url": "/?demo=1",
-      "steps": [
-        {
-          "wait": 900
-        },
-        {
-          "eval": "(()=>{const c=document.getElementById('water'),[bx,by]=document.body.dataset.bar.split(',').map(Number),x=(bx-0.2)*innerWidth,y=by*innerHeight;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()"
-        },
-        {
-          "wait": 1400
-        }
-      ]
-    },
-    {
-      "name": "letter-play",
-      "url": "/#w=PHn_AItg_xSzn_8V",
-      "steps": [
-        {
-          "wait": 900
-        }
-      ]
-    },
-    {
-      "name": "letter-share",
-      "url": "/",
-      "steps": [
-        { "wait": 1200 },
-        { "clickAt": [300, 380] },
-        { "wait": 300 },
-        { "clickAt": [700, 300] },
-        { "wait": 1200 },
-        { "click": "#wordmark" },
-        { "wait": 600 }
-      ]
-    }
+    { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 2500 } ] },
+    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [300, 380] }, { "wait": 120 } ] },
+    { "name": "stone-shadow", "url": "/?demo=1", "steps": [
+      { "wait": 1200 },
+      { "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number),r=Math.max(0.07*Math.min(W,H),44),x=sx*W-r-0.07*W,y=sy*H;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()" },
+      { "wait": 450 }
+    ] },
+    { "name": "echo", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [400, 330] }, { "wait": 2500 } ] },
+    { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1500 } ] },
+    { "name": "mood-dawn", "url": "/?demo=1", "steps": [ { "click": "#mood-dawn" }, { "wait": 1500 } ] },
+    { "name": "hold", "url": "/?demo=1", "steps": [
+      { "wait": 600 },
+      { "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.45,clientY:innerHeight*0.5,pointerId:9,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));return 'down'})()" },
+      { "wait": 1500 },
+      { "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.45,clientY:innerHeight*0.5,pointerId:9,pointerType:'mouse',button:0,bubbles:true};const h=document.body.dataset.holding;c.dispatchEvent(new PointerEvent('pointerup',o));return 'holding='+h})()" },
+      { "wait": 1500 }
+    ] },
+    { "name": "bar-refract", "url": "/?demo=1", "steps": [
+      { "wait": 900 },
+      { "eval": "(()=>{const c=document.getElementById('water'),[bx,by]=document.body.dataset.bar.split(',').map(Number),x=(bx-0.2)*innerWidth,y=by*innerHeight;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return Math.round(x)+','+Math.round(y)})()" },
+      { "wait": 1400 }
+    ] },
+    { "name": "letter-play", "url": "/?demo=1#w=PHn_AItg_xSzn_8V", "steps": [ { "wait": 900 } ] }
   ]
 }
