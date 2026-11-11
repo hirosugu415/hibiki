@@ -83,3 +83,4 @@
 - [cycle 058] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。PNG2枚は健全だがlaunch失敗でscreens空、ヘルスNG上限3点
 - [cycle 059] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。PNG2枚は健全・probeも正常だがmeta無しでヘルスNG上限3点
 - [cycle 060] mode=repair | score 3/10 | health=ok | polish | app無変更の修復。PNG2枚は健全だがlaunch失敗でscreens空、ヘルスNG上限3点
+- [cycle 061] (harness) 修復に 3 サイクル失敗したため、app/ を最後に健全だった状態 (e7522817) へ自動ロールバックした
