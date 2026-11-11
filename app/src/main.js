@@ -5,6 +5,7 @@ import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
 import { createEcho } from './echo.js';
+import { createGlimmer } from './glimmer.js';
 import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
@@ -108,6 +109,17 @@ function pushBar() {
   if (k !== shoal.key) { shoal.key = k; document.body.dataset.bar = k; }
 }
 
+// ---- 夜光虫: 水中の光の粒（波面が届くと光り、わずかに押される。見た目のみ）。ループが回っている間だけ描く ----
+const WAVE_SPEED = () => 0.68 * 95 * (viewW / 420); // px/秒（石・砂州の見積もりと同じ式）
+const glimmer = createGlimmer({
+  canvas: document.getElementById('glimmer'),
+  view: () => ({ w: viewW, h: viewH }),
+  accent: () => pal.accent,
+  stone: () => (backend && backend.setStone ? { x: stone.x * viewW, y: stone.y * viewH, r: stoneR() } : null),
+  speed: WAVE_SPEED,
+  wake,
+});
+
 // ---- ループ制御（静止時は止めて CPU/GPU を休ませる） ----
 let running = false, last = 0, keepUntil = 0;
 function wake(ms) {
@@ -141,6 +153,7 @@ function tick(now) {
   }
   shoal.phase = (shoal.phase + dt) % BAR_PERIOD; pushBar();
   try { backend.frame(dt, pal); } catch { /* 描画失敗でも落とさない */ }
+  try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
 
@@ -258,6 +271,7 @@ function tap(x, yTop, vel = 1, record = true) {
   note(x, yTop, vel);
   stoneEcho(x, yTop);
   barChime(x, yTop);
+  glimmer.hit(x, yTop, 0.6 + 0.4 * vel, { ring: true });
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
 }
@@ -284,6 +298,8 @@ function fountainTick(f) {
   const k = noteIndex(f.ref.x) / (NOTE_COUNT - 1); // 0=低 … 1=高
   // 低い音ほどゆったり・太く、高い音ほど細かく
   ripple(f.ref.x, f.ref.y, 0.2, mix(0.022, 0.014, k), 1400);
+  f.n = (f.n || 0) + 1;
+  if (f.n % 2 === 1) glimmer.hit(f.ref.x, f.ref.y, 0.5);
   if (f.owner === 'ghost') dotShow(f.ref.x, f.ref.y);
   f.timer = setTimeout(() => fountainTick(f), mix(340, 230, k));
 }
@@ -312,6 +328,7 @@ function releaseRing(f) {
   const { x, y } = f.ref;
   const k = noteIndex(x) / (NOTE_COUNT - 1);
   ripple(x, y, 0.4, mix(0.022, 0.014, k) * 1.5, 6000);
+  glimmer.hit(x, y, 1, { ring: true });
   const m = target, hz = noteFreq(m, noteIndex(x));
   audio.play(hz >= 200 ? hz / 2 : hz, Math.min(1, Math.max(0, 1 - y + m.bright)), 0.8, x);
   const n = (+document.body.dataset.releases || 0) + 1;
@@ -580,6 +597,7 @@ let rt = 0;
 function onResize() {
   if (!backend) return;
   sizeBackend();
+  glimmer.layout();
   placeStone();
   wake(400);
 }
@@ -590,6 +608,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', () =
 
 if (backend) {
   sizeBackend();
+  glimmer.layout();
   placeStone();
   wake(1200);
   // 起動直後に、音なしの小さな一滴で水面が「生きている」ことを示す

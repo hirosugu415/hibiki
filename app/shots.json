@@ -1,8 +1,8 @@
 {
   "screens": [
     { "name": "home", "url": "/?demo=1", "steps": [ { "wait": 1500 } ] },
-    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1000 }, { "clickAt": [300, 380] }, { "wait": 120 } ] },
-    { "name": "echo", "url": "/?demo=1", "steps": [ { "wait": 600 }, { "clickAt": [400, 330] }, { "wait": 1800 } ] },
+    { "name": "touched", "url": "/?demo=1", "steps": [ { "wait": 1000 }, { "clickAt": [195, 380] }, { "wait": 120 } ] },
+    { "name": "glimmer-ring", "url": "/?demo=1", "steps": [ { "wait": 1200 }, { "clickAt": [320, 400] }, { "wait": 650 } ] },
     { "name": "mood-night", "url": "/?demo=1", "steps": [ { "click": "#mood-night" }, { "wait": 1200 } ] },
     { "name": "hold", "url": "/?demo=1", "steps": [
       { "wait": 400 },
