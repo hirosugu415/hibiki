@@ -1025,6 +1025,24 @@
           "wait": 1200
         }
       ]
+    },
+    {
+      "name": "rebound-ring",
+      "url": "/?demo=1&seed=1&hour=13",
+      "steps": [
+        {
+          "wait": 5800
+        }
+      ]
+    },
+    {
+      "name": "rebound-off",
+      "url": "/?demo=1&seed=1&hour=13&rebound=0",
+      "steps": [
+        {
+          "wait": 5800
+        }
+      ]
     }
   ]
 }

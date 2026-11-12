@@ -35,3 +35,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - mobile(<500px): k×1.25, max 0.56, 幅×1.3。desktop: k×1.5, max 0.62。dataset.caustic / dataset.flr(=床の輪の半径, デバッグ用) / ?caustic=0 ?caustick ?causw。
 - 混んだ水面(demo 30s)では輪近傍に金の塊が出る（未解決）。
 - probe 出力は shots/cycle-091/（3桁）。PNG 解析は node + 根の node_modules/pngjs。python heredoc/長い sed はハングしがち→ node スクリプトで編集。
+
+## c93: 跳ね返る雫 (main.js reboundDrop, tap() の直前 ~L482)
+- 押下の瞬間の tap で vel>=0.7（ユーザー打は常に1・幽霊初打0.75）→ 800ms 後に同位置へ ripple(amp=min(0.3,主×0.7), r=0.0072) + 音(1oct上, vel0.3, decay0.45)。定数 REB={VEL,DELAY,GAP:2500,BUSY:1000,AMP,RAD}。
+- 出さない: quietTap(周回/こだま系)・前打から1s未満(幽霊連打)・前回発火から2.5s未満・発火時に pointers/fountain/dents が生きている(長押し=press-rebound と排他)。?rebound=0 で off。
+- dataset.rebound="回数,振幅比"/off。デモの幽霊初打は 4.5s 後なので撮影は wait 5800（初打+1.3s）。shots: rebound-ring / rebound-off。

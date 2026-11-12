@@ -481,7 +481,29 @@ function barChime(x, yTop) {
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 let ghostTap = false; // 幽霊の指の打か（デモ以外では残像を洗わず・覚えない）
 let quietTap = false; // 周回再生の打か（残像に触れない）
+// ---- 跳ね返る雫(c93): 強い打(押下の瞬間)の 800ms 後、同じ場所に小さく細い二次の輪と高い一音。?rebound=0 で無効 ----
+const REB_ON = params.get('rebound') !== '0';
+const REB = { VEL: 0.7, DELAY: 800, GAP: 2500, BUSY: 1000, AMP: 0.3, RAD: 0.0072 };
+let rebLast = -1e9, rebPrev = -1e9, rebN = 0;
+document.body.dataset.rebound = REB_ON ? '0,0' : 'off';
+function reboundDrop(x, yTop, vel) {
+  const now = performance.now(), busy = now - rebPrev < REB.BUSY; // 1 秒に 2 打以上（幽霊の連打）は出さない
+  rebPrev = now;
+  if (!REB_ON || !backend || backend.kind !== 'webgl2' || quietTap || vel < REB.VEL || busy || now - rebLast < REB.GAP) return;
+  rebLast = now;
+  setTimeout(() => {
+    // 長押し（泉・沈む指）のあいだは出さない = press-rebound と重ならない
+    if (document.hidden || fountain || pointers.size || dents.size && [...dents.values()].some((d) => !d.ending)) return;
+    const main = 0.3 + 0.2 * vel, amp = Math.min(REB.AMP, main * 0.7);
+    ripple(x, yTop, amp, REB.RAD, 3000);
+    const m = target;
+    audio.play(Math.min(2400, noteFreq(m, noteIndex(x)) * 2), Math.min(1, Math.max(0, 1 - yTop + m.bright)), 0.3, x, 0.45, 1, 0, 1 - yTop);
+    rebN++;
+    document.body.dataset.rebound = rebN + ',' + (amp / main).toFixed(2);
+  }, REB.DELAY);
+}
 function tap(x, yTop, vel = 1, record = true) {
+  reboundDrop(x, yTop, vel);
   if (!quietTap && (!ghostTap || DEMO)) { afterimage.wash(); afterimage.record(x, yTop, vel); }
   plateTouch(x, !record);
   sandWake(x, yTop);
