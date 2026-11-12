@@ -1,6 +1,7 @@
 // 使い方: node harness/loop.mjs builder|commander [--dry-run]
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { ROOT, COMMS, P, pad, rel, shotsDir, STOP_FILE } from './lib/paths.mjs';
 import { log, warn, sleep, sleepUnlessStop, stopMode, setRoleTag, appendLine, logFilePath, withLock, readJson } from './lib/util.mjs';
 import { loadConfig } from './lib/config.mjs';
@@ -199,8 +200,32 @@ async function commanderTurn(st) {
 }
 
 // ───────── メインループ ─────────
+// ───────── 二重起動の防止（同じ役割のループが 2 本動くと、撮影やターン処理が衝突する）─────────
+const pidFile = path.join(ROOT, 'logs', `${role}.pid`);
+function isLoopAlive(pid) {
+  try { process.kill(pid, 0); } catch (e) { if (e.code !== 'EPERM') return false; }
+  if (process.platform !== 'win32') return true;
+  const r = spawnSync('powershell', ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  const cmd = String(r.stdout || '');
+  return !cmd.trim() ? false : /loop.mjs/.test(cmd) && cmd.includes(role);   // PID の使い回しによる誤検知を避ける
+}
+function acquireInstanceLock() {
+  fs.mkdirSync(path.dirname(pidFile), { recursive: true });
+  try {
+    const old = Number(fs.readFileSync(pidFile, 'utf8').trim());
+    if (old && old !== process.pid && isLoopAlive(old)) {
+      console.error(`[${role}] すでに別のループが動いています (PID ${old})。二重起動を防ぐため終了します。止めるには STOP ファイルを置くか、そのプロセスを終了してください。`);
+      return false;
+    }
+  } catch { /* pid ファイルなし */ }
+  fs.writeFileSync(pidFile, String(process.pid));
+  process.on('exit', () => { try { if (fs.readFileSync(pidFile, 'utf8').trim() === String(process.pid)) fs.unlinkSync(pidFile); } catch {} });
+  return true;
+}
+
 async function main() {
   if (stopMode()) { console.log(`STOP ファイルがあります (${STOP_FILE})。削除してから起動してください。`); return; }
+  if (!acquireInstanceLock()) { process.exitCode = 3; return; }
   await ensureInit();
   const cfg0 = loadConfig({ dryRun });
   if (dryRun) log('*** DRY-RUN: claude の代わりにダミーコマンドを使います ***');
