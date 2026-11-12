@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -106,6 +106,14 @@ void main(){
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
   base *= mix(1.12, 0.62, smoothstep(0.0, 1.0, q.y));
+  // 沈む指: 押している間の浅い凹み。縁も塗りも作らず、ガウス凹みの勾配（片側が少し明るく反対が暗い）と中心のごく淡い沈みだけ
+  float dentK = 0.0;
+  if (uDent.w > 0.001) {
+    vec2 dp = (uv - uDent.xy) * uRes / min(uRes.x, uRes.y);
+    float dr = uDent.z, de = exp(-dot(dp, dp) / (2.0 * dr * dr));
+    float dsh = -dot(dp, vec2(-0.5, 0.86)) / (dr * dr) * de;
+    dentK = uDent.w * (0.34 * dr * dsh - 0.10 * de);
+  }
   // 横長のときだけ、右上の隅を最大 +15% 持ち上げる（左右の非対称を和らげる。全体は据え置き）
   float rtk = smoothstep(0.68, 1.0, q.x) * smoothstep(0.62, 1.0, q.y) * smoothstep(1.25, 1.6, asp.x);
   base *= 1.0 + 0.15 * rtk;
@@ -140,6 +148,7 @@ void main(){
            + uAcc * (edge * EDGE_I + gl * TAIL1 + gl * gl * TAIL2);
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
+  col *= 1.0 + dentK;
   col = knee(col);
 
   // 石: 水に濡れた小石。上寄りがわずかに明るく、下は水に沈む。左上に細い光の弧、右下はほぼ無し。波が当たった側の縁だけ光る
@@ -291,7 +300,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -345,6 +354,7 @@ export function createGL(canvas) {
     function setStone(ux, uy, rPx) { stone.x = ux; stone.y = uy; stone.r = rPx; stone.on = 1; }
     function firePulse() { pulse = 1; }
     function setSky(v) { skyK = v; }
+    function setDent(ux, uy, r, d) { dent[0] = ux; dent[1] = uy; dent[2] = r; dent[3] = d; }
     function setSleep(v) { sleep = v; }
     function setCalm(v) { calm = v; }
     function setLife(v) { life = v; }
@@ -422,6 +432,7 @@ export function createGL(canvas) {
       const bnd = pal.band || 1;
       gl.uniform4f(ren.u.uSky, skyK * 0.9, 0.2 * bnd * Math.min(1, canvas.width / canvas.height), 1.6, bnd);
       gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
+      gl.uniform4fv(ren.u.uDent, dent);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);
@@ -431,7 +442,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setSleep, setCalm, setLife, setWake };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setDent, setSleep, setCalm, setLife, setWake };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;

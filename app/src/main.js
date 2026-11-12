@@ -265,6 +265,7 @@ function tick(now) {
     } else if (dx || dy) { stone.x = stone.tx; stone.y = stone.ty; pushStone(); }
   }
   if (plateStep(dt)) moving = true;
+  if (dentStep(dt, performance.now())) moving = true;
   shoal.phase = (shoal.phase + dt) % BAR_PERIOD; pushBar();
   const clearT = document.body.dataset.weather === 'clearing' ? 1 : 0;
   clearK += (clearT - clearK) * (1 - Math.exp(-dt / (clearT ? 0.8 : 1.2)));
@@ -490,6 +491,7 @@ function fountainStart(owner, ref) {
   const f = fountain = { owner, ref, timer: 0, voice: null };
   plateTouch(ref.x, false);
   const m = target, hz = noteFreq(m, noteIndex(ref.x));
+  { const dd = dents.get(owner); if (dd) dd.fountain = true; }
   f.voice = audio.voiceHold(hz, Math.min(1, Math.max(0, 1 - ref.y + m.bright)), (ref.x * 2 - 1) * 0.5);
   document.body.dataset.holding = '1';
   document.body.dataset.holdHz = hz.toFixed(1);
@@ -516,6 +518,55 @@ function releaseRing(f) {
   audio.play(hz >= 200 ? hz / 2 : hz, Math.min(1, Math.max(0, 1 - y + m.bright)), 0.8, x, 1, 1, 0, 1 - y);
   const n = (+document.body.dataset.releases || 0) + 1;
   document.body.dataset.releases = String(n);
+}
+
+// ---- 沈む指: 押している間、指の下がごく浅く凹む（勾配だけ）。離すと約 120ms 後に柔らかい輪が 1 つ立つ ----
+// 凹みは毎フレームの負の高さ splat（縁・塗りなし）。指にはバネで少し遅れて付く。通常タップ(<160ms)は何も足さない。
+const DENT = { R: 0.05, AMP: 0.08, REB_MS: 160, DELAY: 120, LEVEL: 0.316, FOLLOW: 0.09, FADE_FROM: 600 };
+const dents = new Map(); // owner -> { x, y, px, py, t0, k, path, fountain, ending }
+let reboundN = 0, dentInfo = [0, 0];
+document.body.dataset.touch = '0,0.0000,0';
+document.body.dataset.touchPos = '';
+function dentStart(id, x, y) {
+  if (!backend) return;
+  dents.set(id, { x, y, px: x, py: y, t0: performance.now(), k: 0, path: 0, fountain: false, ending: 0 });
+  wake(800);
+}
+function dentEnd(id, reward) {
+  const d = dents.get(id);
+  if (!d || d.ending) return;
+  const held = performance.now() - d.t0;
+  d.ending = performance.now();
+  if (!reward || d.fountain || (held < DENT.REB_MS && d.path < 0.03)) return; // 通常タップ・泉・中断は反動なし
+  const x = d.px, y = d.py;
+  setTimeout(() => {
+    if (document.hidden || !backend) return;
+    ripple(x, y, 0.16, 0.021, 4000);
+    const m = target;
+    audio.play(noteFreq(m, noteIndex(x)), Math.min(1, Math.max(0, 1 - y + m.bright)), 0.6, x, 1.3, DENT.LEVEL, 0, 1 - y);
+    reboundN++;
+    document.body.dataset.touch = dentInfo[0] + ',' + dentInfo[1].toFixed(4) + ',' + reboundN;
+  }, DENT.DELAY);
+}
+function dentStep(dt, now) {
+  if (!dents.size) return false;
+  let shown = false;
+  for (const [id, d] of dents) {
+    const age = now - d.t0;
+    if (age > 12000 && !d.ending) dentEnd(id, false);
+    d.px += (d.x - d.px) * (1 - Math.exp(-dt / DENT.FOLLOW)); d.py += (d.y - d.py) * (1 - Math.exp(-dt / DENT.FOLLOW));
+    let k = Math.min(1, age / 150); k = k * k * (3 - 2 * k);
+    if (d.fountain && age > DENT.FADE_FROM) k *= Math.max(0, 1 - (age - DENT.FADE_FROM) / 300);
+    if (d.ending) { const e = (now - d.ending) / 140; k *= Math.max(0, 1 - e); if (e >= 1) { dents.delete(id); continue; } }
+    d.k = k;
+    if (!shown) { shown = true; if (backend.setDent) backend.setDent(d.px, 1 - d.py, DENT.R, k); }
+    dentInfo = [Math.round(age), DENT.AMP * k];
+    document.body.dataset.touch = Math.round(age) + ',' + (DENT.AMP * k).toFixed(4) + ',' + reboundN;
+    document.body.dataset.touchPos = [d.px, d.py, d.x, d.y].map((v) => v.toFixed(3)).join(',');
+  }
+  if (!shown && backend.setDent) backend.setDent(0.5, 0.5, DENT.R, 0);
+  if (!dents.size) { document.body.dataset.touch = dentInfo[0] + ',0.0000,' + reboundN; }
+  return true;
 }
 
 const pointers = new Map();
@@ -550,13 +601,14 @@ function onDown(e) {
   const old = pointers.get(e.pointerId);
   if (old) onUp(e);
   const now = performance.now();
-  const p = { x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
+  const p = { id: e.pointerId, x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
   pointers.set(e.pointerId, p);
   tap(x, y, 1);
   memory.tap(x, y, 1, true);
   letterRec.record(x, y, 1);
   vesselAdd(1);
   armHold(e.pointerId, p);
+  dentStart(e.pointerId, x, y);
 }
 function strokeTo(p, x, y, fromGhost) {
   const dx = (x - p.x) * viewW / Math.min(viewW, viewH), dy = (y - p.y) * viewH / Math.min(viewW, viewH);
@@ -570,6 +622,7 @@ function strokeTo(p, x, y, fromGhost) {
   }
   const idx = noteIndex(x), now = performance.now();
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }
+  { const d = dents.get(p.id); if (d) { d.path += dist; d.x = x; d.y = y; } }
   p.x = x; p.y = y;
 }
 // 石を掴んだ瞬間のわずかな波（縁のすぐ外に小さく 4 点）と、縁の光
@@ -601,12 +654,14 @@ function onUp(e) {
   const p = pointers.get(e.pointerId);
   if (p && p.timer) clearTimeout(p.timer);
   pointers.delete(e.pointerId);
+  dentEnd(e.pointerId, e.type === 'pointerup');
   fountainStop(e.pointerId, e.type === 'pointerup');
 }
 function releaseAll() {
   stone.grab = null;
   for (const [id, p] of pointers) { if (p.timer) clearTimeout(p.timer); pointers.delete(id); }
   fountainStop();
+  for (const id of [...dents.keys()]) dentEnd(id, false);
 }
 window.addEventListener('blur', releaseAll);
 document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
@@ -653,6 +708,9 @@ const ghost = createGhost({
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
   holdEnd(reward) { fountainStop('ghost', !!reward); },
+  pressStart(x, y) { dotShow(x, y); dentStart('ghostPress', x, y); },
+  pressEnd() { dentEnd('ghostPress', true); },
+  pressCancel() { dentEnd('ghostPress', false); },
   dotHide() { dot.classList.remove('show'); },
 }, { demo: DEMO, seed: SEED });
 function dotShow(x, y) {

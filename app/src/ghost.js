@@ -13,7 +13,7 @@ export function createGhost(api, { demo, seed }) {
   let alive = false;
   let motifN = 0, phase = 0, lastIdx = 4;
   const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
-  const clear = () => { timers.forEach(clearTimeout); timers = []; api.dotHide(); if (api.holdEnd) api.holdEnd(); };
+  const clear = () => { timers.forEach(clearTimeout); timers = []; api.dotHide(); if (api.holdEnd) api.holdEnd(); if (api.pressCancel) api.pressCancel(); };
 
   const xOf = (idx) => (idx + 0.5) / 10 + (Math.random() - 0.5) * 0.02;
   const yOf = () => { phase += 0.9; return 0.5 + 0.18 * Math.sin(phase) + (Math.random() - 0.5) * 0.06; };
@@ -42,6 +42,8 @@ export function createGhost(api, { demo, seed }) {
     [0, 4500].forEach((base) => LOOP_PHRASE.forEach(([x, y, v], i) => {
       later(() => { if (alive) { lastIdx = 3 + i; api.tap(x, y, v); } }, base + i * 600);
     }));
+    // 一度だけの長めの押下（沈む指）: 凹みと、離した後の柔らかい反動
+    if (api.pressStart) { later(() => { if (alive) api.pressStart(0.62, 0.6); }, 8200); later(() => { if (api.pressEnd) api.pressEnd(); }, 8550); }
     later(playMotif, 6300 + 22000);
   }
 

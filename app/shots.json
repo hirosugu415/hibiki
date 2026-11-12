@@ -572,6 +572,42 @@
           "wait": 9000
         }
       ]
+    },
+    {
+      "name": "press-hold",
+      "url": "/?demo=1&hour=13",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,pointerType:'touch',clientX:innerWidth*0.3,clientY:innerHeight*0.3,button:0,isPrimary:true}));})()"
+        },
+        {
+          "wait": 110
+        }
+      ]
+    },
+    {
+      "name": "press-rebound",
+      "url": "/?demo=1&hour=13",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,pointerType:'touch',clientX:innerWidth*0.3,clientY:innerHeight*0.3,button:0,isPrimary:true}));})()"
+        },
+        {
+          "wait": 200
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:7,pointerType:'touch',clientX:innerWidth*0.3,clientY:innerHeight*0.3,button:0,isPrimary:true}));})()"
+        },
+        {
+          "wait": 250
+        }
+      ]
     }
   ]
 }
