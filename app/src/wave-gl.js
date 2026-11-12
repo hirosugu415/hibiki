@@ -67,7 +67,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent; uniform float uHf;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -97,6 +97,7 @@ void main(){
   float m = hs4.a;
   vec2 gm = vec2(tR.a - tL.a, tU.a - tD.a) * 0.25; // 媒質マスクの勾配（石の縁で立つ。内向き）
   vec2 g = vec2(tR.r - tL.r, tU.r - tD.r) * 0.25;
+  float lap2 = tR.r + tL.r + tU.r + tD.r - 4.0 * h; // 高周波強調（c66）: 追加読み取りなし
   vec2 gg = vec2(tR.b - tL.b, tU.b - tD.b) * 0.25;
   vec3 n = normalize(vec3(-g * 9.0, 1.0));
 
@@ -157,6 +158,7 @@ void main(){
   float fresh = 1.0 - FRESH * smoothstep(0.0, 0.22, gl);
   vec3 add = uAcc * ((rim * 1.5 * uLook.y + spec * uLook.z * smoothstep(0.0, 0.25, slope) + hp * hp * CORE2 + hp * CORE1) * fresh)
            + uMid * max(-h, 0.0) * 0.7
+           + uAcc * uHf * smoothstep(0.004, 0.03, lap2) * smoothstep(0.0, 0.02, slope) * fresh
            + uAcc * (edge * EDGE_I + gl * TAIL1 + gl * gl * TAIL2);
 
   vec3 col = base + (vec3(1.0) - exp(-add * 1.15)) * 0.86;
@@ -312,12 +314,14 @@ function readDisp() {
   } catch { /* noop */ }
   return DISP_DEF;
 }
+const HF_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('hf')); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5; } catch { return 0.5; } })();
+const GUARD_TEST = (() => { try { return new URLSearchParams(location.search).get('guardtest') === '1'; } catch { return false; } })(); // テスト専用: 危険な分散係数でガード発火を確認
 const LONG_SIDE_CELLS = 420;
 const MAX_LONG_PX = 1024; // 内部描画の長辺の上限（CSS で拡大。バイリニアで滑らか）
 const MAX_STEPS = 5;
 const DIF_ON = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('dif')); return Number.isFinite(v) ? Math.max(0, Math.min(0.05, v)) : 0.006; } catch { return 0.006; } })();
-const GUARD_EVERY = 2.5; // 秒。発散検知の間隔
-const GUARD_LIMIT = 1.0; // |h| がこれを超えたら分散を切る
+const GUARD_EVERY = 5; // 秒。発散検知の間隔
+const GUARD_LIMIT = 0.7; // |h| がこれを超えたら分散を切る
 
 export function createGL(canvas) {
   try {
@@ -343,7 +347,7 @@ export function createGL(canvas) {
     const difNow = () => (dispOn > 0 ? DIF_ON : 0.03);
     const kNow = () => (dispOn > 0 ? DISP_K0 - 3.3 * dispOn : DISP_K0);
     const stepHz = () => (dispOn > 0 ? STEP_HZ0 * Math.sqrt(DISP_K0 / (DISP_K0 - 3.3 * dispOn)) : STEP_HZ0);
-    let guardBuf = null;
+    let guardBuf = null, guardBand = 0;
     function setDispDataset() {
       try { document.body.dataset.disp = dispCoef <= 0 ? 'off' : dispCoef + ',' + (dispOn > 0 ? Math.max(1, Math.round(dispCoef / 0.002)) : 0) + ',trips' + guardTrips; } catch { /* noop */ }
     }
@@ -418,7 +422,7 @@ export function createGL(canvas) {
       gl.uniform1i(sim.u.uState, 0);
       gl.uniform2i(sim.u.uSize, W, H);
       gl.uniform1f(sim.u.uK, kNow()); // 拡散項 0.03 と合わせて実効 0.47（分散なし）/ 0.43（分散あり）
-      gl.uniform1f(sim.u.uDisp, dispOn);
+      gl.uniform1f(sim.u.uDisp, GUARD_TEST && dispOn > 0 ? 0.2 : dispOn);
       gl.uniform1f(sim.u.uDif, difNow());
       gl.uniform1f(sim.u.uTs, STEP_HZ0 / stepHz());
       gl.uniform1f(sim.u.uDamp, look[3]);
@@ -452,7 +456,7 @@ export function createGL(canvas) {
     function guard(dt) {
       if (dispCoef <= 0) return;
       guardT += dt;
-      if (dispOn <= 0 && time > dispOffUntil) { dispOn = dispCoef; setDispDataset(); }
+      if (dispOn <= 0 && time > dispOffUntil && !(GUARD_TEST && guardTrips > 0)) { dispOn = dispCoef; setDispDataset(); }
       if (guardT < GUARD_EVERY || dispOn <= 0 || sleep > 0.95) return;
       guardT = 0;
       try {
@@ -460,11 +464,12 @@ export function createGL(canvas) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[cur]);
         // RGBA16F の読み出し型は実装依存（FLOAT 不可の環境がある）。実装が示す型で読み、半精度は手で復号する
         const half = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE) === gl.HALF_FLOAT;
-        if (!guardBuf || guardBuf.length !== W * H * 4) guardBuf = half ? new Uint16Array(W * H * 4) : new Float32Array(W * H * 4);
-        gl.readPixels(0, 0, W, H, gl.RGBA, half ? gl.HALF_FLOAT : gl.FLOAT, guardBuf);
+        const bh = Math.ceil(H / 2), by = guardBand ? bh : 0, rows = guardBand ? H - bh : bh; guardBand ^= 1; // 画面を上下 2 帯に分け、5 秒ごとに交互に読む（1 回の読み出しを半分に）
+        if (!guardBuf || guardBuf.length !== W * bh * 4) guardBuf = half ? new Uint16Array(W * bh * 4) : new Float32Array(W * bh * 4);
+        gl.readPixels(0, by, W, rows, gl.RGBA, half ? gl.HALF_FLOAT : gl.FLOAT, guardBuf);
         if (gl.getError() !== gl.NO_ERROR) { guardT = -1e9; return; }
         let mx = 0, bad = false;
-        for (let i = 0; i < guardBuf.length; i += 16) {
+        for (let i = 0, ie = rows * W * 4; i < ie; i += 16) {
           let a = guardBuf[i];
           if (half) { const e = (a >> 10) & 31; if (e === 31) { bad = true; break; } a = e === 0 ? 0 : Math.pow(2, e - 15) * (1 + (a & 1023) / 1024); }
           else if (a !== a) { bad = true; break; } else if (a < 0) a = -a;
@@ -513,6 +518,7 @@ export function createGL(canvas) {
       gl.uniform4f(ren.u.uSky, skyK * 0.9, 0.2 * bnd * Math.min(1, canvas.width / canvas.height), 1.6, bnd);
       gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
       gl.uniform4fv(ren.u.uDent, dent);
+      gl.uniform1f(ren.u.uHf, HF_K);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);
