@@ -119,10 +119,22 @@
     },
     {
       "name": "idle",
-      "url": "/?live=1",
+      "url": "/?q=1",
       "steps": [
         {
-          "wait": 1500
+          "wait": 300
+        },
+        {
+          "clickAt": [
+            300,
+            380
+          ]
+        },
+        {
+          "wait": 14000
+        },
+        {
+          "eval": "document.body.dataset.sandSleep+' wakeR='+document.body.dataset.wakeR"
         }
       ]
     },

@@ -137,10 +137,32 @@ function wake(ms) {
 const SLEEP_HOME = 0.05, SLEEP_AWAKE = 0.35, SLEEP_REST = 0.15;
 let sandSleep = SLEEP_HOME, sleepTarget = SLEEP_HOME, sleepTimer = 0;
 document.body.dataset.sandSleep = sandSleep.toFixed(2);
-function sandWake() {
-  sleepTarget = SLEEP_AWAKE; wake(2600);
+// 径方向の目覚め: 打点から波頭(輪と同じ速さ)の内側だけ砂が見える。2波まで保持し、全面に届いた波は全面扱い
+let wakeA = null, wakeB = null, wakeAll = false, wakeLast = 0;
+const wakeFull = (w) => { // 最遠コーナーまでの距離(短辺比)
+  const s = Math.min(viewW, viewH);
+  return Math.max(Math.hypot(w.x * viewW, w.y * viewH), Math.hypot((1 - w.x) * viewW, w.y * viewH), Math.hypot(w.x * viewW, (1 - w.y) * viewH), Math.hypot((1 - w.x) * viewW, (1 - w.y) * viewH)) / s + 0.05;
+};
+const wakeR = (w, now) => w ? (WAVE_SPEED() * (now - w.t) / 1000 + 12) / Math.min(viewW, viewH) : 0;
+function sandWake(x, yTop) {
+  const now = performance.now();
+  if (now - wakeLast > 13000) { wakeA = wakeB = null; wakeAll = false; } // 無操作の後は眠りから広げ直す
+  wakeLast = now;
+  if (wakeA && wakeR(wakeA, now) >= wakeFull(wakeA)) wakeAll = true;
+  wakeA = wakeB; wakeB = { x, y: 1 - yTop / viewH, t: now };
+  const need = wakeFull(wakeB) * Math.min(viewW, viewH) / WAVE_SPEED() * 1000 + 300;
+  sleepTarget = SLEEP_AWAKE; wake(Math.max(2600, need));
   clearTimeout(sleepTimer);
   sleepTimer = setTimeout(() => { sleepTarget = SLEEP_REST; wake(9000); }, 12000);
+}
+function stepWake() {
+  if (!backend || !backend.setWake) return;
+  const now = performance.now();
+  const rA = wakeAll ? 9 : wakeR(wakeA, now), rB = wakeR(wakeB, now);
+  backend.setWake([wakeA ? wakeA.x : 0.5, wakeA ? wakeA.y : 0.5, rA, 0], [wakeB ? wakeB.x : 0.5, wakeB ? wakeB.y : 0.5, rB, 0]);
+  const full = wakeAll || (wakeB && rB >= wakeFull(wakeB));
+  document.body.dataset.wakeR = wakeAll ? '1.00+' : wakeB ? Math.min(1, rB / wakeFull(wakeB)).toFixed(2) : '0.00';
+  return !full && !!wakeB;
 }
 function stepSleep(dt) {
   const d = sleepTarget - sandSleep;
@@ -172,6 +194,7 @@ function tick(now) {
     if (Math.abs(d) > 0.0005) { pal[key][i] += d * k; moving = true; } else pal[key][i] = target[key][i];
   }
   if (stepSleep(dt)) moving = true;
+  if (stepWake()) moving = true;
   if (moving) applyCss();
   { // 石の追従（軽い慣性）
     const dx = stone.tx - stone.x, dy = stone.ty - stone.y;
@@ -344,7 +367,7 @@ function barChime(x, yTop) {
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 function tap(x, yTop, vel = 1, record = true) {
   plateTouch(x, !record);
-  sandWake();
+  sandWake(x, yTop);
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   if (!hatsune(x, yTop, vel)) note(x, yTop, vel);
   stoneEcho(x, yTop);

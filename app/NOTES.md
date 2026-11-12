@@ -47,3 +47,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 幽霊(demo)の開始は 4500ms（probe/撮影は読み込み+撮影で home が約2.9s時点になるため）。初音: 初回のみ根音/+2/+4度を 0/.18/.36s（audio.play の delay 引数）、通常の音は鳴らさない。localStorage hibiki.hatsune。
 - main.js は CRLF。node で編集するときは 
  を正規化してから置換すること（失敗して無言で無変更になった）。
+
+## c34 径方向の目覚め
+- wave-gl.js: uWakeA/uWakeB(vec4: x,y(下が0),r(短辺比),0)、backend.setWake(a,b)。砂の輝度は lit=1-smoothstep(0.45r, r+0.03, 距離/短辺) の内側だけ uSleep、外は 0.012。輝度上限 0.36、節線交点(|gr|小)は star で減光(mob 0.5)。
+- main.js: sandWake(x,yTop)/stepWake()。波頭 r=WAVE_SPEED*経過/短辺。2波保持、全面に達した波は wakeAll で全面扱い、13秒無操作でリセット。dataset.wakeR。shots idle は /?q=1 で打って14s待ち sandSleep を eval。
