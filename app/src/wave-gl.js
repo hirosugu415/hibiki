@@ -82,7 +82,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent; uniform float uHf; uniform vec2 uFloor; uniform vec4 uFlA; uniform vec4 uFlB; uniform vec4 uGateC;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent; uniform float uHf; uniform vec2 uFloor; uniform vec4 uFlA; uniform vec4 uFlB; uniform vec4 uGateC; uniform vec4 uCaus; uniform vec3 uWarm;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -178,6 +178,16 @@ void main(){
     base *= 1.0 + uFloor.x * fa * (F - 0.4);
     float cv = 1.0 - exp(-max(lap2, 0.0) * 55.0);                  // 波頭の下の曲率: 広く柔らかい明るみ
     base += mix(uMid, uAcc, 0.5) * uFloor.x * fa * cv * 0.2;
+  }
+  // 底の光 (c89): 波の曲率（広い 4 点ラプラシアン）が負の所＝波頭の下に暖色の柔らかい光の帯、正の所はごく少し暗く。env は打鍵後 ~3s で 0（静水では分岐に入らず home 不変）
+  if (uCaus.y > 0.0001) {
+    vec2 co = tx * uCaus.w;
+    float lw = texture(uState, uv + vec2(co.x, 0.0)).r + texture(uState, uv - vec2(co.x, 0.0)).r + texture(uState, uv + vec2(0.0, co.y)).r + texture(uState, uv - vec2(0.0, co.y)).r - 4.0 * h;
+    float cb = clamp(-lw * uCaus.x, 0.0, 1.0), cd = clamp(lw * uCaus.x, 0.0, 1.0);
+    cb = cb * cb * (3.0 - 2.0 * cb);
+    base *= 1.0 - 0.12 * cd * uCaus.y;
+    base *= 1.0 - 0.4 * cb * uCaus.y;
+    base += uWarm * cb * uCaus.y * uCaus.z * (1.0 - 0.45 * smoothstep(0.0, 0.5, dot(base, vec3(0.333))));
   }
   // 砂州の手がかり: 縁を持たない低コントラストのうねり（浅い所がほんのり明るい）。屈折後の座標 q で描く
   if (uBarC.w > 0.0001) {
@@ -364,6 +374,9 @@ function readDisp() {
   return DISP_DEF;
 }
 const FLOOR_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('floor')); return Number.isFinite(v) ? Math.max(0, Math.min(9, v)) : 4; } catch { return 4; } })();
+const CAUS_ON = (() => { try { const q = new URLSearchParams(location.search); const v = parseFloat(q.get('caustic')); return !(Number.isFinite(v) && v <= 0); } catch { return true; } })();
+const CAUS_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get("caustick")); return Number.isFinite(v) ? Math.max(0, Math.min(60, v)) : 16; } catch { return 16; } })();
+const CAUS_W = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('causw')); return Number.isFinite(v) ? Math.max(2, Math.min(30, v)) : 14; } catch { return 14; } })();
 const HF_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('hf')); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5; } catch { return 0.5; } })();
 const GUARD_TEST = (() => { try { return new URLSearchParams(location.search).get('guardtest') === '1'; } catch { return false; } })(); // テスト専用: 危険な分散係数でガード発火を確認
 const LONG_SIDE_CELLS = 420;
@@ -584,6 +597,15 @@ export function createGL(canvas) {
       gl.uniform4f(ren.u.uFlA, flA[0], flA[1], flTa < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTa), 0);
       gl.uniform4f(ren.u.uFlB, flB[0], flB[1], flTb < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTb), 0);
       gl.uniform2f(ren.u.uFloor, FLOOR_K * 0.3, Math.min(1, floorAct * 1.5));
+      {
+        let hr = 13; try { hr = parseFloat(document.body.dataset.hour); if (!Number.isFinite(hr)) hr = 13; } catch { /* noop */ }
+        const nt = 0.5 + 0.5 * Math.cos((hr - 13) / 24 * Math.PI * 2);       // 昼 1 → 夜 0
+        const w = [1.0, 0.60 + 0.20 * nt, 0.30 + 0.18 * nt];                // 夜は淡い琥珀、昼は淡い金
+        const env = CAUS_ON && CAUS_K > 0 ? Math.min(1, Math.max(0, floorAct * 1.6 - 0.1)) : 0;
+        gl.uniform4f(ren.u.uCaus, CAUS_K, env * env * (3 - 2 * env), 0.42, innerWidth < 500 ? CAUS_W * 1.3 : CAUS_W);
+        gl.uniform3f(ren.u.uWarm, w[0], w[1], w[2]);
+        try { document.body.dataset.caustic = CAUS_ON && CAUS_K > 0 ? CAUS_K + ',' + (0.42 * env).toFixed(2) : 'off'; } catch { /* noop */ }
+      }
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);

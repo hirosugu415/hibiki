@@ -971,6 +971,42 @@
           "wait": 700
         }
       ]
+    },
+    {
+      "name": "caustic-ring",
+      "url": "/?demo=1&seed=1&hour=13",
+      "steps": [
+        {
+          "wait": 200
+        },
+        {
+          "clickAt": [
+            195,
+            300
+          ]
+        },
+        {
+          "wait": 1200
+        }
+      ]
+    },
+    {
+      "name": "caustic-off",
+      "url": "/?demo=1&seed=1&hour=13&caustic=0",
+      "steps": [
+        {
+          "wait": 200
+        },
+        {
+          "clickAt": [
+            195,
+            300
+          ]
+        },
+        {
+          "wait": 1200
+        }
+      ]
     }
   ]
 }
