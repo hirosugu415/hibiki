@@ -16,10 +16,10 @@
 - 手紙: `letterRec`, `letterPlay`, `shareLetter`。響の満ち: `vesselShow/vesselAdd/vesselRing`(~678)。ムード: `selectMood`。
 
 ## 砂の図形（c25実装, c26で磨き）
-- wave-gl.js RENDER 末尾 : 3px セル内に丸い粒(半径1px, smoothstep, 粒ごと tone 0.6-1.0)。mob=短辺<600px で線細く・量減。波頭 wv=|g|*5 で +0.15 明るく・最大1px 揺れる。静かな領域: バー(vUv.y)/左上「響」/ヒント(下122px)。
-- main.js: (PC) と (短辺<600, 線少なめ)、/。audio.js 。
+- wave-gl.js RENDER 末尾 if(uChl.z>0.001): 3px セル内に丸粒(半径1px,smoothstep,tone 0.6-1.0)。mob=短辺<600px で線細く・量減。波頭 wv=|g|*5 で+0.15明るく・最大1px揺れ。静かな領域: バー(vUv.y)/左上「響」/ヒント(下122px)。
+- main.js: PLATE_MODES(PC) と PLATE_MODES_S(短辺<600, 線少なめ)、plateTouch/plateStep。audio.js sand(pan)。
 - 調整は shader 内の reach / 輝度0.48 / keep / quiet のみ。
-- GLSL 落とし穴: main スコープに     等が既存。変数名衝突/ブロック欠落で GL 全滅→render='none'（console.warn のみ。probe で render を eval して確認）。
+- GLSL 落とし穴: main スコープに pc g gl s 等が既存。名前衝突/ブロック欠落で GL 全滅→render=none（console.warn のみ。probe で dataset.render を eval して確認）。
 
 ## 状態フック（document.body.dataset.*）
 plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar barChimes echoes echoPending holding holdHz releases letter letterPlay letterVoiced letterShare ambient stoneLaps vessel vesselCall vesselRing glimmer glints（glimmer.js側）
@@ -32,7 +32,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - スコア c17〜c23 は 7 で横ばい。「細部の質感」はもう効かない → 通常訪問者の画面全体を変える案が必要。
 - c26: 粒を丸く・スマホ間引き・波で砂が応える・hold shot 修復(wait4800+waitFor)。
 - c25 は案A(砂の図形)を実装。結果は FEEDBACKv25 を見る。touched ショットは待ち1100msに変更。
-- c24 は innovation: 案A 砂の図形(Chladni, RENDERに解析式+uChl)/案B 月の道(uMoon)/案C 水底の譜(pearls.js) を IDEAS.md に提案済み（推しはA）。司令塔の決定は IDEAS.md 末尾「Cycle 24 — 決定」を見る。
 - 採用済み（再提案不可）: 息の水面・長押し泉・離しの輪・石・砂州+鐘・手紙・ムード・こだま・夜光虫・響の満ち。隅から出す輪は不可。
 
 ## 落とし穴
@@ -40,4 +39,3 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 塗り円盤・強い発光は「泡」に見えて評価が落ちた。縁を持たない低コントラストに。
 - Bash の heredoc に日本語＋記号が大量にあると失敗することがある → Write で一旦ファイルにして cat >> で追記。
 - IDEAS.md は LF。追記のみ。コミットに Claude/Co-Authored-By を入れない。
-- 未読（要確認）: moods.js の中身、audio.js の voice() 引数、glimmer.js の API (`hit`, `frame`)。
