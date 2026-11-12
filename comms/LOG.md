@@ -52,3 +52,4 @@
 - [cycle 044] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、画質は c43 と同一で8点維持
 - [cycle 045] mode=normal | score 8/10 | health=ok | polish | 覚える水は周回の輪が静かに成立し終了後は無地に戻る。砂の糸状線は残り8点維持
 - [cycle 046] mode=normal | score 8/10 | health=ok | polish | 許容緩和は安全に入ったが、石の周りの糸状線は desktop でまだ目立ち8点維持
+- [cycle 047] mode=normal | score 8/10 | health=ok | polish | 石の線は止まれば消え mobile も静か。loop-end に薄い輪が残るが8点維持
