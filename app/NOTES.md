@@ -21,6 +21,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - 光る部屋は #shell-glow(全面canvas,animate)、hover は #shell-hover(輪郭のみ微光)。paintShell は S.Q/S.C/S.hue を返す。y は保存されない(保存形式不変)。
 - shots.json: shell-play/shell-hover は eval で dataset.shellPos 先頭へ pointerdown/pointermove を dispatch（両 viewport 共通）。
 
+- c88 鎮静: playShell は最大8打(等間隔に間引き, dataset.shellPlay='i,n' の n<=8)、x/y を 0.12-0.88 に clamp、vel=0.3+0.12v。main.js tap は quietTap 時 ripple 振幅*0.5・半径0.009（殻再生専用）。
+
 ## 撮影・probe
 - shots.json: デモは `/?demo=1&seed=1&hour=13`。撮影 wait 合計は幅あたり25s以下。gate-split は ?gate=1 付き。
 - probe: `node harness/tools/probe.mjs steps.json --viewport desktop|mobile --url "/?demo=1&x=1"`（要 npm run build）。出力は shots/cycle-085/probe/(3桁) <viewport>-<shot>.png。eval は value に返る。URL は "/?..." 形式（MSYS対策）。mobile clickAt は x<390。

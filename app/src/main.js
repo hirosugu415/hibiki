@@ -485,7 +485,7 @@ function tap(x, yTop, vel = 1, record = true) {
   if (!quietTap && (!ghostTap || DEMO)) { afterimage.wash(); afterimage.record(x, yTop, vel); }
   plateTouch(x, !record);
   sandWake(x, yTop);
-  ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
+  ripple(x, yTop, (0.3 + 0.2 * vel) * (quietTap ? 0.5 : 1), quietTap ? 0.009 : 0.013);
   if (!hatsune(x, yTop, vel)) note(x, yTop, vel);
   stoneEcho(x, yTop);
   barChime(x, yTop);

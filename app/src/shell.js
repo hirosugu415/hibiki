@@ -283,13 +283,15 @@ export function createShell({ accent, demo, shellParam, shellsParam, play }) {
   function endPlay() { clearTimeout(playT); playing = false; body.dataset.shellPlay = 'off'; }
   function playShell(i) {
     if (playing || !play) return;
-    const e = ents[i], n = e.taps.length, rr = mulberry32(i * 7919 + 13), ys = e.taps.map(() => 0.3 + 0.4 * rr());
+    const e = ents[i], all = e.taps.length, rr = mulberry32(i * 7919 + 13), ys = e.taps.map(() => 0.3 + 0.4 * rr());
+    const idx = all <= 8 ? e.taps.map((_, q) => q) : Array.from({ length: 8 }, (_, q) => Math.round(q * (all - 1) / 7)); // 最大8打、等間隔に間引く
+    const n = idx.length;
     playing = true; body.dataset.shellPlay = `${i},${n}`;
     let k = 0;
     const step = () => {
       if (!playing || document.hidden) { endPlay(); return; }
-      const t = e.taps[k];
-      try { play(t.x, ys[k], 0.35 + 0.2 * t.v); glow(e, k); } catch { /* 再生の失敗は無視 */ }
+      const t = e.taps[idx[k]], cl = (v) => Math.min(0.88, Math.max(0.12, v)); // 画面端の12%内側に収める
+      try { play(cl(t.x), cl(ys[idx[k]]), 0.3 + 0.12 * t.v); glow(e, idx[k]); } catch { /* 再生の失敗は無視 */ }
       k++;
       playT = setTimeout(k >= n ? endPlay : step, k >= n ? 600 : 400);
     };
