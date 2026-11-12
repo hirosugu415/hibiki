@@ -34,3 +34,4 @@
 - [cycle 026] mode=normal | score 8/10 | health=ok | polish | スマホは静かになり砂も丸みを帯びたが、デスクトップの粒はまだ角張り波への反応も見えない
 - [cycle 027] mode=normal | score 8/10 | health=ok | polish | 砂は三角の欠けが消え整った点の連なりに。だが格子状で波への反応はまだ見えない
 - [cycle 028] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。画面は静かで一貫、8点維持。砂の格子感と波への無反応が残る
+- [cycle 029] mode=normal | score 8/10 | health=ok | polish | 砂が波に応える実装は入ったが静止画では判別困難。点線感は残り、8点維持
