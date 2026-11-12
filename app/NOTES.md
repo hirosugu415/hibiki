@@ -15,10 +15,11 @@
 - 長押し泉: `fountainStart/Stop`, `releaseRing`。入力: `onDown/onMove/onUp`, `bindCanvas`。
 - 手紙: `letterRec`, `letterPlay`, `shareLetter`。響の満ち: `vesselShow/vesselAdd/vesselRing`(~678)。ムード: `selectMood`。
 
-## 砂の図形（c25 実装済み）
-- wave-gl.js RENDER 末尾: `uChl`(n,m,量,_) + `uCssPx`。3px セル/2px 粒/解析式 `f`、節距離 dn=|f|/|∇f|/0.012、reach 7→0.7 で集まる。`setPlate(n,m,a,ph)`。
-- main.js: `PLATE_MODES`(度数10個→(n,m))、`plateTouch(x,quiet)`(tap と fountainStart から。切替は500ms以上あけ、量を0.12に戻す)、`plateStep(dt)`(tick内。0.7sで1へ、1s後から5sで減衰、泉の間は保持、0で素通り)。audio.js `sand(pan)`。
-- 調整は wave-gl.js のシェーダ内 reach / 輝度(0.48) / keep のみ。
+## 砂の図形（c25実装, c26で磨き）
+- wave-gl.js RENDER 末尾 : 3px セル内に丸い粒(半径1px, smoothstep, 粒ごと tone 0.6-1.0)。mob=短辺<600px で線細く・量減。波頭 wv=|g|*5 で +0.15 明るく・最大1px 揺れる。静かな領域: バー(vUv.y)/左上「響」/ヒント(下122px)。
+- main.js: (PC) と (短辺<600, 線少なめ)、/。audio.js 。
+- 調整は shader 内の reach / 輝度0.48 / keep / quiet のみ。
+- GLSL 落とし穴: main スコープに     等が既存。変数名衝突/ブロック欠落で GL 全滅→render='none'（console.warn のみ。probe で render を eval して確認）。
 
 ## 状態フック（document.body.dataset.*）
 plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar barChimes echoes echoPending holding holdHz releases letter letterPlay letterVoiced letterShare ambient stoneLaps vessel vesselCall vesselRing glimmer glints（glimmer.js側）
@@ -29,6 +30,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## 履歴・方針メモ
 - スコア c17〜c23 は 7 で横ばい。「細部の質感」はもう効かない → 通常訪問者の画面全体を変える案が必要。
+- c26: 粒を丸く・スマホ間引き・波で砂が応える・hold shot 修復(wait4800+waitFor)。
 - c25 は案A(砂の図形)を実装。結果は FEEDBACKv25 を見る。touched ショットは待ち1100msに変更。
 - c24 は innovation: 案A 砂の図形(Chladni, RENDERに解析式+uChl)/案B 月の道(uMoon)/案C 水底の譜(pearls.js) を IDEAS.md に提案済み（推しはA）。司令塔の決定は IDEAS.md 末尾「Cycle 24 — 決定」を見る。
 - 採用済み（再提案不可）: 息の水面・長押し泉・離しの輪・石・砂州+鐘・手紙・ムード・こだま・夜光虫・響の満ち。隅から出す輪は不可。

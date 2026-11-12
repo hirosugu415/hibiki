@@ -168,6 +168,7 @@ void main(){
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
 
   // クラドニ図形: 板 f=cos(nπX)cos(mπY)−cos(mπX)cos(nπY) の節の線に砂粒(2px)が集まる。解析式のみ・追加読み取り無し
+  if (uChl.z > 0.001) {
     float cp = uCssPx;
     float mob = 1.0 - step(600.0, min(uRes.x, uRes.y) / cp);     // 縦長スマホ: 線を細く・量を下げる
     float cell = 3.0 * cp;
@@ -198,11 +199,11 @@ void main(){
       br += 0.15 * wv * grain * keep * line * s;              // 輪が通る帯だけ砂がわずかに明るい
       br = min(br, 0.5);
       // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
-      vec2 cs = vec2(uRes.x, uRes.y) / cp, pc = ctr / cp;
-      float yt = cs.y - pc.y;
+      vec2 cs = uRes / cp, qc = ctr / cp;
+      float yt = cs.y - qc.y;
       float quiet = 0.35 + 0.65 * smoothstep(mix(0.1, 0.13, mob), mix(0.22, 0.27, mob), vUv.y);
-      quiet *= 0.25 + 0.75 * smoothstep(34.0, 96.0, length(vec2(pc.x - 56.0, yt - 40.0)));
-      vec2 hq = vec2((pc.x - cs.x * 0.5) / 170.0, (pc.y - 122.0) / 30.0);
+      quiet *= 0.25 + 0.75 * smoothstep(34.0, 96.0, length(vec2(qc.x - 56.0, yt - 40.0)));
+      vec2 hq = vec2((qc.x - cs.x * 0.5) / 170.0, (qc.y - 122.0) / 30.0);
       quiet *= 0.3 + 0.7 * smoothstep(0.6, 1.3, length(hq));
       col += mix(vec3(1.0), uAcc, 0.3) * br * quiet;
     }
