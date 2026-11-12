@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform vec4 uWakeA; uniform vec4 uWakeB;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform vec4 uWakeA; uniform vec4 uWakeB;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -185,7 +185,7 @@ void main(){
     // 画素ごとの固定ノイズ（2 オクターブ・時間で動かさない）
     float n1 = hash(P + 3.7), n2 = hash(floor(P * 0.5) + 19.1), n3 = hash(P + 71.3);
     float n4 = hash(floor(P * 0.72) + 5.3);
-    float nz = 0.7 * n1 + 0.3 * n4;
+    float nz = 0.5 + 0.6 * (0.7 * n1 + 0.3 * n4 - 0.5);   // 縁の高周波ノイズ振幅を約4割下げる
     float s = smoothstep(n2 * 0.45, n2 * 0.45 + 0.55, uChl.z);   // 塊ごとに時間差で集まる
     // 波頭: 山で締まって濃く、谷でほどけて薄く（読み済みの h のみ）
     float wn = clamp(h * SAND_K, -1.0, 1.0);
@@ -195,7 +195,7 @@ void main(){
     float band = exp(-(dcss / w) * (dcss / w)) * inten * mix(0.3, 1.0, s) * mix(1.0, 0.8, mob);
     // 芯は下駄を履かせて抜けにくく、縁だけ smoothstep で粒にほどける
     float core = exp(-(dcss / (w * 0.5)) * (dcss / (w * 0.5))) * mix(0.3, 1.0, s);
-    float keep = smoothstep(nz - 0.12, nz + 0.12, band * 0.95 + 0.55 * core);
+    float keep = smoothstep(nz - 0.17, nz + 0.17, band * 0.95 + 0.55 * core);
     // 静かに眠り、波のエネルギー(読み済みの h・v・glow の包絡)で目覚める
     float env = max(sqrt(h * h + hs.g * hs.g * 6.0), hs.b * 0.5);
     // 波頭: 打点から外へ広がる円の内側だけ uSleep、外は眠り(0.05)。縁は幅のある smoothstep
@@ -207,6 +207,8 @@ void main(){
     float awake = mix(sleepHere, 1.0, smoothstep(0.006, 0.05, env));
     float star = 1.0 - smoothstep(1.5, 6.0, length(gr));      // 節線の交点(密な結び目)は控えめに
     float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.15, 0.5, mob));
+    // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
+    br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
     br = min(br, 0.36);
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;
@@ -264,7 +266,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let sleep = 0.05, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let sleep = 0.05, calm = 1, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -318,6 +320,7 @@ export function createGL(canvas) {
     function setStone(ux, uy, rPx) { stone.x = ux; stone.y = uy; stone.r = rPx; stone.on = 1; }
     function firePulse() { pulse = 1; }
     function setSleep(v) { sleep = v; }
+    function setCalm(v) { calm = v; }
     function setWake(a, b) { wakeA = a; wakeB = b; }
     function setPlate(n, m, a, ph) { plate[0] = n; plate[1] = m; plate[2] = a; plate[3] = ph; }
     // 砂州: ux, uy は 0–1（uy は下が 0）、rxPx / ryPx は CSS ピクセル半径（楕円）
@@ -386,6 +389,7 @@ export function createGL(canvas) {
       gl.uniform4f(ren.u.uChl, plate[0], plate[1], plate[2], plate[3]);
       gl.uniform1f(ren.u.uCssPx, canvas.width / lastCss[0]);
       gl.uniform1f(ren.u.uSleep, sleep);
+      gl.uniform1f(ren.u.uCalm, calm);
       gl.uniform4fv(ren.u.uWakeA, wakeA);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
@@ -396,7 +400,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSleep, setWake };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSleep, setCalm, setWake };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;

@@ -51,3 +51,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 ## c34 径方向の目覚め
 - wave-gl.js: uWakeA/uWakeB(vec4: x,y(下が0),r(短辺比),0)、backend.setWake(a,b)。砂の輝度は lit=1-smoothstep(0.45r, r+0.03, 距離/短辺) の内側だけ uSleep、外は 0.012。輝度上限 0.36、節線交点(|gr|小)は star で減光(mob 0.5)。
 - main.js: sandWake(x,yTop)/stepWake()。波頭 r=WAVE_SPEED*経過/短辺。2波保持、全面に達した波は wakeAll で全面扱い、13秒無操作でリセット。dataset.wakeR。shots idle は /?q=1 で打って14s待ち sandSleep を eval。
+
+## c35 静けさ
+- uCalm(wave-gl.js, setCalm)/main.js stepCalm: 最後の打(wakeLast)から0.4s後に減衰→4sで0.55、wakeAll×0.72、letterPlay×0.8。波エネルギー env 高い所(波頭)は mix(uCalm,1,smoothstep(.02,.1,env))で据え置き。dataset.sandCalm。縁: nz を 0.6 倍に圧縮、keep の smoothstep 幅 .17。
+- ヒント: body[data-letter-play=1]/[data-ghost-play=1] で #hint を非表示(CSS, 文言差替中 data-say は除外)。ghostPlayNote() が打・手紙終了から6s保持。style.css は CRLF、main/wave-gl は LF。

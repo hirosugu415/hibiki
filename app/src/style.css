@@ -92,6 +92,7 @@ body { position: fixed; inset: 0; }
   animation: hint-in 1s var(--ease) .4s both, breathe 3.8s ease-in-out 1.4s infinite;
   transition: opacity .6s var(--ease), transform .6s var(--ease);
 }
+body[data-letter-play="1"] #hint:not([data-say]), body[data-ghost-play="1"] #hint:not([data-say]) { opacity: 0 !important; transition-duration: .5s; }
 #hint.gone { opacity: 0 !important; transform: translateY(8px); animation: none; transition-duration: .16s; }
 @keyframes hint-in { from { opacity: 0; transform: translateY(8px) } to { opacity: .6; transform: none } }
 @keyframes breathe { 0%, 100% { opacity: .6 } 50% { opacity: .98 } }

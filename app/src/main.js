@@ -138,7 +138,7 @@ const SLEEP_HOME = 0.05, SLEEP_AWAKE = 0.35, SLEEP_REST = 0.15;
 let sandSleep = SLEEP_HOME, sleepTarget = SLEEP_HOME, sleepTimer = 0;
 document.body.dataset.sandSleep = sandSleep.toFixed(2);
 // 径方向の目覚め: 打点から波頭(輪と同じ速さ)の内側だけ砂が見える。2波まで保持し、全面に届いた波は全面扱い
-let wakeA = null, wakeB = null, wakeAll = false, wakeLast = 0;
+let wakeA = null, wakeB = null, wakeAll = false, wakeLast = 0, calm = 1;
 const wakeFull = (w) => { // 最遠コーナーまでの距離(短辺比)
   const s = Math.min(viewW, viewH);
   return Math.max(Math.hypot(w.x * viewW, w.y * viewH), Math.hypot((1 - w.x) * viewW, w.y * viewH), Math.hypot(w.x * viewW, (1 - w.y) * viewH), Math.hypot((1 - w.x) * viewW, (1 - w.y) * viewH)) / s + 0.05;
@@ -163,6 +163,18 @@ function stepWake() {
   const full = wakeAll || (wakeB && rB >= wakeFull(wakeB));
   document.body.dataset.wakeR = wakeAll ? '1.00+' : wakeB ? Math.min(1, rB / wakeFull(wakeB)).toFixed(2) : '0.00';
   return !full && !!wakeB;
+}
+// 輪が通り過ぎた後の砂線: 最後の打から0.4秒後に静まり始め約4秒で約55%、全面覚醒中は0.72倍・手紙再生中は0.8倍。次の打で戻る
+function stepCalm(dt) {
+  const el = (performance.now() - wakeLast) / 1000;
+  const q = Math.min(1, Math.max(0, (el - 0.4) / 3.6));
+  const tgt = wakeLast ? (1 - 0.45 * q * q * (3 - 2 * q)) * (wakeAll ? 0.72 : 1) * (document.body.dataset.letterPlay === '1' ? 0.8 : 1) : 1;
+  const d = tgt - calm;
+  if (Math.abs(d) < 0.001) { if (!d) return false; calm = tgt; }
+  else calm += d * (1 - Math.exp(-dt / (d > 0 ? 0.25 : 0.7)));
+  if (backend && backend.setCalm) backend.setCalm(calm);
+  document.body.dataset.sandCalm = calm.toFixed(2);
+  return true;
 }
 function stepSleep(dt) {
   const d = sleepTarget - sandSleep;
@@ -195,6 +207,7 @@ function tick(now) {
   }
   if (stepSleep(dt)) moving = true;
   if (stepWake()) moving = true;
+  if (stepCalm(dt) || (wakeLast && performance.now() - wakeLast < 4500)) moving = true;
   if (moving) applyCss();
   { // 石の追従（軽い慣性）
     const dx = stone.tx - stone.x, dy = stone.ty - stone.y;
@@ -540,6 +553,13 @@ bindCanvas(canvas);
 
 // ---- 幽霊の指 ----
 const ghostPtr = { x: 0.5, y: 0.5, idx: 0, t: 0 };
+// 幽霊の指が演奏している間は「触れてみてください」を出さない（打が途切れて6秒で復帰）
+let ghostPlayTimer = 0;
+function ghostPlayNote() {
+  document.body.dataset.ghostPlay = '1';
+  clearTimeout(ghostPlayTimer);
+  ghostPlayTimer = setTimeout(() => { document.body.dataset.ghostPlay = '0'; }, 6000);
+}
 const ghost = createGhost({
   bar() { return { x: shoal.x, y: shoal.y, rx: barRx() / viewW }; },
   stone() { return { x: stone.x, y: stone.y, rx: stoneR() / viewW, ry: stoneR() / viewH }; },
@@ -553,6 +573,7 @@ const ghost = createGhost({
     const sr = stoneR() * 1.25;
     if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;
     dotShow(x, y);
+    ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
     tap(x, y, vel);
     if (DEMO) letterRec.record(x, y, vel); // デモ時のみ、幽霊の打も手紙に記録（「響」を押せるように）
@@ -578,14 +599,14 @@ let letterTimers = [], hintWas = null, hintTimer = 0;
 function hintRestore() {
   clearTimeout(hintTimer); hintTimer = 0;
   if (hintWas === null) return;
-  hint.textContent = hintWas.text;
+  hint.textContent = hintWas.text; delete hint.dataset.say;
   if (hintWas.gone) hint.classList.add('gone');
   hintWas = null;
 }
 // ヒントの文言を ms だけ差し替える（元の文言と表示状態は hintWas に 1 つだけ保持し、二重に差し替えない）
 function hintSay(text, ms) {
   if (hintWas === null) hintWas = { text: hint.textContent, gone: hint.classList.contains('gone') };
-  hint.textContent = text;
+  hint.textContent = text; hint.dataset.say = '1';
   if (hintWas.gone) { hint.style.animation = 'none'; hint.style.opacity = '.7'; } // 触れた後は静かな不透明度で見せる
   hint.classList.remove('gone');
   clearTimeout(hintTimer); hintTimer = setTimeout(hintRestore, ms);
@@ -606,7 +627,7 @@ function letterPlay(taps) {
     if (i) t += Math.min(3000, Math.max(300, s.dt));
     later(() => { dotShow(s.x, s.y); tap(s.x, s.y, Math.max(0.4, s.vel), false); }, t);
   });
-  later(() => { letterTimers = []; document.body.dataset.letterPlay = '0'; if (hint.textContent === 'だれかの水面') hintRestore(); ghost.start(); }, t + 1800);
+  later(() => { letterTimers = []; document.body.dataset.letterPlay = '0'; ghostPlayNote(); if (hint.textContent === 'だれかの水面') hintRestore(); ghost.start(); }, t + 1800);
 }
 
 // 受け手の最初の pointerdown（AudioContext が起きる操作）の約 0.6 秒後に、手紙を音つきで一度だけなぞる。
@@ -628,7 +649,7 @@ function letterVoice() {
     if (i) t += Math.min(3000, Math.max(300, s.dt));
     later(() => { dotShow(s.x, s.y); tap(s.x, s.y, Math.max(0.4, s.vel), false); }, t + 20);
   });
-  later(() => { voicedTimers = []; document.body.dataset.letterPlay = '0'; if (hint.textContent === 'だれかの水面') hintRestore(); }, t + 1800);
+  later(() => { voicedTimers = []; document.body.dataset.letterPlay = '0'; ghostPlayNote(); if (hint.textContent === 'だれかの水面') hintRestore(); }, t + 1800);
 }
 
 // ---- 間欠の雨粒（通常モードのみ。触れられていない間、7〜11 秒に一滴） ----
