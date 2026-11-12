@@ -643,3 +643,7 @@ wordmark.addEventListener('click', shareLetter);
 wordmark.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shareLetter(); }
 });
+
+// 起動演出の状態（検証用）。字は CSS の wm-resolve で結像し、約 2.3 秒後に ready
+document.body.dataset.opening = 'resolve';
+setTimeout(() => { document.body.dataset.opening = 'ready'; }, 2300);

@@ -25,10 +25,17 @@ body { position: fixed; inset: 0; }
   transition: opacity .6s var(--ease);
   top: max(24px, calc(env(safe-area-inset-top) + 16px));
   left: max(28px, calc(env(safe-area-inset-left) + 22px));
-  font-size: 30px; font-weight: 200; letter-spacing: .12em; line-height: 1;
-  color: rgb(255 255 255 / .78);
-  text-shadow: 0 0 22px rgb(var(--accent) / .5), 0 1px 10px rgb(var(--deep) / .5);
+  font-size: 38px; font-weight: 200; letter-spacing: .18em; line-height: 1;
+  color: rgb(255 255 255 / .8);
+  text-shadow: 0 0 26px rgb(var(--accent) / .55), 0 1px 12px rgb(var(--deep) / .5);
+  /* 起動時、水面から字が結像する（最終状態は上の静的な指定と同じ。途中でも不透明度 .5 を下回らない） */
+  animation: wm-resolve 2.2s var(--ease) .1s both;
 }
+@keyframes wm-resolve {
+  from { filter: blur(3px); letter-spacing: .34em; opacity: .5; text-shadow: 0 0 40px rgb(var(--accent) / .9), 0 1px 12px rgb(var(--deep) / .5); }
+  to   { filter: blur(0);   letter-spacing: .18em; opacity: 1; }
+}
+@media (max-width: 600px) { #wordmark { font-size: 34px; } }
 /* 見た目はそのまま、当たり判定だけ 44px 以上に広げる */
 #wordmark::before { content: ''; position: absolute; inset: -9px -12px; }
 @media (hover: hover) { #wordmark:hover { color: rgb(255 255 255 / .94); } }
@@ -145,6 +152,7 @@ body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
 
 @media (prefers-reduced-motion: reduce) {
   #hint { animation: none; opacity: .85; }
+  #wordmark { animation: none; }
   #aura .glow, #aura i { animation: none; }
   #aura .glow { opacity: .8; }
   #aura i { opacity: calc(var(--o) * .7); }
