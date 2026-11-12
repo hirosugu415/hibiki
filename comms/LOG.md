@@ -68,3 +68,4 @@
 - [cycle 060] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、回帰なし。7点維持
 - [cycle 061] mode=normal | score 7/10 | health=ok | polish | 沈む指は実装済みだが凹みは静止画で見えず。反動の輪は出る。home 不変で静か
 - [cycle 062] mode=normal | score 7/10 | health=ok | polish | 凹みの強化は静止画でほぼ見えず撮影枠も外れる。home は不変で静か、回帰なし
+- [cycle 063] mode=normal | score 7/10 | health=ok | polish | 石の硬い白弧が消え、濡れた艶と接地の影で home が一段上質に。回帰なし
