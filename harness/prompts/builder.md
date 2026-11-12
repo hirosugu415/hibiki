@@ -27,12 +27,28 @@
 
 | 種類 | ファイル |
 |---|---|
-| 読む（必須） | `comms/VISION.md`（北極星。絶対のルールを必ず守る）、`comms/orders/ORDERv{{CYCLE}}.md`（今回の指示） |
-| 読む（任意） | `comms/feedback/FEEDBACKv{{PREV}}.md`（直前の評価。サイクル1では無い）、`comms/IDEAS.md`、`git log` |
-| 書く（必須） | `comms/reports/REPORTv{{CYCLE}}.md`（作業報告） |
+| 読む（必須） | `app/NOTES.md`（**あなた自身の記憶ノート。最初に読む**）、`comms/VISION.md`（北極星。絶対のルールを必ず守る）、`comms/orders/ORDERv{{CYCLE}}.md`（今回の指示） |
+| 読む（任意） | `comms/feedback/FEEDBACKv{{PREV}}.md`（直前の評価。サイクル1では無い）、`git log -3` |
+| 読む（innovation のみ） | `comms/IDEAS.md` の**末尾だけ**（`tail -n 80` など。全文は読まない） |
+| 書く（必須） | `comms/reports/REPORTv{{CYCLE}}.md`（作業報告）、`app/NOTES.md`（記憶ノートの更新） |
 | 書く（innovation のみ） | `comms/IDEAS.md`（**追記のみ**。既存の内容は消さない・書き換えない） |
 | 編集してよい | `app/` 配下すべて（`app/shots.json` を含む） |
 | 触らない | 上記以外の `comms/` のファイル、`shots/`、`logs/`、`harness/` |
+
+## 記憶ノートと読み方（消費を抑えるため必ず守る）
+
+あなたは毎ターン記憶がリセットされて起動します。前回までに分かったことは **`app/NOTES.md`** にだけ残せます。
+ツールを 1 回呼ぶたびに、それまでの会話全体が送り直されます。**読む量とツール呼び出しの回数が、そのまま消費になります。**
+
+- **最初に `app/NOTES.md` を読み、コード全体を読み直さない。** 無ければ今回作る。
+- `app/NOTES.md` の中身（**4KB 以内**、古い情報は消して常に最新に）:
+  ファイルごとの役割 / 主要な関数・定数とその場所 / 描画と音の流れ / `document.body.dataset.*` などの状態フック /
+  `shots.json` と probe のコツ / 既知の落とし穴・やってはいけないこと（過去に失敗したこと）。
+- **ファイルを丸ごと読まない。** `grep -n` で場所を特定し、`sed -n 'a,bp'` や Read の offset/limit で必要な範囲だけ読む。
+- **一度読んだ内容を読み直さない。** 確認系のコマンドは `&&` や `;` でまとめて 1 回で実行する。ツール呼び出しは **25 回以内** を目安にする。
+- probe のスクショを見るのは確認に必要な数枚だけ。`comms/IDEAS.md` は innovation のときだけ末尾を読む。
+- REPORT は簡潔に（目安 2KB 以内）。
+- 作業の最後（コミットの前）に `app/NOTES.md` を更新する。
 
 ## 開発環境の前提
 
@@ -61,7 +77,7 @@
 ## mode 別の進め方
 
 ### mode = normal
-1. VISION と ORDER を読み、何をするか決める。ORDER の優先順位に従う。ORDER に無い大きな方針転換はしない（小さな改善・バグ修正は可）。
+1. NOTES・VISION・ORDER を読み、何をするか決める。ORDER の優先順位に従う。ORDER に無い大きな方針転換はしない（小さな改善・バグ修正は可）。
 2. 実装する。見た目・操作感（VISION が UX 優先ならなおさら）を、実際に `probe` で触って確認しながら作る。
 3. `cd app && npm run build` が通ることを確認。コンソールエラーが無いことを確認。
 4. `app/shots.json` を更新。

@@ -64,12 +64,17 @@ export function buildPrompt(role, st, cfg, { notes = [], retryNote = '' } = {}) 
   ctx.push(`- サイクル: **${N}** / 上限 ${cfg.maxCycles}　　今回の mode: **${st.mode}**${role === 'commander' ? `　　次サイクルの mode: **${st.nextMode}**` : ''}`);
   ctx.push(`- 直近の評価スコア推移: ${scoreHistory(N)}`);
   if (role === 'builder') {
-    ctx.push(`- 読む: \`${rel(P.vision)}\`, \`${rel(P.order(N))}\`${N > 1 ? `, \`${rel(P.feedback(N - 1))}\`` : ''}${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`` : ''}`);
-    ctx.push(`- 書く: \`${rel(P.report(N))}\`${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`（追記のみ）` : ''}、および app/ 配下`);
+    ctx.push(`- 読む: \`app/NOTES.md\`（最初に）, \`${rel(P.vision)}\`, \`${rel(P.order(N))}\`${N > 1 ? `, \`${rel(P.feedback(N - 1))}\`` : ''}${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`（末尾だけ）` : ''}`);
+    ctx.push(`- 書く: \`${rel(P.report(N))}\`, \`app/NOTES.md\`（記憶ノートの更新）${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`（追記のみ）` : ''}、および app/ 配下`);
+    if (!fs.existsSync(path.join(ROOT, 'app', 'NOTES.md'))) ctx.push('- `app/NOTES.md` はまだありません。今回、コードを把握したついでに作成してください（4KB 以内）。');
   } else if (N === 0) {
     ctx.push(`- これはサイクル0です。書く: \`${rel(P.vision)}\`, \`${rel(P.order(1))}\``);
   } else {
-    ctx.push(`- 読む: \`${rel(P.vision)}\`, \`${rel(P.order(N))}\`, \`${rel(P.report(N))}\`, \`${SHOTS_REL(N)}\` 配下, \`${rel(P.ideas)}\`, \`${rel(P.log)}\``);
+    ctx.push(`- 読む: \`${rel(P.vision)}\`, \`${rel(P.order(N))}\`, \`${rel(P.report(N))}\`, \`${SHOTS_REL(N)}\` 配下の主要画像（6〜8枚）${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`（末尾の今サイクル分だけ）` : ''}`);
+    try {
+      const recent = fs.readFileSync(P.log, 'utf8').split(/\r?\n/).filter((l) => /^- \[cycle \d+\] mode=/.test(l)).slice(-6);
+      if (recent.length) ctx.push('- 直近の LOG（LOG.md は読まなくてよい）:\n' + recent.map((l) => '  ' + l).join('\n'));
+    } catch { /* LOG なし */ }
     ctx.push(`- 書く: \`${rel(P.feedback(N))}\`, \`${rel(P.order(N + 1))}\`${st.mode === 'innovation' ? `, \`${rel(P.ideas)}\`（採否の追記）` : ''}`);
     ctx.push('\n### 今サイクルの撮影・ヘルスチェック結果\n' + shotSection(N));
   }

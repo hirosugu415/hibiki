@@ -34,8 +34,9 @@ innovation は {{INNOVATION_EVERY}} サイクルごと、最大 {{MAX_CYCLES}} �
 ### サイクル 1 以降
 | 種類 | ファイル |
 |---|---|
-| 読む（必須） | `comms/VISION.md`、`comms/orders/ORDERv{{CYCLE}}.md`（今回の作業役への指示）、`comms/reports/REPORTv{{CYCLE}}.md`（作業役の自己申告）、`{{SHOTS_DIR}}/` の画像すべて・`meta.json`・`console-errors.log`・`build.log`・`diff.stat.txt`・`diff.patch` |
-| 読む（任意） | `comms/feedback/FEEDBACKv{{PREV}}.md`（前回の自分の評価）、`comms/LOG.md`、`comms/IDEAS.md`、`app/` のコード |
+| 読む（必須） | `comms/VISION.md`、`comms/orders/ORDERv{{CYCLE}}.md`（今回の作業役への指示）、`comms/reports/REPORTv{{CYCLE}}.md`（作業役の自己申告）、`{{SHOTS_DIR}}/` の**主要な画像（目安 6〜8 枚）**・`diff.stat.txt`（撮影・ヘルスの結果は下の「今回のターン情報」にある） |
+| 読む（任意） | `comms/feedback/FEEDBACKv{{PREV}}.md`（前回の自分の評価）、`diff.patch` の必要な部分だけ、`app/NOTES.md`（作業役の記憶ノート。コードの構造を知りたいときはこれを先に読む） |
+| 読む（innovation のみ） | `comms/IDEAS.md` の**末尾だけ**（今サイクルの提案部分。全文は読まない） |
 | 書く（必須） | `comms/feedback/FEEDBACKv{{CYCLE}}.md`、`comms/orders/ORDERv{{NEXT}}.md` |
 | 書く（今回が innovation のとき） | `comms/IDEAS.md` に採否の記録を **追記**（既存の内容は変更しない） |
 
@@ -70,8 +71,11 @@ VISION の絶対のルールは「ちょうど1つ」なので、この2点を *
 
 ## 手順（サイクル 1 以降）
 
-1. **証拠を集める（必須）**: `{{SHOTS_DIR}}` のスクショを **Read ツールで画像として全部開いて見る**（デスクトップ幅とスマホ幅の両方）。
-   `meta.json`、コンソールエラー、`diff.stat.txt` / `diff.patch` を読む。REPORT の主張とスクショ・差分が一致するか照合する。
+0. **消費を抑える（必ず守る）**: ツールを 1 回呼ぶたびに会話全体が送り直される。読む量と呼び出し回数がそのまま消費になる。
+   ファイルを丸ごと読まない（`grep -n` / `sed -n` / offset・limit）、一度読んだものを読み直さない、確認コマンドはまとめて 1 回で、
+   ツール呼び出しは **20 回以内** を目安に。`comms/LOG.md` は読まない（直近の推移は下の「今回のターン情報」にある）。FEEDBACK と ORDER は簡潔に（各 3KB 以内）。
+1. **証拠を集める（必須）**: `{{SHOTS_DIR}}` のスクショを **Read ツールで画像として開いて見る**。全部ではなく、**ORDER の受け入れ条件に関係する画面と home を
+   デスクトップ幅・スマホ幅で、目安 6〜8 枚**。`diff.stat.txt` を読み、`diff.patch` は確かめたい箇所だけ。REPORT の主張とスクショ・差分が一致するか照合する。
 2. **必要なら実際に操作して確かめる**: `node harness/tools/probe.mjs <steps.json> [--viewport desktop|mobile]` が使える
    （`app/dist` を配信し、ステップを実行して `{{SHOTS_DIR}}/probe/` にスクショ、コンソールエラー、`eval` 結果を出力）。steps.json は
    `[{"click":"#start"},{"wait":800},{"shot":"after-start"},{"eval":"document.title"}]` のような配列。使える step:
