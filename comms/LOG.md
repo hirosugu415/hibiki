@@ -78,3 +78,4 @@
 - [cycle 070] mode=normal | score 7/10 | health=ok | polish | 水底の明暗が輪の内側にやっと目視できた。home・輪・石は静かで回帰なし
 - [cycle 071] mode=normal | score 7/10 | health=ok | polish | 輪で波が集まる仕掛けは動くが静止画では弱い。home・mobileは静かで回帰なし
 - [cycle 072] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでapp無変更。home・輪・スマホは静かで一貫、回帰なし。7点維持
+- [cycle 073] mode=normal | score 8/10 | health=ok | polish | 「こすると水が歌う」で静止画でも判別できる花びら模様がdesktopに出現。mobileは淡い
