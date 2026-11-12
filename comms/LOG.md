@@ -80,3 +80,4 @@
 - [cycle 072] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでapp無変更。home・輪・スマホは静かで一貫、回帰なし。7点維持
 - [cycle 073] mode=normal | score 8/10 | health=ok | polish | 「こすると水が歌う」で静止画でも判別できる花びら模様がdesktopに出現。mobileは淡い
 - [cycle 074] mode=normal | score 8/10 | health=ok | polish | 花は石と離れ6枚で数えられるようになったがmobileはまだ淡く、外側の淡いリングが残る
+- [cycle 075] mode=normal | score 8/10 | health=ok | polish | bowlの外側リングが消え花びら6枚がdesktop・mobileとも数えられる。余韻も綺麗で回帰なし
