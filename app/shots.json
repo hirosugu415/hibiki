@@ -752,10 +752,10 @@
     },
     {
       "name": "floor-on",
-      "url": "/?demo=1&seed=1&hour=13",
+      "url": "/?hour=13",
       "steps": [
         {
-          "wait": 700
+          "wait": 1200
         },
         {
           "clickAt": [
@@ -770,10 +770,10 @@
     },
     {
       "name": "floor-off",
-      "url": "/?demo=1&seed=1&hour=13&floor=0",
+      "url": "/?hour=13&floor=0",
       "steps": [
         {
-          "wait": 700
+          "wait": 1200
         },
         {
           "clickAt": [

@@ -28,9 +28,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 ## 近づく指(c67)
 - main.js hoverMove/hoverStep/hoverLeave。沈む指の setDent を弱く再利用(GAIN=8)。マウスのみ。?hover=0 で無効。
 
-## 水底(c69)
-- wave-gl.js RENDER: floorTex/floorStones(歪めた格子+jitter した丸い石+低周波ノイズ)。base *= 1+uFloor.x*fa*(F-0.4)、さらに lap2 曲率の明るみ base += mix(uMid,uAcc,.5)*uFloor.x*fa*(1-exp(-lap2*55))*0.2。屈折は q+clamp(g*70,±1)*3px/uRes。mobile は oct2 省略。
-- ゲート fa: JS が本物の打(amp>=0.28)の位置・時刻を flA/flB に保持、半径 0.05+0.22*t(短辺比)の円盤×floorAct(打で1→6sで0)。静水・雨・小波では 0=home 不変。wake(uWake*) は砂板専用で当てにならない（使うと0）。
-- ?floor=係数(既定1, 強さ=係数*0.3, 0で無効, 上限9)。dataset.floor="係数,最大ずれpx"(0〜3)/off。
-- 効果は控えめ: K=1 で輪の内側に淡い丸い明暗が読める程度。強くすると水玉(bokeh)に見える(デバッグで確認)。
-- probe 比較はラン間でゴーストの打ち時刻がずれる→差分画像は当てにならず crop 並置で見る。
+## 水底(c69,c70調整)
+- wave-gl.js RENDER: floorTex = 大きく歪めた低周波 vnoise(0.9)+oct2(0.15)+丸石(sc6:0.2, sc2.6:0.5, 縁 smoothstep(rad*.5,rad))。base *= 1+uFloor.x*fa*(F-0.4) と lap2 曲率の明るみ。屈折ずれ上限 4px。mobile は oct2 省略。
+- ゲート fa: JS が本物の打(amp>=0.28)の位置・時刻を flA/flB に保持、半径 0.05+0.22*t の円盤×floorAct(打で1→3.5sで0)。静水・雨・小波では 0=home 不変。
+- ?floor=係数(既定4=強さ1.2, 0で無効, 上限9)。dataset.floor="係数,最大ずれpx"(0〜4)/off。係数2は静止画で見えず、5で内側に柔らかい明るみ(汚れなし)。石の縁を鋭く(0.78)すると直線的な縁=格子に見えた。小さい石(sc6)を強くすると水玉。
+- 比較は非デモ URL(/?hour=13&floor=N)+clickAt[360,320]。デモ幽霊は打ち時刻がずれる。shots.json floor-on/off はこの形。probe 出力は shots/cycle-070/probe/(3桁)。
+- headless は fps~20 で sim が実時間の1/3。8s 後 dataset.floor を見るなら実時間24s 待つ。home の輝度は run 間で±2.4%揺れる(星・石が乱数)ので floor 有無の差は測れない→ゲート0で担保。

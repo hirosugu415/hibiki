@@ -94,12 +94,12 @@ float floorStones(vec2 p, float sc, vec2 off){
   float hh = hash(ci + 5.7);
   vec2 jit = (vec2(hash(ci), hash(ci + 3.3)) - 0.5) * 0.22;
   float rad = mix(0.2, 0.33, hash(ci + 9.1));
-  return step(0.12, hh) * (1.0 - smoothstep(rad * 0.78, rad, length(f - jit)));
+  return step(0.12, hh) * (1.0 - smoothstep(rad * 0.5, rad, length(f - jit)));
 }
 float floorTex(vec2 p, float oct2){
   p += 0.28 * vec2(vnoise(p * 1.1 + 7.1), vnoise(p * 1.1 + 2.9));   // 格子に見えないよう領域をゆがめる
-  float v = vnoise(p * 2.4 + 3.1) * 0.45 + oct2 * vnoise(p * 5.3 + 11.7) * 0.15;
-  v += 0.55 * floorStones(p, 6.0, vec2(0.3, 0.1)) + 0.45 * floorStones(p, 3.3, vec2(4.2, 1.7));
+  float v = vnoise(p * 2.4 + 3.1) * 0.9 + oct2 * vnoise(p * 5.3 + 11.7) * 0.15;
+  v += 0.2 * floorStones(p, 6.0, vec2(0.3, 0.1)) + 0.5 * floorStones(p, 2.6, vec2(4.2, 1.7));
   return v * 0.9;
 }
 void main(){
@@ -156,7 +156,7 @@ void main(){
     float wlA = (1.0 - smoothstep(uFlA.z * 0.5, uFlA.z + 0.05, wdA)) * smoothstep(0.0, 0.04, uFlA.z);
     float wlB = (1.0 - smoothstep(uFlB.z * 0.5, uFlB.z + 0.05, wdB)) * smoothstep(0.0, 0.04, uFlB.z);
     float fa = uFloor.y * max(wlA, wlB);
-    vec2 fsh = clamp(g * 70.0, vec2(-1.0), vec2(1.0)) * 3.0 / uRes;     // ずれ上限 3px
+    vec2 fsh = clamp(g * 70.0, vec2(-1.0), vec2(1.0)) * 4.0 / uRes;     // ずれ上限 4px
     vec2 fp = (q + fsh - vec2(0.5, 0.4)) * asp;
     float oct2 = 1.0 - step(600.0, min(uRes.x, uRes.y) / uCssPx);
     float F = floorTex(fp, oct2);
@@ -346,7 +346,7 @@ function readDisp() {
   } catch { /* noop */ }
   return DISP_DEF;
 }
-const FLOOR_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('floor')); return Number.isFinite(v) ? Math.max(0, Math.min(9, v)) : 1; } catch { return 1; } })();
+const FLOOR_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('floor')); return Number.isFinite(v) ? Math.max(0, Math.min(9, v)) : 4; } catch { return 4; } })();
 const HF_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('hf')); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5; } catch { return 0.5; } })();
 const GUARD_TEST = (() => { try { return new URLSearchParams(location.search).get('guardtest') === '1'; } catch { return false; } })(); // テスト専用: 危険な分散係数でガード発火を確認
 const LONG_SIDE_CELLS = 420;
@@ -530,8 +530,8 @@ export function createGL(canvas) {
       if (n === 0 && pending) n = 1;
       for (let i = 0; i < n; i++) step(true);
       time += dt;
-      floorAct = Math.max(0, floorAct - dt / 6);
-      try { document.body.dataset.floor = FLOOR_K <= 0 ? 'off' : FLOOR_K + ',' + (3 * Math.min(1, floorAct * 1.5)).toFixed(2); } catch { /* noop */ }
+      floorAct = Math.max(0, floorAct - dt / 3.5);
+      try { document.body.dataset.floor = FLOOR_K <= 0 ? 'off' : FLOOR_K + ',' + (4 * Math.min(1, floorAct * 1.5)).toFixed(2); } catch { /* noop */ }
       guard(dt);
       pulse = Math.max(0, pulse - dt / 1.4);
       gl.useProgram(ren.pr);
