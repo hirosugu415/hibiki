@@ -90,3 +90,5 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - wave-gl.js: uLife(setLife)。halo = 従来 * uLife * 0.6（halo は 石の砂場の強さ全般を左右）。main.js stepLife(tick内): 石の速さ(画面比/秒)>0.035 で stoneMoveT 更新（pushStone内。累積ドリフト判定は常時発火して失敗済み）、止まってから 2.5s で life=(1-u)^2。dataset.stoneLife。shots: sandfield-push(350ms後)/sandfield-rest(4s後)。
 - 「響」: --fill は full かつ wmGlow=false なら 0（home と同じ見え方）。wmGlowSet: onLearn で2s、cycle中は点灯、off で2s後に消灯。.ready の呼吸アニメは廃止。dataset.wmGlow。
 - 人手ばらつき probe: shots/cycle-47/probe/gen.mjs → tol.json(desktop)/tolm.json(mobile は縦のずれを短辺比に合わせる; 画面比 .05 だと mobile は .118 で .11 超え→off)。
+
+## c48: innovation サイクル（コード変更なし）。IDEAS に Skim/Petrichor/Letter Relay を提案。
