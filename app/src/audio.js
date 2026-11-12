@@ -19,7 +19,7 @@ function makeIR(ctx, seconds, power, darkness) {
 
 export function createAudio() {
   let ctx = null, unavailable = false, muted = false, gesture = false;
-  let master, bus, wetS, wetL, echoSend;
+  let master, bus, wetS, wetL, echoSend, rvSend;
   const voices = [];
 
   const publish = () => {
@@ -50,7 +50,7 @@ export function createAudio() {
       rvIn.connect(convS); rvIn.connect(convL);
       convS.connect(wetS); convL.connect(wetL);
       wetS.connect(master); wetL.connect(master);
-      bus.connect(rvIn);
+      bus.connect(rvIn); rvSend = rvIn;
 
       const delay = ctx.createDelay(1.0); delay.delayTime.value = 0.33;
       const fb = ctx.createGain(); fb.gain.value = 0.34;
@@ -100,17 +100,23 @@ export function createAudio() {
     }
   }
 
-  function voice(freq, bright, vel, pan, decay = 1, level = 1) {
+  function voice(freq, bright, vel, pan, decay = 1, level = 1, delay = 0, depth = 0) {
     const t = ctx.currentTime;
     trim();
     const out = ctx.createGain();
-    out.gain.value = 1;
+    const dp = Math.max(0, Math.min(1, depth || 0));
+    out.gain.value = 1 - 0.2 * dp; // 奥ほど最大 −2dB
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass'; filt.Q.value = 0.4;
-    filt.frequency.value = 900 + 7200 * Math.pow(bright, 1.4);
+    const lp0 = 900 + 7200 * Math.pow(bright, 1.4);
+    const lp = Math.max(lp0 * (1 - 0.45 * dp), Math.min(lp0, 2000)); // 奥ほどこもるが 2kHz は残す
+    filt.frequency.value = lp;
     const pn = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if (pn) { pn.pan.value = pan; filt.connect(pn); pn.connect(out); } else filt.connect(out);
     out.connect(bus);
+    let send = null;
+    if (dp > 0.01 && rvSend) { send = ctx.createGain(); send.gain.value = 0.4 * dp; out.connect(send); send.connect(rvSend); } // 残響 send を最大 +40%
+    document.body.dataset.depth = dp.toFixed(2) + ',' + (1 + 0.4 * dp).toFixed(2) + ',' + Math.round(lp);
 
     const tau = (0.55 + (1 - bright) * 0.35) * decay;
     const partials = [
@@ -142,20 +148,20 @@ export function createAudio() {
     voices.push(rec);
     oscs[0].onended = () => {
       const i = voices.indexOf(rec); if (i >= 0) voices.splice(i, 1);
-      try { out.disconnect(); filt.disconnect(); } catch { /* noop */ }
+      try { out.disconnect(); filt.disconnect(); if (send) send.disconnect(); } catch { /* noop */ }
     };
   }
 
   // x: 0–1（左→右）、bright: 0–1（下→上）
-  function play(freq, bright, vel = 1, x = 0.5, decay = 1, level = 1, delay = 0) {
+  function play(freq, bright, vel = 1, x = 0.5, decay = 1, level = 1, delay = 0, depth = 0) {
     if (unavailable || muted || !gesture) return;
     try {
-      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay); } }); return; }
+      if (!ctx) { unlock().then(() => { if (ctx && ctx.state === 'running') { if (pendingMood) setMood(pendingMood); voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay, depth); } }); return; }
       if (ctx.state !== 'running') {
-        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay); publish(); }).catch(() => {});
+        ctx.resume().then(() => { if (ctx.state === 'running') voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay, depth); publish(); }).catch(() => {});
         return;
       }
-      voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay);
+      voice(freq, bright, vel, (x * 2 - 1) * 0.5, decay, level, delay, depth);
     } catch { /* 音が出せなくても波紋は動く */ }
   }
 

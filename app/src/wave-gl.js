@@ -168,13 +168,13 @@ void main(){
   // 空の映り込み: 反射ベクトルの y 成分（q.y + 法線の傾き）の勾配だけ。線は作らず、上端の帯にだけ薄く乗せる。石の上では弱める
   if (uSky.x > 0.0001) {
     float hb = uSky.y;
-    float sy = mix(uv.y, q.y, 0.5) + clamp(n.y, -0.12, 0.12) * 0.55 * (1.0 - smoothstep(0.94, 1.0, uv.y)) + sin(q.x * asp.x * 2.1 + uTime * 0.07) * 0.006;
+    float sy = mix(uv.y, q.y, 0.5) + clamp(n.y, -0.25, 0.25) * 0.55 * (1.0 - smoothstep(0.94, 1.0, uv.y)) + sin(q.x * asp.x * 2.1 + uTime * 0.07) * 0.006;
     float sb = smoothstep(1.0 - hb, 1.0, sy);
     float fres = mix(0.35, 1.0, pow(sb, uSky.z));                  // 浅い視線ほど強い
     float sk = sb * fres * (1.0 - m * 0.85);
     col += uSkyC * uSky.x * sk;
   }
-  vec2 vc = (uv - 0.5) * vec2(1.0, 1.15);
+  vec2 vc = (uv - 0.5) * vec2(1.0, mix(1.15, 0.98, smoothstep(0.55, 1.0, uv.y)));   // 上端側は暗縁を弱め、空との帯にしない
   col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
 
@@ -415,7 +415,7 @@ export function createGL(canvas) {
       gl.uniform1f(ren.u.uCalm, calm);
       gl.uniform1f(ren.u.uLife, life);
       gl.uniform4fv(ren.u.uWakeA, wakeA);
-      gl.uniform3f(ren.u.uSky, skyK, 0.2 * Math.min(1, canvas.width / canvas.height), 1.6);
+      gl.uniform3f(ren.u.uSky, skyK * 0.9, 0.2 * Math.min(1, canvas.width / canvas.height), 1.6);
       gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);

@@ -312,7 +312,7 @@ function ripple(x, yTop, amp, radius, live = LIVE) {
 }
 function note(x, yTop, vel) {
   const m = target;
-  audio.play(noteFreq(m, noteIndex(x)), Math.min(1, Math.max(0, 1 - yTop + m.bright)), vel, x);
+  audio.play(noteFreq(m, noteIndex(x)), Math.min(1, Math.max(0, 1 - yTop + m.bright)), vel, x, 1, 1, 0, 1 - yTop);
 }
 // 触れた瞬間の光の滲み。色は音高（x）に応じて、アクセントの周りでわずかに変える。
 const mix = (a, b, t) => a + (b - a) * t;
@@ -495,7 +495,7 @@ function releaseRing(f) {
   ripple(x, y, 0.4, mix(0.022, 0.014, k) * 1.5, 6000);
   glimmer.hit(x, y, 1, { sound: true });
   const m = target, hz = noteFreq(m, noteIndex(x));
-  audio.play(hz >= 200 ? hz / 2 : hz, Math.min(1, Math.max(0, 1 - y + m.bright)), 0.8, x);
+  audio.play(hz >= 200 ? hz / 2 : hz, Math.min(1, Math.max(0, 1 - y + m.bright)), 0.8, x, 1, 1, 0, 1 - y);
   const n = (+document.body.dataset.releases || 0) + 1;
   document.body.dataset.releases = String(n);
 }
