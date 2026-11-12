@@ -83,3 +83,4 @@
 - [cycle 075] mode=normal | score 8/10 | health=ok | polish | bowlの外側リングが消え花びら6枚がdesktop・mobileとも数えられる。余韻も綺麗で回帰なし
 - [cycle 076] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでapp無変更。home・bowlとも静かで回帰なし、8点据え置き
 - [cycle 077] mode=normal | score 8/10 | health=ok | polish | 双つの泉が動き、2つの泉が干渉縞を作る。desktopは縞が弱く、中心に粗い輪が出る
+- [cycle 078] mode=normal | score 8/10 | health=ok | polish | 双つの泉でdesktopにも節線の縞が出て中心も滑らか。mobileも落ち着き、回帰なし
