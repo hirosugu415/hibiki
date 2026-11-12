@@ -272,7 +272,8 @@ function tick(now) {
   document.body.dataset.clearK = clearK.toFixed(3);
   if (backend.setSky) backend.setSky(SKY_K);
   document.body.dataset.sky = target.id + ',' + SKY_K.toFixed(2) + ',' + (1 - 0.2 * Math.min(1, innerWidth / innerHeight)).toFixed(3);
-  const palT = { ...pal, sky: pal.sky.map((v, i) => Math.max(0, v * hourTintNow.mul[i] + hourTintNow.add[i])) };
+  const hk = innerHeight > innerWidth ? 1.9 : 1; // 縦長は空の寄与が小さいので刻の差を強める（昼は恒等）
+  const palT = { ...pal, sky: pal.sky.map((v, i) => Math.max(0, v * (1 + (hourTintNow.mul[i] - 1) * hk) + hourTintNow.add[i] * hk)) };
   try { backend.frame(dt, clearK ? { ...palT, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : palT); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;

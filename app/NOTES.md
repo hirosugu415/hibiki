@@ -36,3 +36,6 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - IDEAS.md は LF・追記のみ。コミットに Claude/Co-Authored-By を入れない。git の巻き戻し系コマンド禁止。
 - 採否履歴は IDEAS.md の「決定」節。B 空を映す水=c53実装。A 奥行きの音 / C 近づく指 は未実装。
 - probe のスクショは shots/cycle-053/probe/(ゼロ埋め3桁)に出る。輝度比較は pngjs(ルート node_modules)。デモで±1〜2%揺れる。
+
+- 刻の水の色(c58): 空は "下地に足す" 加算なので上端最終色=下地(12,24,41)+sky*0.45。夕(h19)は mul[4.3,1.1,0.1] add[.075,.04,0] で上端12%=(60,44,43)琥珀銅(c57 33,40,48は灰茶)。朝 mul[1,1.2,1.5] add[.015,.025,.05]→(23,44,77)。夜 mul[.3,.4,.6]→(15,30,55)。昼(22,38,62)。mobile は下地Bが高く夕もR<Bだが暖色の帯に見える。計測: shots/cycle-58/probe/run.sh(viewport hour..)+m.mjs。1回の probe 約15s、run.sh は4時点/120s以内。
+- 縦長(innerH>innerW)は main.js の hk=1.9 で mul偏差・addを増幅(空寄与が小さいため。昼は恒等)。mobile 夕(61,49,60)/朝(26,49,86)/夜(19,37,64)。
