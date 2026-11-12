@@ -99,3 +99,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## c50 雨あがり・ムード雨
 - main.js tick: clearK(0..1, weather==='clearing' で上昇 tau.8s/下降 tau1.2s)→ backend.frame に look[3]+0.0004*clearK の複製 pal を渡す（uLook.w は描画未使用、減衰は uDamp のみ）。dataset.clearK / rainLive(同時輪数)。ムード切替の rain 確認は eval で `getElementById('mood-night').click()`（pointerdown を出すと rain= 固定が解除される）。shots: rain-night/rain-dawn。3ムードで輪は同質（変更なし）。120s rain=1 は rain 1.00維持・最大同時2・エラー0。
+
+## c51 雨の背景明度＝補正不要（コード変更なし）
+- 雨と home の背景輝度差は、撮影時刻を揃えれば全ムード・両幅で ±4% 以内。見かけの「持ち上がり」の正体は #aura(CSS, breathe 13s 周期)の呼吸位相差（#aura を隠すと home/rain が一致、glimmer/afterimage は無関係）。shader 側で add を抑える試作(uRain)は数値が動かず撤回。比較は shots/cycle-51/probe/{gen.mjs,lum.mjs}（home も rain も goto 後 wait 3200 で揃える）。
