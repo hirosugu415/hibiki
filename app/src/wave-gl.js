@@ -106,6 +106,9 @@ void main(){
   float r = length(pc);
   vec3 base = mix(uMid, uDeep, smoothstep(0.0, 0.95, r));
   base *= mix(1.12, 0.62, smoothstep(0.0, 1.0, q.y));
+  // 横長のときだけ、右上の隅を最大 +15% 持ち上げる（左右の非対称を和らげる。全体は据え置き）
+  float rtk = smoothstep(0.68, 1.0, q.x) * smoothstep(0.62, 1.0, q.y) * smoothstep(1.25, 1.6, asp.x);
+  base *= 1.0 + 0.15 * rtk;
   float bands = sin(q.x * asp.x * 3.2 + uTime * 0.12 + sin(q.y * 3.6 - uTime * 0.09) * 1.6) * 0.5 + 0.5;
   base += uMid * 0.16 * bands * bands * (1.0 - smoothstep(0.1, 1.1, r));
   // 砂州の手がかり: 縁を持たない低コントラストのうねり（浅い所がほんのり明るい）。屈折後の座標 q で描く
@@ -175,7 +178,7 @@ void main(){
     col += uSkyC * uSky.x * sk;
   }
   vec2 vc = (uv - 0.5) * vec2(1.0, mix(1.15, 0.98, smoothstep(0.55, 1.0, uv.y)));   // 上端側は暗縁を弱め、空との帯にしない
-  col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
+  col *= 1.0 - 0.38 * (1.0 - 0.3 * rtk) * smoothstep(0.25, 0.95, length(vc));
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
 
   // クラドニ図形: 板 f=cos(nπX)cos(mπY)−cos(mπX)cos(nπY) の節の線に砂粒(2px)が集まる。解析式のみ・追加読み取り無し

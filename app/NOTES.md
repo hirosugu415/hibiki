@@ -16,7 +16,9 @@
 - 空の映り込み(c53): wave-gl RENDER の vignette 直前、sy=uv.y/q.y+n.y の勾配×フレネルで上端 ~20%(短辺比)に uSkyC(moods.js の sky 色, PKEYS 経由でムード補間)を加算。uSky=(強さ,帯高,指数)。石の上は ×0.15。?sky=0 で無し(SKY_K)。dataset.sky=mood,強さ,地平y。線・円盤なし。強さは moods.js の色の大きさで調整(夜は極弱)。
 
 - 空の波打ち(c54): sy の法線項を±0.25に(局所)、vignette の y 係数は上端で1.15→0.98、uSky強度×0.9。
-- 奥行きの音(c54): audio.play/voice の末尾引数 depth(=1-yTop。note()と長押し泉のみ)。LP×(1-.45d,下限2k)、rvSend(rvIn)へ0.4d の send、音量1-0.2d。dataset.depth="d,wet,lp"。幽霊/他の音は depth=0。
+- 奥行きの音(c54,c55確認): audio.voice の末尾引数 depth(=1-yTop。note()と長押し泉のみ)。lp=max(lp0*(1-.45d), min(lp0,2000))、rvSend 0.4d、音量1-0.2d(最大-1.8dB)。dataset.depth="d,wet,lp"。headless の eval は他の音(depth0)に上書きされるので式を node で計算して確認。
+- 右上の持ち上げ(c55): wave-gl の base 直後 rtk(右30%×上38%×横長のみ)で base+15%、vignette 係数も×(1-.3rtk)。mobile 不変。
+- 空 on/off(c55実測,9s,デモ固定): desktop L 40.8(off)/41.9(on) 、mobile 50.0/50.6。差+2.6%/+1.2%、色味同じ→空は問題なし。probe は出力名が desktop-s.png で毎回上書き→都度 mv。URL は "/" 単独だと MSYS が壊すので必ず "/?demo=1" 形式。
 
 ## 状態フック（document.body.dataset.*）
 plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive sky depth
