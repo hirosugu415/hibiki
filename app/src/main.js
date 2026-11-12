@@ -710,7 +710,7 @@ function gatherFire(pts) {
 // ---- こすると水が歌う(c73): 小さな往復ドラッグで、指の周りに n 重対称の定在模様を立てる。?bowl=0 で無効、?bowl=demo で 1.5s 後に自動発火 ----
 const BOWL_PARAM = params.get('bowl');
 const BOWL_ON = BOWL_PARAM !== '0';
-const BOWL_N = Math.max(3, Math.min(8, parseInt(params.get('bowln')) || 5));
+const BOWL_N = Math.max(4, Math.min(8, parseInt(params.get('bowln')) || 6)); // 見える花びら(ローブ)の枚数。駆動は cos(mθ), m=n/2
 let bowlCount = 0;
 document.body.dataset.bowl = BOWL_ON ? '0' : 'off';
 function bowlTrack(p, px, py) {
@@ -735,15 +735,16 @@ function bowlTrack(p, px, py) {
   for (const q of rv) { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); mx += q.x; my += q.y; }
   if (Math.max(x1 - x0, y1 - y0) > S * 0.24) return;
   const rate = 1000 / ((rv[rv.length - 1].t - rv[0].t) / (rv.length - 1) || 250);
-  const n = Math.max(3, Math.min(8, Math.round(3 + (rate - 4) * 5 / 6)));
+  const n = Math.max(4, Math.min(8, 2 * Math.round(2 + (rate - 4) / 3)));
   r.revs = [];
   bowlFire(mx / rv.length / viewW, my / rv.length / viewH, n);
 }
-const BOWL_DUR = 3, BOWL_K = 24;
+const BOWL_DUR = 3, BOWL_K = 24, KR = 6.6;
 let bowl = null; // 発火中の状態（シミュレーション時間 t 秒で駆動: 低 fps でも波速と周波数の比が崩れない）
 function bowlFire(fx, fy, n) {
-  const S = Math.min(viewW, viewH), R = S * 0.14, v = 0.68 * 95 * (viewW / 420);
-  bowl = { fx, fy, n, t: 0, R, f: v * 7 / (2 * Math.PI * R) }; // 輪の縁で kR≈7（J_n の山が輪の内側に入る）
+  const S = Math.min(viewW, viewH), R = S * 0.12, v = 0.68 * 95 * (viewW / 420);
+  n = 2 * Math.max(2, Math.min(4, Math.round(n / 2)));
+  bowl = { fx, fy, n, m: n / 2, amp: 0.95 * (viewW < 600 ? 0.72 : 1), t: 0, R, f: v * KR / (2 * Math.PI * R) }; // 輪の縁で kR≈7（J_n の山が輪の内側に入る）
   bowlCount++;
   document.body.dataset.bowl = `${n},${fx.toFixed(3)},${fy.toFixed(3)},${BOWL_DUR * 1000}`;
   wake(1200);
@@ -762,10 +763,14 @@ function bowlStep(dt) {
   const e = (t < 1.2 ? 1 : t < 2.4 ? 0.62 : 0.34) * (t > BOWL_DUR - 0.3 ? (BOWL_DUR - t) / 0.3 : 1) * Math.min(1, t / 0.15);
   for (let i = 0; i < BOWL_K; i++) {
     const th = i / BOWL_K * Math.PI * 2;
-    ripple(B.fx + Math.cos(th) * B.R / viewW, B.fy + Math.sin(th) * B.R / viewH, 0.055 * (dt / 0.07) * e * w * Math.cos(B.n * th), 0.034, 600);
+    ripple(B.fx + Math.cos(th) * B.R / viewW, B.fy + Math.sin(th) * B.R / viewH, 0.055 * B.amp * (dt / 0.07) * e * w * Math.cos(B.m * th), 0.034, 600);
   }
 }
-if (BOWL_PARAM === 'demo') setTimeout(() => bowlFire(0.5, 0.4, BOWL_N), 1500);
+if (BOWL_PARAM === 'demo') setTimeout(() => { // 石の影響の外・ワードマークの下に収まる位置
+  const S = Math.min(viewW, viewH), ext = S * 0.12 * 1.55 + 10;
+  const fy = Math.max((84 + ext) / viewH, Math.min(0.4, stone.y - (stoneR() + ext) / viewH));
+  bowlFire(0.5, fy, BOWL_N);
+}, 1500);
 // 石を掴んだ瞬間のわずかな波（縁のすぐ外に小さく 4 点）と、縁の光
 function grabPing() {
   const r = stoneR() * 1.18;
