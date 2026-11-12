@@ -58,3 +58,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## c36 innovation
 - app無変更。IDEAS.md に案A共鳴/B深まる水/C石の砂場を追記。推しC（砂の輝度基準を uStoneC への距離にする）。
+
+## c37 石の砂場（wave-gl.js 砂ブロック）
+- halo=(1-smoothstep(1.2R, max(3.2R,短辺28%), 石中心距離CSS px))*has。sleepHere=mix(.012,mix(min(.035,uSleep),uSleep,halo),lit)、env側 mix(.05,1,halo)、br*=mix(1,1.9,halo)。外の残りは 0.07/0.12 だと遠景の線が石周りと同格に見えた→0.035/0.05 で局在。dataset.sandHalo="1,半径比"(main.js pushStone)。shots: sandfield-push（石を eval の pointer 列で押す）。

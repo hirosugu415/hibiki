@@ -203,12 +203,18 @@ void main(){
     float litA = (1.0 - smoothstep(uWakeA.z * 0.45, uWakeA.z + 0.03, length(wa) / shortS)) * smoothstep(0.0, 0.05, uWakeA.z);
     float litB = (1.0 - smoothstep(uWakeB.z * 0.45, uWakeB.z + 0.03, length(wb) / shortS)) * smoothstep(0.0, 0.05, uWakeB.z);
     float lit = max(litA, litB);
-    float sleepHere = mix(0.012, uSleep, lit);
-    float awake = mix(sleepHere, 1.0, smoothstep(0.006, 0.05, env));
+    // 石の砂場: 輝度の基準は最寄りの石までの距離。1.2R の内側は満ち、外径 max(3.2R, 短辺28%) で消え、外にはごく薄い残りだけ
+    float stR = max(uStoneC.w, 1.0);
+    float dsC = length((vUv - uStoneC.xy) * asp) * uRes.y / cp;
+    float hOut = max(3.2 * stR, 0.28 * shortS / cp);
+    float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has;
+    float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
+    float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
     float star = 1.0 - smoothstep(1.5, 6.0, length(gr));      // 節線の交点(密な結び目)は控えめに
     float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.15, 0.5, mob));
     // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
     br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
+    br *= mix(1.0, 1.9, halo);   // 砂場の中は石の影として少し濃く
     br = min(br, 0.36);
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;

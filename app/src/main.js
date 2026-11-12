@@ -86,6 +86,7 @@ function pushStone() {
   backend.setStone(stone.x, 1 - stone.y, stoneR());
   pushBar();
   document.body.dataset.stones = '1';
+  { const R = stoneR(); document.body.dataset.sandHalo = '1,' + Math.max(3.2, 0.28 * Math.min(viewW, viewH) / R).toFixed(2); }
   document.body.dataset.stone = stone.x.toFixed(3) + ',' + stone.y.toFixed(3);
 }
 function placeStone() { [stone.x, stone.y] = clampStone(stone.x, stone.y); stone.tx = stone.x; stone.ty = stone.y; stone.glide = false; stone.vx = stone.vy = 0; pushStone(); }
