@@ -181,13 +181,19 @@ void main(){
   }
   // 底の光 (c89): 波の曲率（広い 4 点ラプラシアン）が負の所＝波頭の下に暖色の柔らかい光の帯、正の所はごく少し暗く。env は打鍵後 ~3s で 0（静水では分岐に入らず home 不変）
   if (uCaus.y > 0.0001) {
+    // c90 屈折: 打点（輪の中心）から外向きにサンプル位置をずらす＝光は波頭より内側に落ちる。読み取りは従来と同じ 4 回
+    vec2 dA = (uv - uFlA.xy) * asp, dB = (uv - uFlB.xy) * asp;
+    vec2 dd = dot(dA, dA) < dot(dB, dB) ? dA : dB;
+    vec2 dn = dd / max(length(dd), 1e-4);
+    vec2 so = uv + dn / asp * (uCaus.w * 2.1) * tx;
     vec2 co = tx * uCaus.w;
-    float lw = texture(uState, uv + vec2(co.x, 0.0)).r + texture(uState, uv - vec2(co.x, 0.0)).r + texture(uState, uv + vec2(0.0, co.y)).r + texture(uState, uv - vec2(0.0, co.y)).r - 4.0 * h;
+    float lw = texture(uState, so + vec2(co.x, 0.0)).r + texture(uState, so - vec2(co.x, 0.0)).r + texture(uState, so + vec2(0.0, co.y)).r + texture(uState, so - vec2(0.0, co.y)).r - 4.0 * h;
     float cb = clamp(-lw * uCaus.x, 0.0, 1.0), cd = clamp(lw * uCaus.x, 0.0, 1.0);
-    cb = cb * cb * (3.0 - 2.0 * cb);
-    base *= 1.0 - 0.12 * cd * uCaus.y;
-    base *= 1.0 - 0.4 * cb * uCaus.y;
-    base += uWarm * cb * uCaus.y * uCaus.z * (1.0 - 0.45 * smoothstep(0.0, 0.5, dot(base, vec3(0.333))));
+    base *= 1.0 - 0.1 * cd * uCaus.y;
+    float cx = max(-lw * uCaus.x, 0.0);
+    float ce = uCaus.y * 0.95 * 1.4 * cx / (0.49 + cx * cx);   // 山形の応答: 曲率が強すぎる所（混み合った水面）では逆に退き、べた塗りの金にならない
+    base *= mix(vec3(1.0), vec3(1.0, 0.46, 0.08), 0.9 * ce);
+    base += uWarm * ce * uCaus.z * (1.0 - 0.35 * smoothstep(0.0, 0.6, dot(base, vec3(0.333))));
   }
   // 砂州の手がかり: 縁を持たない低コントラストのうねり（浅い所がほんのり明るい）。屈折後の座標 q で描く
   if (uBarC.w > 0.0001) {
@@ -600,9 +606,10 @@ export function createGL(canvas) {
       {
         let hr = 13; try { hr = parseFloat(document.body.dataset.hour); if (!Number.isFinite(hr)) hr = 13; } catch { /* noop */ }
         const nt = 0.5 + 0.5 * Math.cos((hr - 13) / 24 * Math.PI * 2);       // 昼 1 → 夜 0
-        const w = [1.0, 0.60 + 0.20 * nt, 0.30 + 0.18 * nt];                // 夜は淡い琥珀、昼は淡い金
+        const w = [1.0, 0.40 + 0.28 * nt, 0.12 + 0.12 * nt];                // 夜は淡い琥珀、昼は淡い金
         const env = CAUS_ON && CAUS_K > 0 ? Math.min(1, Math.max(0, floorAct * 1.6 - 0.1)) : 0;
-        gl.uniform4f(ren.u.uCaus, CAUS_K, env * env * (3 - 2 * env), 0.42, innerWidth < 500 ? CAUS_W * 1.3 : CAUS_W);
+        const mob = innerWidth < 500;
+        gl.uniform4f(ren.u.uCaus, CAUS_K * (mob ? 1.25 : 1.5), env * env * (3 - 2 * env), mob ? 0.56 : 0.5, mob ? CAUS_W * 1.3 : CAUS_W);
         gl.uniform3f(ren.u.uWarm, w[0], w[1], w[2]);
         try { document.body.dataset.caustic = CAUS_ON && CAUS_K > 0 ? CAUS_K + ',' + (0.42 * env).toFixed(2) : 'off'; } catch { /* noop */ }
       }

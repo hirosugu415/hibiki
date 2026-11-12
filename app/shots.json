@@ -1007,6 +1007,24 @@
           "wait": 1200
         }
       ]
+    },
+    {
+      "name": "caustic-night",
+      "url": "/?demo=1&seed=1&hour=20",
+      "steps": [
+        {
+          "wait": 200
+        },
+        {
+          "clickAt": [
+            195,
+            300
+          ]
+        },
+        {
+          "wait": 1200
+        }
+      ]
     }
   ]
 }
