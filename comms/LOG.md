@@ -55,3 +55,4 @@
 - [cycle 047] mode=normal | score 8/10 | health=ok | polish | 石の線は止まれば消え mobile も静か。loop-end に薄い輪が残るが8点維持
 - [cycle 048] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home・タップ波紋とも静かで一貫、画質は c47 と同一で8点維持
 - [cycle 049] mode=normal | score 8/10 | health=ok | polish | 雨の輪は既存質感のまま静かに成立。home 不変で回帰なし、clearing の減衰緩和は未実装
+- [cycle 050] mode=normal | score 8/10 | health=ok | polish | 雨のムード別整合は問題なし・clearing 緩和は微小に実装。雨時の背景の持ち上がりは残り8点維持
