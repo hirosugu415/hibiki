@@ -211,11 +211,13 @@ void main(){
     float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
     float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
     float star = 1.0 - smoothstep(1.5, 6.0, length(gr));      // 節線の交点(密な結び目)は控えめに
-    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.15, 0.5, mob));
+    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 0.7, mob));
     // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
     br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
-    br *= mix(1.0, 1.9, halo);   // 砂場の中は石の影として少し濃く
-    br = min(br, 0.36);
+    br *= mix(1.0, 1.9 * mix(1.0, 1.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
+    br = 0.4 * (1.0 - exp(-br / 0.4));   // 交点で光が溜まらないよう soft-clamp
+    br = min(br, 0.34);
+    br *= mix(1.0, smoothstep(0.0, 6.0, dpx), has);   // 石が最前面: 輪郭の内側は 0、外 6px で立ち上がる
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;
     float yt = cs.y - qc.y;

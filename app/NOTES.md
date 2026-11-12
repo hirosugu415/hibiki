@@ -61,3 +61,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## c37 石の砂場（wave-gl.js 砂ブロック）
 - halo=(1-smoothstep(1.2R, max(3.2R,短辺28%), 石中心距離CSS px))*has。sleepHere=mix(.012,mix(min(.035,uSleep),uSleep,halo),lit)、env側 mix(.05,1,halo)、br*=mix(1,1.9,halo)。外の残りは 0.07/0.12 だと遠景の線が石周りと同格に見えた→0.035/0.05 で局在。dataset.sandHalo="1,半径比"(main.js pushStone)。shots: sandfield-push（石を eval の pointer 列で押す）。
+
+## c38 石が最前面
+- wave-gl.js 砂ブロック末尾: br を soft-clamp(0.4*(1-exp(-br/0.4)))→min .34、石輪郭 dpx で smoothstep(0,6) マスク。star 減光 desktop .3/mobile .7、halo ×1.9 は mobile のみ ×1.3 追加。
