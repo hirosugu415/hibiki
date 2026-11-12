@@ -11,7 +11,7 @@ const MOTIFS = [
 export function createGhost(api, { demo, seed }) {
   let timers = [];
   let alive = false;
-  let motifN = 0, phase = 0, lastIdx = 4;
+  let motifN = 0, phase = 0, lastIdx = 4, slotN = 0;
   const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
   const clear = () => { timers.forEach(clearTimeout); timers = []; api.dotHide(); if (api.holdEnd) api.holdEnd(); if (api.pressCancel) api.pressCancel(); };
 
@@ -60,7 +60,8 @@ export function createGhost(api, { demo, seed }) {
     });
     later(() => {
       if (!alive) return;
-      if (motifN % 3 === 0) stroke(); else later(playMotif, 1200);
+      if (motifN === 2 || (motifN % 3 === 0 && (slotN++ % 2 === 1))) circle();
+      else if (motifN % 3 === 0) stroke(); else later(playMotif, 1200);
     }, t + 150);
   }
 
@@ -84,6 +85,23 @@ export function createGhost(api, { demo, seed }) {
         api.drag(x0 + (x1 - x0) * k, y0 - Math.sin(k * Math.PI) * 0.14 - k * 0.06);
         if (i === N) { api.dotHide(); later(playMotif, 1600); }
       }, i * 70);
+    }
+  }
+
+  // 円のモチーフ: ほぼ閉じた輪を 1 秒で描く（半径は短辺の 17%）。波が内へ集まり、中心に一点が立つ
+  function circle() {
+    const m = api.metric ? api.metric() : { w: 800, h: 600 }, S = Math.min(m.w, m.h), R = 0.17 * S;
+    const cx = (0.3 + Math.random() * 0.4) * m.w, cy = 0.5 * m.h, N = 20;
+    const pt = (k) => [(cx + R * Math.sin(k * Math.PI * 2)) / m.w, (cy - R * Math.cos(k * Math.PI * 2)) / m.h];
+    const [x0, y0] = pt(0);
+    api.tap(x0, y0, 0.5);
+    for (let i = 1; i <= N; i++) {
+      later(() => {
+        if (!alive) return;
+        const [x, y] = pt(i / N);
+        api.drag(x, y);
+        if (i === N) { api.dotHide(); later(playMotif, 4200); }
+      }, 300 + i * 50);
     }
   }
 

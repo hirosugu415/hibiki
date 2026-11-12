@@ -785,6 +785,48 @@
           "wait": 1500
         }
       ]
+    },
+    {
+      "name": "gather-draw",
+      "url": "/?hour=13&seed=1",
+      "steps": [
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(async()=>{const w=document.querySelector('#water'),W=innerWidth,H=innerHeight,S=Math.min(W,H),r=S*.2;\nconst sl=ms=>new Promise(r=>setTimeout(r,ms));\nconst ev=(t,x,y)=>w.dispatchEvent(new PointerEvent(t,{pointerId:9,pointerType:'touch',clientX:x,clientY:y,bubbles:true,isPrimary:true}));\nconst p=i=>[W/2+r*Math.sin(i/20*6.2832),H*.45-r*Math.cos(i/20*6.2832)];\nev('pointerdown',...p(0));for(let i=1;i<=20;i++){await sl(40);ev('pointermove',...p(i));}ev('pointerup',...p(20));return document.body.dataset.gather;})()"
+        }
+      ]
+    },
+    {
+      "name": "gather-focus",
+      "url": "/?hour=13&seed=1",
+      "steps": [
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(async()=>{const w=document.querySelector('#water'),W=innerWidth,H=innerHeight,S=Math.min(W,H),r=S*.2;\nconst sl=ms=>new Promise(r=>setTimeout(r,ms));\nconst ev=(t,x,y)=>w.dispatchEvent(new PointerEvent(t,{pointerId:9,pointerType:'touch',clientX:x,clientY:y,bubbles:true,isPrimary:true}));\nconst p=i=>[W/2+r*Math.sin(i/20*6.2832),H*.45-r*Math.cos(i/20*6.2832)];\nev('pointerdown',...p(0));for(let i=1;i<=20;i++){await sl(40);ev('pointermove',...p(i));}ev('pointerup',...p(20));return document.body.dataset.gather;})()"
+        },
+        {
+          "wait": 1500
+        }
+      ]
+    },
+    {
+      "name": "gather-off",
+      "url": "/?hour=13&seed=1&gather=0",
+      "steps": [
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(async()=>{const w=document.querySelector('#water'),W=innerWidth,H=innerHeight,S=Math.min(W,H),r=S*.2;\nconst sl=ms=>new Promise(r=>setTimeout(r,ms));\nconst ev=(t,x,y)=>w.dispatchEvent(new PointerEvent(t,{pointerId:9,pointerType:'touch',clientX:x,clientY:y,bubbles:true,isPrimary:true}));\nconst p=i=>[W/2+r*Math.sin(i/20*6.2832),H*.45-r*Math.cos(i/20*6.2832)];\nev('pointerdown',...p(0));for(let i=1;i<=20;i++){await sl(40);ev('pointermove',...p(i));}ev('pointerup',...p(20));return document.body.dataset.gather;})()"
+        },
+        {
+          "wait": 1500
+        }
+      ]
     }
   ]
 }

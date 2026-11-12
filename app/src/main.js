@@ -651,7 +651,59 @@ function strokeTo(p, x, y, fromGhost) {
   const idx = noteIndex(x), now = performance.now();
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }
   { const d = dents.get(p.id); if (d) { d.path += dist; d.x = x; d.y = y; } }
+  gatherTrack(p, x * viewW, y * viewH);
   p.x = x; p.y = y;
+}
+// ---- 集まる輪(c71): ほぼ閉じた円を 1.5 秒以内に描くと、波が内側へ集まり中心に一点が立つ。?gather=0 で無効 ----
+const GATHER_ON = params.get('gather') !== '0';
+let gatherCount = 0, gatherAt = -1e9;
+document.body.dataset.gather = GATHER_ON ? '0,0,0,0' : 'off';
+// 判定: 直近1.5s の軌跡のうち、始終点距離 < 周長の12%・多角形面積 > 短辺²の3%・4πA/L² > 0.6（円=1、直線/往復/S字は≈0）
+function gatherTrack(p, px, py) {
+  if (!GATHER_ON) return;
+  const now = performance.now(), tr = p.trail || (p.trail = []);
+  if (!tr.length) tr.push({ x: p.x * viewW, y: p.y * viewH, t: now });
+  const l = tr[tr.length - 1];
+  if (Math.hypot(px - l.x, py - l.y) < 3) return;
+  tr.push({ x: px, y: py, t: now });
+  while (tr.length && now - tr[0].t > 1500) tr.shift();
+  if (now - gatherAt < 2000 || tr.length < 8) return;
+  const n = tr.length, cum = [0], S = Math.min(viewW, viewH);
+  for (let i = 1; i < n; i++) cum[i] = cum[i - 1] + Math.hypot(tr[i].x - tr[i - 1].x, tr[i].y - tr[i - 1].y);
+  const e = tr[n - 1];
+  for (let i = 0; i < n - 6; i++) {
+    const L = cum[n - 1] - cum[i];
+    if (L < S * 0.5 || Math.hypot(e.x - tr[i].x, e.y - tr[i].y) >= L * 0.12) continue;
+    let a2 = 0;
+    for (let j = i; j < n; j++) { const q = tr[j], r = tr[j + 1 < n ? j + 1 : i]; a2 += q.x * r.y - r.x * q.y; }
+    const A = Math.abs(a2) / 2;
+    if (A <= S * S * 0.03 || 4 * Math.PI * A / (L * L) < 0.6) continue;
+    gatherFire(tr.slice(i));
+    p.trail = [e];
+    return;
+  }
+}
+function gatherFire(pts) {
+  gatherAt = performance.now(); gatherCount++;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const q of pts) { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  let R = 0; for (const q of pts) R += Math.hypot(q.x - cx, q.y - cy); R /= pts.length;
+  const speed = 0.68 * 95 * (viewW / 420);
+  const ms = Math.round(Math.max(500, Math.min(2600, R / speed * 1000)));
+  const fx = cx / viewW, fy = cy / viewH;
+  document.body.dataset.gather = `${gatherCount},${fx.toFixed(3)},${fy.toFixed(3)},${ms}`;
+  const k = Math.min(14, pts.length);
+  for (let i = 0; i < k; i++) { const q = pts[Math.floor(i * pts.length / k)]; ripple(q.x / viewW, q.y / viewH, 0.1, 0.022, ms + 1500); }
+  setTimeout(() => {
+    ripple(fx, fy, 0.6, 0.019, 2000);
+    glimmer.hit(fx, fy, 0.5, { sound: false });
+    if (document.hidden) return;
+    const b = noteIndex(fx), top = NOTE_COUNT - 1;
+    [[0, 0.3], [2, 0.26], [4, 0.22]].forEach(([s, v], j) => setTimeout(() => {
+      audio.play(noteFreq(target, Math.min(top, b + s)), 0.5, v, fx, 1.6, 1, 0, 1 - fy);
+    }, j * 90));
+  }, ms);
 }
 // 石を掴んだ瞬間のわずかな波（縁のすぐ外に小さく 4 点）と、縁の光
 function grabPing() {
@@ -725,6 +777,7 @@ const ghost = createGhost({
     // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
     const sr = stoneR() * 1.25;
     if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;
+    ghostPtr.trail = null;
     dotShow(x, y);
     ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
@@ -740,6 +793,7 @@ const ghost = createGhost({
   pressStart(x, y) { dotShow(x, y); dentStart('ghostPress', x, y); },
   pressEnd() { dentEnd('ghostPress', true); },
   pressCancel() { dentEnd('ghostPress', false); },
+  metric() { return { w: viewW, h: viewH }; },
   dotHide() { dot.classList.remove('show'); },
 }, { demo: DEMO, seed: SEED });
 function dotShow(x, y) {

@@ -34,3 +34,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - ?floor=係数(既定4=強さ1.2, 0で無効, 上限9)。dataset.floor="係数,最大ずれpx"(0〜4)/off。係数2は静止画で見えず、5で内側に柔らかい明るみ(汚れなし)。石の縁を鋭く(0.78)すると直線的な縁=格子に見えた。小さい石(sc6)を強くすると水玉。
 - 比較は非デモ URL(/?hour=13&floor=N)+clickAt[360,320]。デモ幽霊は打ち時刻がずれる。shots.json floor-on/off はこの形。probe 出力は shots/cycle-070/probe/(3桁)。
 - headless は fps~20 で sim が実時間の1/3。8s 後 dataset.floor を見るなら実時間24s 待つ。home の輝度は run 間で±2.4%揺れる(星・石が乱数)ので floor 有無の差は測れない→ゲート0で担保。
+
+## 集まる輪(c71)
+- main.js gatherTrack(p,px,py)(strokeTo末尾から呼ぶ)/gatherFire。軌跡 p.trail(px,直近1.5s)。判定: 始終点距離<周長L*0.12 ∧ L>=0.5S ∧ 多角形面積>0.03S²(S=短辺) ∧ 4πA/L²>=0.6、クールダウン2s。発火で輪上最大14点に ripple(0.1)、R/波速(clamp500-2600ms)後に中心 splat0.6＋3和音(0/+2/+4音、vel0.3,0.26,0.22)。
+- dataset.gather="回数,中心x,中心y,収束ms"(?gather=0 で 'off'・検出ごと無効=退路)。ghost.js circle(): motifN===2 と以降3の倍数で交互(seed=1 では約30–45s で初回)。api.metric() 追加。
+- 検証: shots/cycle-71/probe/gen.mjs(誤検出表)・gen2.mjs(draw/focus)。eval は async 可(awaitされる)。ロード直後(<2s)は timer が遅れ 1.5s を超え不発になる→ shots は wait2500 後に eval。desktop 1280x800 の中央下に石があり輪と重なる。
