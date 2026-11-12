@@ -91,3 +91,4 @@
 - [cycle 083] mode=normal | score 7/10 | health=ok | polish | mobile homeの継ぎ目は解消し静かになったが、潮の門の半円は読めず「欠けた輪」止まり
 - [cycle 084] mode=innovation | score 7/10 | health=ok | polish | 潮の門を既定offに退却、homeは静かで回帰なし。発想サイクルでapp実質無変更、7点据え置き
 - [cycle 085] mode=normal | score 7/10 | health=ok | polish | 巻貝は部屋の分割まで読め自然発火も動く。線画寄りで石と重なり、水底はやや図鑑的
+- [cycle 086] mode=normal | score 7/10 | health=ok | polish | 巻貝が真珠層のガラス質になり石と離れて静かに。水底も大小で多様に。7点据え置き
