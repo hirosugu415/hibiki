@@ -133,6 +133,34 @@ function wake(ms) {
   keepUntil = Math.max(keepUntil, now + ms);
   if (!running && backend) { running = true; last = now; requestAnimationFrame(tick); }
 }
+// ---- 砂の眠り sandSleep: 眠る(0.05) → 最初の打で 0.35 へ(約0.8s) → 12秒無入力で 0.15 へゆっくり戻る → 次の打で再び 0.35 ----
+const SLEEP_HOME = 0.05, SLEEP_AWAKE = 0.35, SLEEP_REST = 0.15;
+let sandSleep = SLEEP_HOME, sleepTarget = SLEEP_HOME, sleepTimer = 0;
+document.body.dataset.sandSleep = sandSleep.toFixed(2);
+function sandWake() {
+  sleepTarget = SLEEP_AWAKE; wake(2600);
+  clearTimeout(sleepTimer);
+  sleepTimer = setTimeout(() => { sleepTarget = SLEEP_REST; wake(9000); }, 12000);
+}
+function stepSleep(dt) {
+  const d = sleepTarget - sandSleep;
+  if (Math.abs(d) < 0.0005) { if (!d) return false; sandSleep = sleepTarget; }
+  else sandSleep += d * (1 - Math.exp(-dt / (d > 0 ? 0.45 : 3.5)));
+  if (backend && backend.setSleep) backend.setSleep(sandSleep);
+  document.body.dataset.sandSleep = sandSleep.toFixed(2);
+  return true;
+}
+// ---- 初音: 初回のタップだけ、根音・3度・5度が少しずれて鳴る（デモは毎回初回） ----
+let hatsuneDone = DEMO ? false : store.get('hatsune') === '1';
+document.body.dataset.hatsune = hatsuneDone ? '1' : '0';
+function hatsune(x, yTop, vel) {
+  if (hatsuneDone) return false;
+  hatsuneDone = true; document.body.dataset.hatsune = '1';
+  if (!DEMO) store.set('hatsune', '1');
+  const m = target, i0 = Math.floor(noteIndex(x) / 5) * 5, br = Math.min(1, Math.max(0, 1 - yTop + m.bright));
+  [[0, 0, 1], [2, 0.18, 0.8], [4, 0.36, 0.7]].forEach(([d, t, lv]) => audio.play(noteFreq(m, Math.min(NOTE_COUNT - 1, i0 + d)), br, vel, x, 1, lv, t));
+  return true;
+}
 function tick(now) {
   updateSandDrift(performance.now());
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
@@ -143,6 +171,7 @@ function tick(now) {
     const d = target[key][i] - pal[key][i];
     if (Math.abs(d) > 0.0005) { pal[key][i] += d * k; moving = true; } else pal[key][i] = target[key][i];
   }
+  if (stepSleep(dt)) moving = true;
   if (moving) applyCss();
   { // 石の追従（軽い慣性）
     const dx = stone.tx - stone.x, dy = stone.ty - stone.y;
@@ -315,8 +344,9 @@ function barChime(x, yTop) {
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 function tap(x, yTop, vel = 1, record = true) {
   plateTouch(x, !record);
+  sandWake();
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
-  note(x, yTop, vel);
+  if (!hatsune(x, yTop, vel)) note(x, yTop, vel);
   stoneEcho(x, yTop);
   barChime(x, yTop);
   glimmer.hit(x, yTop, 0.6 + 0.4 * vel, { sound: true });

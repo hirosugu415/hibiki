@@ -81,7 +81,7 @@ export function createGhost(api, { demo }) {
 
   return {
     // 通常モードの「間欠の雨粒」は main.js 側が担当する
-    start() { if (demo) start(800); },
+    start() { if (demo) start(4500); },
     skipFirst() { motifN = Math.max(motifN, 1); }, // 手紙の再生があるときは最初の一幕（firstAct）を使わない
     retreat() {
       const wasDemo = demo;

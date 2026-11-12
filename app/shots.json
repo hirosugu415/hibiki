@@ -28,6 +28,24 @@
       ]
     },
     {
+      "name": "bloom",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 200
+        },
+        {
+          "clickAt": [
+            300,
+            380
+          ]
+        },
+        {
+          "wait": 500
+        }
+      ]
+    },
+    {
       "name": "stone-shadow",
       "url": "/?demo=1",
       "steps": [
