@@ -56,7 +56,7 @@ const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...
 let mood = MOODS[store.get('mood')] || MOODS.calm;
 let target = mood;
 const afterimage = createAfterimage({ el: document.getElementById('afterimage'), accent: () => mood.accent, demoSeed: DEMO && SEED });
-const shell = createShell({ accent: () => mood.accent, demo: DEMO, shellParam: params.get('shell'), shellsParam: params.get('shells') });
+const shell = createShell({ accent: () => mood.accent, demo: DEMO, shellParam: params.get('shell'), shellsParam: params.get('shells'), play: (x, y, v) => { quietTap = true; try { tap(x, y, v, false); } finally { quietTap = false; } } });
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const to255 = (c) => c.map((v) => Math.round(v * 255)).join(' ');
 function applyCss() {

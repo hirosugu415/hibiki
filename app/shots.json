@@ -941,6 +941,36 @@
           "wait": 4800
         }
       ]
+    },
+    {
+      "name": "shell-play",
+      "url": "/?demo=1&seed=1&hour=13&shells=5",
+      "steps": [
+        {
+          "wait": 2300
+        },
+        {
+          "eval": "(()=>{const [x,y]=document.body.dataset.shellPos.split(';')[0].split(',').map(Number),c=document.getElementById('water');const o={clientX:x*innerWidth,clientY:y*innerHeight,pointerId:5,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));return 1})()"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    },
+    {
+      "name": "shell-hover",
+      "url": "/?demo=1&seed=1&hour=13&shells=5",
+      "steps": [
+        {
+          "wait": 2300
+        },
+        {
+          "eval": "(()=>{const [x,y]=document.body.dataset.shellPos.split(';')[0].split(',').map(Number),c=document.getElementById('water');const o={clientX:x*innerWidth,clientY:y*innerHeight,pointerId:5,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointermove',o));return 1})()"
+        },
+        {
+          "wait": 700
+        }
+      ]
     }
   ]
 }

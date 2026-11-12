@@ -97,6 +97,7 @@ export function paintShell(ctx, size, taps, accent, strength = 1, opts = {}) {
   // 開口の端
   { const [ex, ey] = Q(Th), [fx, fy] = Q(Th - TAU); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(fx, fy); ctx.lineWidth = lw * 0.8; ctx.strokeStyle = col(0.86, 0.4); ctx.stroke(); }
   ctx.restore();
+  S.Q = Q; S.C = C; S.hue = hue;
   return S;
 }
 
@@ -108,12 +109,13 @@ function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } c
 const MULT = [1.1, 0.65, 0.9, 1.3, 0.75], TURNS = [2.2, 3.2, 2.6, 2.0, 3.0], ROT = [0.4, 2.3, 4.1, 5.5, 1.2];
 const q2 = (v) => Math.round(v * 100) / 100;
 
-export function createShell({ accent, demo, shellParam, shellsParam }) {
+export function createShell({ accent, demo, shellParam, shellsParam, play }) {
   const body = document.body;
   const ON = shellParam !== '0';
   const SHOW = shellParam === 'show';
   body.dataset.shell = ON ? '0' : 'off';
   body.dataset.shells = '0';
+  body.dataset.shellPlay = 'off';
   if (!ON) return { record() {}, dismiss() {} };
 
   const taps = [];
@@ -198,28 +200,112 @@ export function createShell({ accent, demo, shellParam, shellsParam }) {
   } else if (!demo) {
     list = loadSaved().slice(-5).map((e) => ({ x: e.x, y: e.y, taps: (e.t || []).map(([x, p, v]) => ({ x, p, v })).filter((t) => isFinite(t.x + t.p + t.v)) })).filter((e) => e.taps.length >= 3);
   }
-  if (list.length) {
-    body.dataset.shells = String(list.length);
-    const fc = document.createElement('canvas'); fc.id = 'shells'; fc.setAttribute('aria-hidden', 'true');
+  // ---- 床の殻: 配置は ワードマーク・バー・石・他の殻 を避ける。タップで演奏が蘇る ----
+  const ents = [];
+  let fc = null, ov = null, gl = null, ready = false, playing = false, playT = 0, hoverI = -1;
+  const hitR = (e) => e.sz * 0.44;
+  const rectOf = (sel) => { const el = document.querySelector(sel); if (!el) return null; const r = el.getBoundingClientRect(); return r.width && r.height ? r : null; };
+  const nearRect = (x, y, R, r, pad) => !!r && Math.hypot(x - Math.max(r.left - pad, Math.min(x, r.right + pad)), y - Math.max(r.top - pad, Math.min(y, r.bottom + pad))) < R;
+  function place(e, R, placed) {
+    const W = innerWidth, H = innerHeight, wm = rectOf('#wordmark'), bar = rectOf('#bar');
+    const st = (body.dataset.stone || '').split(',').map(Number), hasSt = st.length > 1 && isFinite(st[1]);
+    const sr = Math.max(0.07 * Math.min(W, H), 44) * 1.9;
+    const ok = (x, y) => x - R >= 6 && x + R <= W - 6 && y - R >= 6 && y + R <= H - 6 && !nearRect(x, y, R, wm, 14) && !nearRect(x, y, R, bar, 14)
+      && !(hasSt && Math.hypot(x - st[0] * W, y - st[1] * H) < R + sr) && placed.every((p) => Math.hypot(x - p.cx, y - p.cy) > R + p.R + 8);
+    const x0 = e.x * W, y0 = e.y * H;
+    if (ok(x0, y0)) return [x0, y0];
+    let best = null, bd = 1e9;
+    for (let gy = 0.1; gy <= 0.95; gy += 0.03) for (let gx = 0.06; gx <= 0.95; gx += 0.03) {
+      const x = gx * W, y = gy * H;
+      if (!ok(x, y)) continue;
+      const d = Math.hypot(x - x0, y - y0); if (d < bd) { bd = d; best = [x, y]; }
+    }
+    return best || [x0, y0];
+  }
+  const mkLayer = (id, trans) => {
+    const c = document.createElement('canvas'); c.id = id; c.setAttribute('aria-hidden', 'true');
+    const W = innerWidth, H = innerHeight, dpr = dprOf();
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    c.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transition:${trans}`;
+    c.ctx = c.getContext('2d'); c.ctx.scale(dpr, dpr); document.body.appendChild(c); return c;
+  };
+  function buildFloor() {
+    if (!list.length) return;
     const W = innerWidth, H = innerHeight, dpr = dprOf(), Sm = Math.min(W, H);
+    fc = document.createElement('canvas'); fc.id = 'shells'; fc.setAttribute('aria-hidden', 'true');
     fc.width = Math.round(W * dpr); fc.height = Math.round(H * dpr);
     fc.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transition:opacity 3s ease-out`;
     const fctx = fc.getContext('2d');
     list.forEach((e, i) => {
       const sz = Math.round(Sm * 0.23 * MULT[i % MULT.length] * (W < 600 ? 1.15 : 1));
+      const [cx, cy] = place(e, sz * 0.44, ents);
       const t = document.createElement('canvas'); t.width = t.height = Math.round(sz * dpr);
       const tc = t.getContext('2d'); tc.scale(dpr, dpr);
-      paintShell(tc, sz, e.taps, accent(), 0.33, { turns: TURNS[i % TURNS.length], rot: ROT[i % ROT.length] });
-      fctx.drawImage(t, Math.round(e.x * W - sz / 2) * dpr, Math.round(e.y * H - sz / 2) * dpr);
+      const S = paintShell(tc, sz, e.taps, accent(), 0.33, { turns: TURNS[i % TURNS.length], rot: ROT[i % ROT.length] });
+      fctx.drawImage(t, Math.round(cx - sz / 2) * dpr, Math.round(cy - sz / 2) * dpr);
+      ents.push({ cx, cy, sz, R: sz * 0.44, S, taps: e.taps });
     });
+    body.dataset.shellPos = ents.map((e) => `${(e.cx / W).toFixed(2)},${(e.cy / H).toFixed(2)}`).join(';');
     document.body.appendChild(fc);
+    ov = mkLayer('shell-hover', 'opacity .45s ease-out');
+    gl = mkLayer('shell-glow', 'none');
     let back = 0;
-    setTimeout(() => { fc.style.opacity = '1'; }, 1200);
-    window.addEventListener('pointerdown', () => { // 触れると薄れ、静けさが戻ると再び浮かぶ
+    setTimeout(() => { fc.style.opacity = '1'; ready = true; }, 1200);
+    window.addEventListener('pointerdown', (ev) => { // 触れると薄れ、静けさが戻ると再び浮かぶ
+      if (ev.shellHit) return;
       fc.style.transition = 'opacity .8s ease-out'; fc.style.opacity = '0'; clearTimeout(back);
       back = setTimeout(() => { fc.style.transition = 'opacity 4s ease-out'; fc.style.opacity = '1'; }, 9000);
     }, { capture: true, passive: true });
   }
+  const visibleNow = () => ready && fc && parseFloat(getComputedStyle(fc).opacity) > 0.2;
+  const hitIdx = (x, y) => { for (let i = ents.length - 1; i >= 0; i--) if (Math.hypot(x - ents[i].cx, y - ents[i].cy) < hitR(ents[i])) return i; return -1; };
+  const stoneHit = (x, y) => { const st = (body.dataset.stone || '').split(',').map(Number); return st.length > 1 && isFinite(st[1]) && Math.hypot(x - st[0] * innerWidth, y - st[1] * innerHeight) < Math.max(0.07 * Math.min(innerWidth, innerHeight), 44) + 10; };
+  const spiralPath = (c, e, ofs) => { const { Q } = e.S; c.beginPath(); for (let t = -TAU * 0.8, f = true; t <= e.S.Th + 0.02; t += 0.04) { const [x, y] = Q(t); f ? c.moveTo(x + ofs[0], y + ofs[1]) : c.lineTo(x + ofs[0], y + ofs[1]); f = false; } };
+  function setHover(i) {
+    if (i === hoverI || !ov) return;
+    hoverI = i; body.dataset.shellHover = i < 0 ? 'off' : String(i);
+    if (i < 0) { ov.style.opacity = '0'; return; }
+    const e = ents[i], c = ov.ctx, ofs = [e.cx - e.sz / 2, e.cy - e.sz / 2], h = e.S.hue;
+    c.clearRect(0, 0, innerWidth, innerHeight); c.save(); c.lineJoin = c.lineCap = 'round';
+    spiralPath(c, e, ofs); c.lineWidth = Math.max(5, e.sz * 0.03); c.strokeStyle = `hsla(${h.toFixed(0)},55%,86%,0.05)`; c.stroke();
+    spiralPath(c, e, ofs); c.lineWidth = Math.max(2, e.sz * 0.009); c.strokeStyle = `hsla(${h.toFixed(0)},55%,92%,0.2)`; c.stroke();
+    c.restore(); ov.style.opacity = '1';
+  }
+  function glow(e, i) { // 演奏中の部屋が淡く光る
+    const { Q, th } = e.S, c = gl.ctx, a = th[i], b = th[i + 1], steps = Math.max(4, Math.ceil((b - a) / 0.08));
+    const ox = e.cx - e.sz / 2, oy = e.cy - e.sz / 2;
+    c.clearRect(0, 0, innerWidth, innerHeight); c.beginPath();
+    for (let q = 0; q <= steps; q++) { const [x, y] = Q(a + (b - a) * q / steps); q ? c.lineTo(x + ox, y + oy) : c.moveTo(x + ox, y + oy); }
+    for (let q = steps; q >= 0; q--) { const [x, y] = Q(a + (b - a) * q / steps - TAU); c.lineTo(x + ox, y + oy); }
+    c.closePath(); c.fillStyle = `hsla(${e.S.hue.toFixed(0)},60%,88%,0.34)`; c.fill();
+    try { gl.animate([{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0 }], { duration: 900, easing: 'ease-out' }); } catch { /* noop */ }
+  }
+  function endPlay() { clearTimeout(playT); playing = false; body.dataset.shellPlay = 'off'; }
+  function playShell(i) {
+    if (playing || !play) return;
+    const e = ents[i], n = e.taps.length, rr = mulberry32(i * 7919 + 13), ys = e.taps.map(() => 0.3 + 0.4 * rr());
+    playing = true; body.dataset.shellPlay = `${i},${n}`;
+    let k = 0;
+    const step = () => {
+      if (!playing || document.hidden) { endPlay(); return; }
+      const t = e.taps[k];
+      try { play(t.x, ys[k], 0.35 + 0.2 * t.v); glow(e, k); } catch { /* 再生の失敗は無視 */ }
+      k++;
+      playT = setTimeout(k >= n ? endPlay : step, k >= n ? 600 : 400);
+    };
+    step();
+  }
+  window.addEventListener('pointerdown', (ev) => { // 殻の中だけ奪う（殻の外・石は従来どおり）
+    if (!ents.length || !visibleNow() || (ev.pointerType === 'mouse' && ev.button > 0)) return;
+    const i = hitIdx(ev.clientX, ev.clientY);
+    if (i < 0 || stoneHit(ev.clientX, ev.clientY)) return;
+    ev.stopPropagation(); ev.shellHit = true;
+    if (!playing) playShell(i);
+  }, { capture: true });
+  window.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'mouse' && ents.length) setHover(visibleNow() ? hitIdx(ev.clientX, ev.clientY) : -1); }, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) endPlay(); });
+  window.addEventListener('pagehide', endPlay);
+  if (list.length) { body.dataset.shells = String(list.length); setTimeout(buildFloor, 350); }
   window.addEventListener('pointerdown', dismiss, { capture: true, passive: true });
   window.addEventListener('keydown', dismiss, { capture: true });
   return { record, dismiss };

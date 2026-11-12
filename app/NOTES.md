@@ -15,6 +15,12 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - 非デモは localStorage 'hibiki.shells'(最大12)、再訪で最新5個を #shells に strength0.33 で表示。MULT/TURNS/ROT 配列で大きさ0.65-1.3倍・巻き数2-3.2・向きを変える。
 - フラグ: ?shell=show(固定12打,dataset.shell="12,2.8",消えない)、?shell=0(off)、?shells=N(seed固定。デモでも出る)。デモは保存/読込しない。PNG保存は未実装。
 
+## c87: 床の殻の演奏再生(shell.js の createShell 後半)
+- buildFloor(350ms後): place() でワードマーク/バー/石(r*1.9)/他の殻を避けて配置。ents[{cx,cy,sz,R,S,taps}]。dataset.shellPos(正規化座標 ';'区切り)/shellPlay('off'|'idx,n')/shellHover。
+- window pointerdown(capture, 最初に登録): 殻内(R=sz*0.44・石は除く・fc の opacity>0.2)で stopPropagation+ev.shellHit=true→playShell。再生中は無視。0.4s間隔、vel=0.35+0.2v、yは seed由来(0.3-0.7)。main.js の play コールバックが quietTap で tap(x,y,v,false) を呼ぶ。
+- 光る部屋は #shell-glow(全面canvas,animate)、hover は #shell-hover(輪郭のみ微光)。paintShell は S.Q/S.C/S.hue を返す。y は保存されない(保存形式不変)。
+- shots.json: shell-play/shell-hover は eval で dataset.shellPos 先頭へ pointerdown/pointermove を dispatch（両 viewport 共通）。
+
 ## 撮影・probe
 - shots.json: デモは `/?demo=1&seed=1&hour=13`。撮影 wait 合計は幅あたり25s以下。gate-split は ?gate=1 付き。
 - probe: `node harness/tools/probe.mjs steps.json --viewport desktop|mobile --url "/?demo=1&x=1"`（要 npm run build）。出力は shots/cycle-085/probe/(3桁) <viewport>-<shot>.png。eval は value に返る。URL は "/?..." 形式（MSYS対策）。mobile clickAt は x<390。
