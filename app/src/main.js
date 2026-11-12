@@ -8,6 +8,7 @@ import { createLoop } from './loop.js';
 import { createEcho } from './echo.js';
 import { createGlimmer } from './glimmer.js';
 import { createAfterimage } from './afterimage.js';
+import { createShell } from './shell.js';
 import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
@@ -55,6 +56,7 @@ const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...
 let mood = MOODS[store.get('mood')] || MOODS.calm;
 let target = mood;
 const afterimage = createAfterimage({ el: document.getElementById('afterimage'), accent: () => mood.accent, demoSeed: DEMO && SEED });
+const shell = createShell({ accent: () => mood.accent, demo: DEMO, shellParam: params.get('shell'), shellsParam: params.get('shells') });
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const to255 = (c) => c.map((v) => Math.round(v * 255)).join(' ');
 function applyCss() {
@@ -490,7 +492,7 @@ function tap(x, yTop, vel = 1, record = true) {
   gateEcho(x, yTop);
   glimmer.hit(x, yTop, 0.6 + 0.4 * vel, { sound: true });
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
-  if (record) echo.record(x, yTop, vel);
+  if (record) { echo.record(x, yTop, vel); shell.record(x, yTop, vel, noteIndex(x) / (NOTE_COUNT - 1)); }
 }
 
 // ---- 覚える水: 同じフレーズを 2 度弾くと、弱い幽霊の打として最大 4 周まわって溶ける（loop.js） ----

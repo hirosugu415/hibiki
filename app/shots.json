@@ -923,6 +923,24 @@
           "wait": 800
         }
       ]
+    },
+    {
+      "name": "shell-show",
+      "url": "/?demo=1&seed=1&hour=13&shell=show",
+      "steps": [
+        {
+          "wait": 3600
+        }
+      ]
+    },
+    {
+      "name": "shells-floor",
+      "url": "/?demo=1&seed=1&hour=13&shells=5",
+      "steps": [
+        {
+          "wait": 4800
+        }
+      ]
     }
   ]
 }
