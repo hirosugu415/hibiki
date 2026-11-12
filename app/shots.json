@@ -467,6 +467,24 @@
           "eval": "document.body.dataset.loop"
         }
       ]
+    },
+    {
+      "name": "rain-drizzle",
+      "url": "/?demo=1&seed=1&rain=0.3",
+      "steps": [
+        {
+          "wait": 2200
+        }
+      ]
+    },
+    {
+      "name": "rain-heavy",
+      "url": "/?demo=1&seed=1&rain=1",
+      "steps": [
+        {
+          "wait": 2200
+        }
+      ]
     }
   ]
 }

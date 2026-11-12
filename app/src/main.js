@@ -618,6 +618,7 @@ const ghost = createGhost({
     dotShow(x, y);
     ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
+    if (!(RAIN_FORCE && rainForced)) lastGhostAct = performance.now();
     ghostTap = true; try { tap(x, y, vel); } finally { ghostTap = false; }
     if (DEMO) memory.tap(x, y, vel, false);
     if (DEMO) letterRec.record(x, y, vel); // デモ時のみ、幽霊の打も手紙に記録（「響」を押せるように）
@@ -700,7 +701,7 @@ function letterVoice() {
 let ambientN = 0;
 document.body.dataset.ambient = '0';
 function drop() {
-  if (document.hidden || !backend || performance.now() - lastTouch < 8000) return;
+  if (document.hidden || !backend || performance.now() - lastTouch < 8000 || rain > 0.05) return;
   const x = 0.1 + Math.random() * 0.8;
   // バー（下 ~100px）とヒント（下 ~150px）の領域、ワードマーク（上 ~80px）を避ける
   const top = 90 / viewH, bottom = 1 - 215 / viewH;
@@ -740,6 +741,73 @@ function scheduleLap(ms) {
   }, ms);
 }
 if (!DEMO) scheduleLap(2000);
+
+// ---- 雨: 触れずにいる水面の天気。40s 無操作で小雨、90s から本降り。触れると退き、止めると雨あがり ----
+// 雨粒は tap() を通さない（砂・石・初音・残像・覚える水に触れない）。小さな輪 + 極小の音のみ。
+const rainParam = parseFloat(params.get('rain'));
+const RAIN_FORCE = Number.isFinite(rainParam) ? Math.max(0, Math.min(1, rainParam)) : null;
+const RAIN_MAX_LIVE = 6, RAIN_LIFE = 2400;
+let rain = RAIN_FORCE || 0, rainForced = RAIN_FORCE !== null, rainSeen = rain > 0.02;
+let rainLastAct = performance.now(), lastGhostAct = -1e9, clearingUntil = 0, rainTimer = 0, rainStepT = performance.now();
+const rainLive = [];
+let rainRng = (() => { let a = (SEED || rainForced ? 0x2f6e2b1 : (Date.now() ^ 0x9e3779b9)) >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })();
+const rainActed = () => { rainLastAct = performance.now(); if (rainForced) { rainForced = false; } };
+for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel']) window.addEventListener(ev, (e) => { if (ev === 'pointermove' && e.pointerType === 'mouse' && !e.buttons && !pointers.size) return; rainActed(); }, { capture: true, passive: true });
+const smooth01 = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+function rainTarget(now) {
+  if (rainForced) return RAIN_FORCE;
+  if (DEMO && !RAIN_FORCE) return 0; // デモの通常撮影には降らせない
+  const idle = (now - Math.max(rainLastAct, lastTouch, lastGhostAct)) / 1000;
+  if (idle < 40) return 0;
+  if (idle < 90) return 0.35 * smooth01((idle - 40) / 50);
+  return 0.35 + 0.65 * smooth01((idle - 90) / 60);
+}
+function rainStep() {
+  const now = performance.now(), dt = Math.min(0.5, (now - rainStepT) / 1000); rainStepT = now;
+  const tgt = rainTarget(now);
+  const prev = rain;
+  rain += (tgt - rain) * (1 - Math.exp(-dt / (tgt < rain ? 0.55 : 2.5))); // 退くのは速く、立ち上がりは緩やかに
+  if (rain < 0.004) rain = 0;
+  if (prev > 0.04) rainSeen = true;
+  // 触れて雨が退いたあと、手を止めてから約 6 秒だけ「雨あがり」
+  const act = Math.max(rainLastAct, lastTouch, lastGhostAct);
+  if (rainSeen && tgt === 0 && rain < prev && now - act < 1500) clearingUntil = act + 6000;
+  const clearing = rainSeen && now < clearingUntil && tgt === 0;
+  if (!clearing && rain < 0.02) rainSeen = false;
+  document.body.dataset.rain = rain.toFixed(2);
+  document.body.dataset.weather = clearing ? 'clearing' : rain < 0.02 ? 'dry' : rain <= 0.35 ? 'drizzle' : 'rain';
+  if (rain > 0.02 && !rainTimer) scheduleRain(rainFirst ? 300 : null);
+  if (rainTimer && rain <= 0.02) { clearTimeout(rainTimer); rainTimer = 0; }
+}
+let rainFirst = rainForced;
+function rainDrop() {
+  const now = performance.now();
+  while (rainLive.length && rainLive[0] < now) rainLive.shift();
+  if (document.hidden || !backend || backend.kind !== 'webgl2' || rainLive.length >= RAIN_MAX_LIVE || pointers.size || fountain) return false;
+  const sx = stone.x * viewW, sy = stone.y * viewH, avoid = stoneR() * 1.9;
+  const top = 100 / viewH, bottom = 1 - 225 / viewH;
+  for (let tries = 0; tries < 8; tries++) {
+    const x = 0.08 + rainRng() * 0.84, y = top + rainRng() * Math.max(0.1, bottom - top);
+    if (Math.hypot(x * viewW - sx, y * viewH - sy) < avoid) continue;
+    ripple(x, y, 0.07 + 0.07 * rain, 0.0105, RAIN_LIFE); // 通常の打(0.5)の 1/3 以下
+    rainLive.push(now + RAIN_LIFE);
+    const m = target;
+    audio.play(noteFreq(m, 5 + Math.floor(rainRng() * 5)), 0.5, 0.35, x, 0.8, 0.12);
+    return true;
+  }
+  return false;
+}
+function scheduleRain(first) {
+  let ms;
+  if (first != null) ms = first;
+  else if (rain <= 0.35) ms = (2000 + rainRng() * 2000) * (1 + (0.35 - rain) / 0.35);
+  else { const t = (rain - 0.35) / 0.65; ms = (2000 + (600 - 2000) * t) + rainRng() * (2000 + (1500 - 2000) * t); }
+  rainFirst = false;
+  rainTimer = setTimeout(() => { rainTimer = 0; try { if (rain > 0.02) { rainDrop(); scheduleRain(); } } catch { /* noop */ } }, ms);
+}
+document.body.dataset.rain = rain.toFixed(2);
+document.body.dataset.weather = 'dry';
+setInterval(() => { try { rainStep(); } catch { /* noop */ } }, 120);
 
 // ---- UI: ムード・ミュート ----
 const seg = document.querySelector('.seg');

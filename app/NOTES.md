@@ -92,3 +92,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 人手ばらつき probe: shots/cycle-47/probe/gen.mjs → tol.json(desktop)/tolm.json(mobile は縦のずれを短辺比に合わせる; 画面比 .05 だと mobile は .118 で .11 超え→off)。
 
 ## c48: innovation サイクル（コード変更なし）。IDEAS に Skim/Petrichor/Letter Relay を提案。
+
+## c49 雨（main.js 「雨:」ブロック、石のさざ波の後）
+- rainStep(120msのsetInterval)→dataset.rain/weather(dry|drizzle|rain|clearing)。目標: 無操作(pointer/key/wheel/ghost打/lastTouch)40s未満0、40-90s は ≤0.35、以降1.0へ(150sで)。立上がりtau2.5s/退きtau.55s。clearing=触れて退いたあと act+6s(輪の減衰は変更せず dataset のみ)。
+- rainDrop: tap() を通さず ripple(amp .07+.07rain, r.0105)+audio.play(level .12)。同時6・石半径×1.9避け・上100/下225pxは避ける。デモは `rain=` 指定時以外 0(ghost 打も無操作を更新)。`?demo=1&seed=1&rain=0.3|1` は触れるまで固定。drop()(ambient)は rain>.05 で止める。probe の wait は長くても実時間で効く(55s 待ちは並列実行で不安定→単独で)。shots: rain-drizzle/rain-heavy。
