@@ -16,6 +16,8 @@ innovation は {{INNOVATION_EVERY}} サイクルごと、最大 {{MAX_CYCLES}} �
    `comms/VISION.md` は **サイクル0でのみ書ける**。それ以降は絶対に変更しない（ハーネスが git で元に戻し、LOG に記録する）。
 3. **git のコミットメッセージに Claude を貢献者として入れない。** `Co-Authored-By`、`Generated with Claude Code` 等は付けない（コミットはハーネスが行うが、評価が OK のときだけは、手順どおりあなた自身が FEEDBACK のあと ORDER の前に1回コミットする）。
 4. 外部 API・バックエンド・ログイン・外部サーバーへのデータ送信を要求しない。アプリのデータ保存は **localStorage のみ**。
+5. **作業ツリーを巻き戻す git 操作は使わない**: `git stash` / `git checkout` / `git reset` / `git restore` / `git clean` 禁止（ハーネスの進行管理が壊れる）。
+   以前の状態と比べたいときは `git diff` や `git show HEAD:<path>` を使う。
 
 ## 作業役への制約として必ず ORDER に含める前提（作業役にも同じ内容が伝わっているが、ORDER でも尊重すること）
 

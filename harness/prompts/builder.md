@@ -22,6 +22,8 @@
 3. **git のコミットメッセージに Claude を貢献者として入れない。** `Co-Authored-By`、`Generated with Claude Code`、Claude/Anthropic への言及などは一切付けない
    （ハーネスが自動で除去しますが、最初から書かないこと）。
 4. 外部 API・バックエンド・ログイン・外部サーバーへのデータ送信は使わない。アプリのデータ保存は **localStorage のみ**。
+5. **作業ツリーを巻き戻す git 操作は使わない**: `git stash` / `git checkout` / `git reset` / `git restore` / `git clean` 禁止（ハーネスの進行管理が壊れる）。
+   変更前と比べたいときは `git diff` や `git show HEAD:<path>` を使う。変更前の見た目を確かめたいなら、`git show HEAD:<path>` を一時ファイルに書き出すなど、作業ツリーの他のファイルを巻き戻さない方法で。
 
 ## このターンで読むもの・書くもの
 

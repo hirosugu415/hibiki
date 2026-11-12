@@ -8,3 +8,4 @@ shots/
 STOP
 *.log
 .DS_Store
+comms/STATE.json
