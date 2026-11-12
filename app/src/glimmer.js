@@ -97,7 +97,7 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
   }
   function drawMeets(now, c) {
     for (let k = meets.length - 1; k >= 0; k--) {
-      const m = meets[k], age = now - m.t0, LIFE = 1100;
+      const m = meets[k], age = now - m.t0, LIFE = 2000;
       if (age > LIFE) { meets.splice(k, 1); continue; }
       const u = age / LIFE, env = Math.min(1, age / 90) * Math.pow(1 - u, 1.3), r = 7 + 1.5 * u;
       const g = ctx2.createRadialGradient(m.x, m.y, r * 0.5, m.x, m.y, r * 3.4);

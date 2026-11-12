@@ -57,3 +57,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - mobile(innerWidth<500) は uCaus.y を 0 にして金を完全に出さない(wave-gl.js ~L638)。濁りオリーブ対策。desktop の金は不変。
 - 出会いの粒(glimmer.js drawMeets): 半径7px 芯 + 放射グラデの暈(3.4r) + 広がる細い輪(1.2px)。
 - probe 出力先は shots/cycle-098/probe/(3桁)。bash の node -e に backtick を入れるとシェルが展開→ファイルに .cjs を書いて実行。
+
+## c99: 金は全幅で off（確定）
+- wave-gl.js uCaus ブロックは「10% の暗部」だけ残し、金（tint・uWarm 加算・輪の帯ゲート）のコードを全削除。mobile は従来どおり uCaus.y=0。金を作り直さない。uWarm uniform は JS 側に残るが未使用。
+- main.js ghost.tap: 左上 200×190 CSS px の打は y=190px へ押し出し（「響」周囲に輪の中心を作らない）。
+- glimmer.js 出会いの粒 LIFE=2000ms。検証: probe の PNG で r>b-5&&r>60 の画素数が全て UI の ~18 のみ。
+- probe 出力は shots/cycle-099/probe/（3桁）。

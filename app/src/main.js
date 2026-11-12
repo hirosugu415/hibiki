@@ -1025,6 +1025,8 @@ const ghost = createGhost({
     // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
     const sr = stoneR() * 1.25;
     if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;
+    // c99: 「響」(左上 46,40) の近くに輪の中心を作らない: 左上 200×190 CSS px の打は真下へ押し出す
+    if (x * viewW < 200 && y * viewH < 190) y = 190 / viewH;
     ghostPtr.trail = null; ghostPtr.rub = null;
     dotShow(x, y);
     ghostPlayNote();
