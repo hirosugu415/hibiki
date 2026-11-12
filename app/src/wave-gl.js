@@ -6,7 +6,8 @@ void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 const SIM = `#version 300 es
 precision highp float; precision highp int;
 uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDisp; uniform float uDif; uniform float uTs; uniform float uDamp; uniform float uGlowDecay;
-uniform vec4 uSplat[16]; uniform int uCount; uniform vec4 uStone; uniform vec4 uBar;
+uniform vec4 uSplat[16]; uniform int uCount; uniform vec4 uStone; uniform vec4 uBar; uniform vec4 uBowl;
+const float BOWLK = 0.11;
 out vec4 o;
 void main(){
   ivec2 p = ivec2(gl_FragCoord.xy);
@@ -44,7 +45,13 @@ void main(){
   }
   float ed = min(min(float(p.x), float(mx.x - p.x)), min(float(p.y), float(mx.y - p.y)));
   float sponge = 1.0 - smoothstep(0.0, 12.0, ed);
-  float damp = pow(uDamp - sponge * 0.028, uTs);
+  // こすって咲く花(c75): 花の外側にだけなだらかな吸収帯（内 1.4R→1.9R で立ち上がり、2.3R→3.0R で消える）。外へ漏れる波を静かに吸う
+  float bz = 0.0;
+  if (uBowl.w > 0.0) {
+    float bd2 = length((vec2(p) + 0.5) - uBowl.xy) / uBowl.z;
+    bz = uBowl.w * smoothstep(1.3, 1.75, bd2) * (1.0 - smoothstep(2.3, 3.0, bd2));
+  }
+  float damp = pow(uDamp - sponge * 0.028 - bz * BOWLK, uTs);
   float v = (c.g + kk * wet * lap - uDisp * wet * bil) * damp;
   v = clamp(v, -1.5, 1.5);
   v -= sign(v) * min(abs(v), 0.00006);
@@ -373,7 +380,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, floorAct = 0, flA = [0.5, 0.5, 0, 0], flB = [0.5, 0.5, 0, 0], flTa = -1e4, flTb = -1e4, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bowl = [0.5, 0.5, 1, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, floorAct = 0, flA = [0.5, 0.5, 0, 0], flB = [0.5, 0.5, 0, 0], flTa = -1e4, flTb = -1e4, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const dispCoef = readDisp();
     let dispOn = dispCoef; let dispOffUntil = 0, guardT = 0, guardTrips = 0, guardMs = 0;
     // 長波の波速² = uK（拡散 uDif は速度への減衰項で速さに効かない）を保つ: uK = 0.44 - 3.3β（β=0.012 で 0.40。安定条件 8K + 32β ≤ 4 は β≤0.035 で満たす）。波速が不変になるようステップ数を増やし、減衰は pow(,uTs) で時間基準に直す
@@ -450,6 +457,7 @@ export function createGL(canvas) {
     function setWake(a, b) { wakeA = a; wakeB = b; }
     function setPlate(n, m, a, ph) { plate[0] = n; plate[1] = m; plate[2] = a; plate[3] = ph; }
     // 砂州: ux, uy は 0–1（uy は下が 0）、rxPx / ryPx は CSS ピクセル半径（楕円）
+    function setBowl(ux, uy, rPx, s) { bowl[0] = ux; bowl[1] = uy; bowl[2] = rPx; bowl[3] = s; }
     function setBar(ux, uy, rxPx, ryPx) { bar.x = ux; bar.y = uy; bar.rx = rxPx; bar.ry = ryPx; bar.on = 1; }
 
     function step(withSplats) {
@@ -468,6 +476,7 @@ export function createGL(canvas) {
       const n = withSplats ? Math.min(16, queue.length / 4) : 0;
       if (n) { const b = queue.splice(0, n * 4); splats.set(b); }
       gl.uniform4f(sim.u.uStone, stone.x * W, stone.y * H, stone.r * W / lastCss[0], stone.on);
+      { const k = W / lastCss[0]; gl.uniform4f(sim.u.uBowl, bowl[0] * W, bowl[1] * H, Math.max(1, bowl[2] * k), bowl[3]); }
       { const k = W / lastCss[0]; gl.uniform4f(sim.u.uBar, bar.x * W, bar.y * H, bar.rx * k, bar.on ? bar.ry * k : 0); }
       gl.uniform1i(sim.u.uCount, n);
       if (n) gl.uniform4fv(sim.u.uSplat, splats);
@@ -571,7 +580,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setDent, setSleep, setCalm, setLife, setWake, guardInfo: () => ({ ms: guardMs, trips: guardTrips, on: dispOn }) };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, setBowl, firePulse, setPlate, setSky, setDent, setSleep, setCalm, setLife, setWake, guardInfo: () => ({ ms: guardMs, trips: guardTrips, on: dispOn }) };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;

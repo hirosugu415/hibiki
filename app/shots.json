@@ -838,6 +838,15 @@
       ]
     },
     {
+      "name": "bowl-late",
+      "url": "/?demo=1&seed=1&hour=13&bowl=demo",
+      "steps": [
+        {
+          "wait": 3900
+        }
+      ]
+    },
+    {
       "name": "bowl-off",
       "url": "/?demo=1&seed=1&hour=13&bowl=0",
       "steps": [

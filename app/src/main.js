@@ -740,14 +740,16 @@ function bowlTrack(p, px, py) {
   bowlFire(mx / rv.length / viewW, my / rv.length / viewH, n);
 }
 const BOWL_DUR = 3, BOWL_K = 24, KR = 6.6;
+const MOBILE_AMP = parseFloat(params.get('bamp')) || 1;
 let bowl = null; // 発火中の状態（シミュレーション時間 t 秒で駆動: 低 fps でも波速と周波数の比が崩れない）
 function bowlFire(fx, fy, n) {
   const S = Math.min(viewW, viewH), R = S * 0.12, v = 0.68 * 95 * (viewW / 420);
   n = 2 * Math.max(2, Math.min(4, Math.round(n / 2)));
-  bowl = { fx, fy, n, m: n / 2, amp: 0.95 * (viewW < 600 ? 0.72 : 1), t: 0, R, f: v * KR / (2 * Math.PI * R) }; // 輪の縁で kR≈7（J_n の山が輪の内側に入る）
+  bowl = { fx, fy, n, m: n / 2, amp: 0.95 * (viewW < 600 ? MOBILE_AMP : 1), t: 0, R, f: v * KR / (2 * Math.PI * R) }; // 輪の縁で kR≈7（J_n の山が輪の内側に入る）
   bowlCount++;
   document.body.dataset.bowl = `${n},${fx.toFixed(3)},${fy.toFixed(3)},${BOWL_DUR * 1000}`;
   wake(1200);
+  if (backend.setBowl) backend.setBowl(fx, 1 - fy, R, 1);
   const b = noteIndex(fx);
   for (let j = 0; j < 6; j++) setTimeout(() => {
     if (document.hidden) return;
@@ -758,9 +760,10 @@ function bowlFire(fx, fy, n) {
 function bowlStep(dt) {
   const B = bowl; if (!B) return;
   B.t += dt;
-  if (B.t >= BOWL_DUR) { bowl = null; document.body.dataset.bowl = `${B.n},${B.fx.toFixed(3)},${B.fy.toFixed(3)},0`; return; }
+  if (B.t >= BOWL_DUR + 1.2) { bowl = null; if (backend.setBowl) backend.setBowl(0.5, 0.5, 1, 0); document.body.dataset.bowl = `${B.n},${B.fx.toFixed(3)},${B.fy.toFixed(3)},0`; return; }
   const w = Math.sin(2 * Math.PI * B.f * B.t), t = B.t;
-  const e = (t < 1.2 ? 1 : t < 2.4 ? 0.62 : 0.34) * (t > BOWL_DUR - 0.3 ? (BOWL_DUR - t) / 0.3 : 1) * Math.min(1, t / 0.15);
+  if (t >= BOWL_DUR) return; // 駆動は終わり、吸収帯だけ残して余韻を静かに畳む
+  const e = (t < 1.2 ? 1 : t < 2.4 ? 0.62 : 0.34) * (t > BOWL_DUR - 0.9 ? (BOWL_DUR - t) / 0.9 : 1) * Math.min(1, t / 0.15);
   for (let i = 0; i < BOWL_K; i++) {
     const th = i / BOWL_K * Math.PI * 2;
     ripple(B.fx + Math.cos(th) * B.R / viewW, B.fy + Math.sin(th) * B.R / viewH, 0.055 * B.amp * (dt / 0.07) * e * w * Math.cos(B.m * th), 0.034, 600);
@@ -840,6 +843,7 @@ const ghost = createGhost({
     grabPing(); wake(1800);
   },
   tap(x, y, vel) {
+    if (BOWL_PARAM === 'demo' && (bowl || bowlCount === 0 || performance.now() < 8000)) return; // 撮影用: 花のデモ中は幽霊の打を休ませる（ほどける様子だけを見せる）
     // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
     const sr = stoneR() * 1.25;
     if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;

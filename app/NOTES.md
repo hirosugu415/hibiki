@@ -34,3 +34,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - demo 発火位置: 石(stone.y, stoneR())の上・ワードマーク(84px)の下に収まるよう fy を算出(desktop y≈0.32)。花の外側の放射リングは物理的に出る(淡い)。
 - dataset.bowl="n,x,y,持続ms"(終了で ms=0 / 未発火"0" / 無効"off")。sim時間(tick dt)で進める(setTimeout駆動は headless で崩れる)。
 - 誤検出検証: shots/cycle-74/probe/gen.cjs が c-*.json を生成(eval で PointerEvent 往復)。直線/小円/1.5s揺れ/タップ連打=不発、速い往復=n6、中速(周期480ms)=n4。
+
+## c75: 花の外側吸収帯
+- wave-gl.js SIM: uniform uBowl(x,y,Rcells,強さ)。花の中心から 1.3R→1.75R で立ち上がり 2.3R→3.0R で消える減衰(BOWLK=0.11 を damp に引く)。setBowl(ux,uy,Rpx,s) を main.js bowlFire で呼び、駆動終了+1.2s で解除。2D フォールバックは setBowl 無し(guard済)。これで外側リング消滅、花びら6枚が鮮明。
+- mobile の ×0.72 を撤廃(MOBILE_AMP 既定1, ?bamp= で試せる)。mobile は desktop よりやや淡く丸いが6枚数えられる。
+- 駆動は終端 0.9s かけて減衰(余韻)。BOWL_PARAM=demo 中は幽霊の打を止める(撮影の花以外の波を出さない)。bowl-late は wait 3900(発火後約2.4s)。mobile は desktop より早く消える(4.3s でほぼ消滅)。
+- probe 出力先は shots/cycle-0NN(3桁)。
