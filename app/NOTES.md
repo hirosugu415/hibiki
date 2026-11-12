@@ -78,3 +78,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 対策: wave-gl.js 砂ブロック Q の直後で、対角方向に沿って変わる垂直シフト(sin 7ua / 6va)で座標を歪め S 字に曲げた。単純な低周波 warp は平行移動だけで直線が残る(失敗済み)。
 - 残像: afterimage.js 色を白側へ20%、R=m*(0.18+0.1v)、alpha1.0、opacity .22 のまま。R を 0.27 以上にすると灰色の霧になり石が沈む。
 - probe は shots/cycle-042/（3桁）に出る。mobile の clickAt は x<390。
+
+## c43 髪の毛状の線を抑える（wave-gl.js 砂ブロック）
+- 調整値: 歪み 0.042/0.03→0.034/0.024、star smoothstep(0.9, 6.0/7.5)、線幅 w 3.3/2.4(mob)、br 係数 0.4、soft-clamp sc 0.32/0.46、上限 .27/.34(mob)、keep の縁幅 ±0.24、halo 倍率 1.55。細く粒立った断片は「細さ×halo倍率」が原因。
+- afterimage.js: 色 = accent*0.78 + 0.11 + 0.11*[.35,.85,.9]（白混ぜ約11%＋青緑寄り）。probe は shots/cycle-043/probe。steps は shots/cycle-43/probe/{push,wash,shown}.json。

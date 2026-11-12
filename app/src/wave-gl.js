@@ -178,13 +178,13 @@ void main(){
     vec2 P = gl_FragCoord.xy;
     vec2 Q = (P - uRes * 0.5) / shortS + 0.5;
     // 板の僅かな不均一: 反対称式の対角節(X=Y)が画面を貫く直線にならないよう、座標をゆるく歪めて曲げる
-    { float ua = Q.x + Q.y, va = Q.x - Q.y; Q += 0.042 * vec2(1.0, -1.0) * sin(7.0 * ua + 1.1 + 1.5 * sin(3.1 * va)) + 0.03 * vec2(1.0, 1.0) * sin(6.0 * va + 0.6 + 1.3 * sin(2.7 * ua)); }
+    { float ua = Q.x + Q.y, va = Q.x - Q.y; Q += 0.034 * vec2(1.0, -1.0) * sin(7.0 * ua + 1.1 + 1.5 * sin(3.1 * va)) + 0.024 * vec2(1.0, 1.0) * sin(6.0 * va + 0.6 + 1.3 * sin(2.7 * ua)); }
     float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
     float f = cnx * cmy - cmx * cny;
     vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
                    -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
     float glen = length(gr);
-    float star = 1.0 - smoothstep(0.5, mix(4.5, 6.5, mob), glen);      // 節線の交点(密な結び目)
+    float star = 1.0 - smoothstep(0.9, mix(6.0, 7.5, mob), glen);      // 節線の交点(密な結び目)
     float dcss = abs(f) / max(glen, 1.6) * shortS / cp ;     // 節の線までの距離(CSS px)。結び目では距離を伸ばし帯を締める(滲みの広がり対策)
     // 画素ごとの固定ノイズ（2 オクターブ・時間で動かさない）
     float n1 = hash(P + 3.7), n2 = hash(floor(P * 0.5) + 19.1), n3 = hash(P + 71.3);
@@ -195,11 +195,11 @@ void main(){
     float wn = clamp(h * SAND_K, -1.0, 1.0);
     float wf = wn > 0.0 ? mix(1.0, 0.6, wn) : mix(1.0, 1.8, -wn);
     float inten = wn > 0.0 ? mix(1.0, 1.6, wn) : mix(1.0, 0.5, -wn);
-    float w = mix(2.4, 1.7, mob) * wf * mix(3.2, 1.0, s);
+    float w = mix(3.3, 2.4, mob) * wf * mix(3.2, 1.0, s);
     float band = exp(-(dcss / w) * (dcss / w)) * inten * mix(0.3, 1.0, s) * mix(1.0, 0.8, mob);
     // 芯は下駄を履かせて抜けにくく、縁だけ smoothstep で粒にほどける
     float core = exp(-(dcss / (w * 0.5)) * (dcss / (w * 0.5))) * mix(0.3, 1.0, s);
-    float keep = smoothstep(nz - 0.17, nz + 0.17, band * 0.95 + 0.55 * core);
+    float keep = smoothstep(nz - 0.24, nz + 0.24, band * 0.95 + 0.55 * core);
     // 静かに眠り、波のエネルギー(読み済みの h・v・glow の包絡)で目覚める
     float env = max(sqrt(h * h + hs.g * hs.g * 6.0), hs.b * 0.5);
     // 波頭: 打点から外へ広がる円の内側だけ uSleep、外は眠り(0.05)。縁は幅のある smoothstep
@@ -214,13 +214,13 @@ void main(){
     float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has;
     float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
     float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
-    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
+    float br = 0.4 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
     // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
     br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
-    br *= mix(1.0, 1.9 * mix(1.0, 2.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
-    float sc = mix(0.4, 0.62, mob);
+    br *= mix(1.0, 1.55 * mix(1.0, 2.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
+    float sc = mix(0.32, 0.46, mob);
     br = sc * (1.0 - exp(-br / sc));   // 交点で光が溜まらないよう soft-clamp
-    br = min(br, mix(0.34, 0.5, mob));
+    br = min(br, mix(0.27, 0.34, mob));
     br *= mix(1.0, smoothstep(0.0, 6.0, dpx), has);   // 石が最前面: 輪郭の内側は 0、外 6px で立ち上がる
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;

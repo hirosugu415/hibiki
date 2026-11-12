@@ -29,7 +29,7 @@ export function createAfterimage({ el, accent, demoSeed }) {
     if (!c) return false;
     c.clearRect(0, 0, w, h);
     c.globalCompositeOperation = 'lighter';
-    const [r, g, b] = accent().map((v) => Math.round((v * 0.8 + 0.2) * 255)); // ムード色を明るい側へ
+    const [r, g, b] = accent().map((v, k) => Math.round((v * 0.78 + 0.11 + 0.11 * [0.35, 0.85, 0.9][k]) * 255)); // ムード色を明るい側へ
     const m = Math.max(w, h);
     list.forEach(([x, y, v], i) => {
       const age = 0.55 + 0.45 * ((i + 1) / list.length); // 新しい打ほど少し濃い
