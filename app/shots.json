@@ -749,6 +749,42 @@
           "wait": 600
         }
       ]
+    },
+    {
+      "name": "floor-on",
+      "url": "/?demo=1&seed=1&hour=13",
+      "steps": [
+        {
+          "wait": 700
+        },
+        {
+          "clickAt": [
+            360,
+            320
+          ]
+        },
+        {
+          "wait": 1500
+        }
+      ]
+    },
+    {
+      "name": "floor-off",
+      "url": "/?demo=1&seed=1&hour=13&floor=0",
+      "steps": [
+        {
+          "wait": 700
+        },
+        {
+          "clickAt": [
+            360,
+            320
+          ]
+        },
+        {
+          "wait": 1500
+        }
+      ]
     }
   ]
 }

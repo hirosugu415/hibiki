@@ -67,7 +67,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent; uniform float uHf;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC; uniform vec4 uDent; uniform float uHf; uniform vec2 uFloor; uniform vec4 uFlA; uniform vec4 uFlB;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -85,6 +85,22 @@ float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453
 vec3 knee(vec3 x){
   vec3 t = max(x - 0.72, 0.0);
   return min(x, vec3(0.72)) + 0.24 * (1.0 - exp(-t / 0.24));
+}
+// 水底 (c69): 低周波ノイズ＋大きく丸い石の緩い勾配。格子・縁・粒は無し。f は約 0..1
+float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
+float floorStones(vec2 p, float sc, vec2 off){
+  vec2 pp = p * sc + off, ci = floor(pp), f = fract(pp) - 0.5;
+  float hh = hash(ci + 5.7);
+  vec2 jit = (vec2(hash(ci), hash(ci + 3.3)) - 0.5) * 0.22;
+  float rad = mix(0.2, 0.33, hash(ci + 9.1));
+  return step(0.12, hh) * (1.0 - smoothstep(rad * 0.78, rad, length(f - jit)));
+}
+float floorTex(vec2 p, float oct2){
+  p += 0.28 * vec2(vnoise(p * 1.1 + 7.1), vnoise(p * 1.1 + 2.9));   // 格子に見えないよう領域をゆがめる
+  float v = vnoise(p * 2.4 + 3.1) * 0.45 + oct2 * vnoise(p * 5.3 + 11.7) * 0.15;
+  v += 0.55 * floorStones(p, 6.0, vec2(0.3, 0.1)) + 0.45 * floorStones(p, 3.3, vec2(4.2, 1.7));
+  return v * 0.9;
 }
 void main(){
   vec2 uv = vUv;
@@ -132,6 +148,22 @@ void main(){
   base *= 1.0 + 0.15 * rtk;
   float bands = sin(q.x * asp.x * 3.2 + uTime * 0.12 + sin(q.y * 3.6 - uTime * 0.09) * 1.6) * 0.5 + 0.5;
   base += uMid * 0.16 * bands * bands * (1.0 - smoothstep(0.1, 1.1, r));
+  // 水底の屈折と曲率の明るみ (c69)。ゲート fa は輪の通る所だけ立ち、静水では 0（home 不変）
+  float fAmt = 0.0, fMaxPx = 0.0;
+  if (uFloor.x > 0.0001) {
+    float wsh = min(uRes.x, uRes.y);
+    float wdA = length((uv - uFlA.xy) * uRes) / wsh, wdB = length((uv - uFlB.xy) * uRes) / wsh;
+    float wlA = (1.0 - smoothstep(uFlA.z * 0.5, uFlA.z + 0.05, wdA)) * smoothstep(0.0, 0.04, uFlA.z);
+    float wlB = (1.0 - smoothstep(uFlB.z * 0.5, uFlB.z + 0.05, wdB)) * smoothstep(0.0, 0.04, uFlB.z);
+    float fa = uFloor.y * max(wlA, wlB);
+    vec2 fsh = clamp(g * 70.0, vec2(-1.0), vec2(1.0)) * 3.0 / uRes;     // ずれ上限 3px
+    vec2 fp = (q + fsh - vec2(0.5, 0.4)) * asp;
+    float oct2 = 1.0 - step(600.0, min(uRes.x, uRes.y) / uCssPx);
+    float F = floorTex(fp, oct2);
+    base *= 1.0 + uFloor.x * fa * (F - 0.4);
+    float cv = 1.0 - exp(-max(lap2, 0.0) * 55.0);                  // 波頭の下の曲率: 広く柔らかい明るみ
+    base += mix(uMid, uAcc, 0.5) * uFloor.x * fa * cv * 0.2;
+  }
   // 砂州の手がかり: 縁を持たない低コントラストのうねり（浅い所がほんのり明るい）。屈折後の座標 q で描く
   if (uBarC.w > 0.0001) {
     vec2 bp = (q - uBarC.xy) * asp / uBarC.zw;
@@ -314,6 +346,7 @@ function readDisp() {
   } catch { /* noop */ }
   return DISP_DEF;
 }
+const FLOOR_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('floor')); return Number.isFinite(v) ? Math.max(0, Math.min(9, v)) : 1; } catch { return 1; } })();
 const HF_K = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('hf')); return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5; } catch { return 0.5; } })();
 const GUARD_TEST = (() => { try { return new URLSearchParams(location.search).get('guardtest') === '1'; } catch { return false; } })(); // テスト専用: 危険な分散係数でガード発火を確認
 const LONG_SIDE_CELLS = 420;
@@ -340,7 +373,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, floorAct = 0, flA = [0.5, 0.5, 0, 0], flB = [0.5, 0.5, 0, 0], flTa = -1e4, flTb = -1e4, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const dispCoef = readDisp();
     let dispOn = dispCoef; let dispOffUntil = 0, guardT = 0, guardTrips = 0, guardMs = 0;
     // 長波の波速² = uK（拡散 uDif は速度への減衰項で速さに効かない）を保つ: uK = 0.44 - 3.3β（β=0.012 で 0.40。安定条件 8K + 32β ≤ 4 は β≤0.035 で満たす）。波速が不変になるようステップ数を増やし、減衰は pow(,uTs) で時間基準に直す
@@ -397,6 +430,11 @@ export function createGL(canvas) {
     // ux, uy: 0–1（uy は下が 0）。radiusShort: 短辺に対する半径の比。
     function splat(ux, uy, amp, radiusShort) {
       if (!W || queue.length >= 400) return;
+      if (amp >= 0.28) { // 本物の打だけ（雨・石の小さな波・残響では水底を出さない）
+        floorAct = 1;
+        if (time - flTa > 0.3) { flB = flA; flTb = flTa; }
+        flA = [ux, uy, 0, 0]; flTa = time;
+      }
       queue.push(ux * W, uy * H, Math.max(1.2, radiusShort * Math.min(W, H)), amp);
       pending = Math.min(16, queue.length / 4);
     }
@@ -492,6 +530,8 @@ export function createGL(canvas) {
       if (n === 0 && pending) n = 1;
       for (let i = 0; i < n; i++) step(true);
       time += dt;
+      floorAct = Math.max(0, floorAct - dt / 6);
+      try { document.body.dataset.floor = FLOOR_K <= 0 ? 'off' : FLOOR_K + ',' + (3 * Math.min(1, floorAct * 1.5)).toFixed(2); } catch { /* noop */ }
       guard(dt);
       pulse = Math.max(0, pulse - dt / 1.4);
       gl.useProgram(ren.pr);
@@ -519,6 +559,9 @@ export function createGL(canvas) {
       gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
       gl.uniform4fv(ren.u.uDent, dent);
       gl.uniform1f(ren.u.uHf, HF_K);
+      gl.uniform4f(ren.u.uFlA, flA[0], flA[1], flTa < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTa), 0);
+      gl.uniform4f(ren.u.uFlB, flB[0], flB[1], flTb < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTb), 0);
+      gl.uniform2f(ren.u.uFloor, FLOOR_K * 0.3, Math.min(1, floorAct * 1.5));
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);

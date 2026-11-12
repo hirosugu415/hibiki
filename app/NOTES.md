@@ -7,12 +7,10 @@
 
 ## 機能の要点
 - 砂(Chladni)/石(艶・接地影)/空の映り込み(?sky=0)/刻の水(?hour=0–24、13=恒等)/覚える水/雨(?rain=0.3|1)/奥行きの音/右上持ち上げ/沈む指(?dent=1 で凹みのみ)。いずれも c37–c63 で調整済み。触る必要なし。
-- 分散(c65): SIM に4次項 -uDisp*wet*bil。?disp=係数(既定0.03,0で従来,上限0.035) ?dif=拡散。uK=0.44-3.3β、STEP_HZ=95*sqrt(0.44/uK)、MAX_STEPS=5。420セル格子では β≤0.035 が安定上限、効果は控えめ（この題材は c66 で閉じた）。退路=DISP_DEF=0。
-- 発散ガード guard(): 5秒ごとに画面の上/下半分を交互に readPixels（半精度を手復号）、max|h|>0.7 か NaN で分散を8s切る。dataset.disp="β,本数,tripsN" dispMax="max,msN"。通常の最大 |h|≈0.15（連打・雨30s）。`?guardtest=1`（テスト専用）: uDisp=0.2 を使い、初回 trip 後は分散を戻さない→数秒で静まる。
-- 高周波強調(c66): RENDER で lap2=4近傍(2セル幅,追加読み取りなし)のラプラシアン → add に uAcc*uHf*smoothstep(0.004,0.03,lap2)*smoothstep(0,.02,slope)*fresh。?hf=0..1（既定0.5, 0で無効）。home 輝度差 +0.8%。効果は輪内側の細い明線程度。
+- 分散(c65/66,閉じた): ?disp=係数(既定0.03,0で従来,上限0.035)。発散ガード guard() が5秒ごと readPixels、max|h|>0.7 で分散を8s切る(dataset.disp/dispMax)。?guardtest=1 テスト専用。高周波強調 ?hf=0..1(既定0.5)。いずれも触る必要なし。
 
 ## 状態フック（document.body.dataset.*）
-plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive sky depth hour hourPitch touch touchPos disp dispMax
+plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR afterimage rain sky depth hour touch disp hover floor
 
 ## 撮影・probe
 - shots.json: デモは `/?demo=1&seed=1&hour=13`。disp-on/disp-off/hf-off は非デモ(clickAt[300,300]+#water scale1.8)。撮影 wait 合計は幅あたり25s以下。
@@ -28,6 +26,11 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - 未実装案: A 奥行きの音(済), C 近づく指。決定履歴は IDEAS.md「決定」節。
 
 ## 近づく指(c67)
-- main.js hoverMove/hoverStep/hoverLeave（dentStep 冒頭で dents 空なら hoverStep）。沈む指と同じ setDent uniform を弱い GAIN=8,R=0.1 で再利用（追加パスなし）。マウスのみ(pointerType mouse,buttons0,pointers空)。HOLD700ms→FADE2.6s。?hover=0 で無効。dataset.hover=on/off, hoverK。
-- 効果は GAIN 線形：5 は不可視、10 でやや帯状、8 を採用。確認は eval で pointermove を dispatch→crop。非デモ homeは起動時に輪が出るので 7s 待ってから比較。
-- 撮影 disp-on/off,hf-off は tap 後 450+200ms に変更済。hover-near 追加。
+- main.js hoverMove/hoverStep/hoverLeave。沈む指の setDent を弱く再利用(GAIN=8)。マウスのみ。?hover=0 で無効。
+
+## 水底(c69)
+- wave-gl.js RENDER: floorTex/floorStones(歪めた格子+jitter した丸い石+低周波ノイズ)。base *= 1+uFloor.x*fa*(F-0.4)、さらに lap2 曲率の明るみ base += mix(uMid,uAcc,.5)*uFloor.x*fa*(1-exp(-lap2*55))*0.2。屈折は q+clamp(g*70,±1)*3px/uRes。mobile は oct2 省略。
+- ゲート fa: JS が本物の打(amp>=0.28)の位置・時刻を flA/flB に保持、半径 0.05+0.22*t(短辺比)の円盤×floorAct(打で1→6sで0)。静水・雨・小波では 0=home 不変。wake(uWake*) は砂板専用で当てにならない（使うと0）。
+- ?floor=係数(既定1, 強さ=係数*0.3, 0で無効, 上限9)。dataset.floor="係数,最大ずれpx"(0〜3)/off。
+- 効果は控えめ: K=1 で輪の内側に淡い丸い明暗が読める程度。強くすると水玉(bokeh)に見える(デバッグで確認)。
+- probe 比較はラン間でゴーストの打ち時刻がずれる→差分画像は当てにならず crop 並置で見る。
