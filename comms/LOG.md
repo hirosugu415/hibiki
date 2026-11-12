@@ -54,3 +54,4 @@
 - [cycle 046] mode=normal | score 8/10 | health=ok | polish | 許容緩和は安全に入ったが、石の周りの糸状線は desktop でまだ目立ち8点維持
 - [cycle 047] mode=normal | score 8/10 | health=ok | polish | 石の線は止まれば消え mobile も静か。loop-end に薄い輪が残るが8点維持
 - [cycle 048] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home・タップ波紋とも静かで一貫、画質は c47 と同一で8点維持
+- [cycle 049] mode=normal | score 8/10 | health=ok | polish | 雨の輪は既存質感のまま静かに成立。home 不変で回帰なし、clearing の減衰緩和は未実装
