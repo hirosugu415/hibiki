@@ -53,3 +53,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - **バグ根治**: デモの泉座標は module 初期化時 viewW=1 で計算され mobile 値・間隔0.34Sになっていた → 発火時(setTimeout内)に pt() で計算。画面サイズ依存の値はタイマー内で。
 - desktop 間隔0.27S, y=0.38(石 y≈0.62 から>15%S)。駆動点 RAD 0.016→0.026(?sprad=、中心のジャギー解消)。mobile LAM 0.085→0.102, AMP 0.4→0.34。
 - 振幅揃え: springStep で2番目の泉/held泉の level = min(古い泉の現在level, 自分)、held は f.t0 から1.5s で立ち上がり。springAdopt の lv0 は古い泉の現在levelに合わせる。
+
+## c79: 泉の非対称解消・デモ座標点検
+- sprLevel を「hold(既定3000ms, ?sprhold=)の間は lv0 を保ち、その後 smoothstep でほどける」に変更。springAdopt が hold を付与、springKill は hold=0。新旧の振幅が揃い縞が左右対称に。8秒の寿命は不変。
+- デモ座標点検: bowl=demo / ghost.springsAct(api.metric) / sprdemo(pt()) は全て発火時計算で問題なし。module 初期化時 viewW=1 の値を使う箇所は他に無い(定数は全て関数/getter)。
+- 実操作 probe: eval で #water に PointerEvent(down→1.2s→up→0.8s→down→2.8s)。非デモURL "/?seed=1&hour=13"。dataset.springs="2,.375,.375,.625,.375"。
