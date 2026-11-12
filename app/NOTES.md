@@ -15,11 +15,9 @@
 - 長押し泉: `fountainStart/Stop`, `releaseRing`。入力: `onDown/onMove/onUp`, `bindCanvas`。
 - 手紙: `letterRec`, `letterPlay`, `shareLetter`。響の満ち: `vesselShow/vesselAdd/vesselRing`(~678)。ムード: `selectMood`。
 
-## 砂の図形（c25実装, c26で磨き）
-- wave-gl.js RENDER 末尾 if(uChl.z>0.001): 3px セル内に丸粒(半径1px,smoothstep,tone 0.6-1.0)。mob=短辺<600px で線細く・量減。波頭 wv=|g|*5 で+0.15明るく・最大1px揺れ。静かな領域: バー(vUv.y)/左上「響」/ヒント(下122px)。
-- main.js: PLATE_MODES(PC) と PLATE_MODES_S(短辺<600, 線少なめ)、plateTouch/plateStep。audio.js sand(pan)。
-- 調整は shader 内の reach / 輝度0.48 / keep / quiet のみ。
-- GLSL 落とし穴: main スコープに pc g gl s 等が既存。名前衝突/ブロック欠落で GL 全滅→render=none（console.warn のみ。probe で dataset.render を eval して確認）。
+## 砂
+- main.js: PLATE_MODES(PC)/PLATE_MODES_S(スマホ)、plateTouch/plateStep。audio.js sand(pan)。静かな領域(バー/響/ヒント)は shader の quiet。
+- GLSL 落とし穴: main スコープに pc g gl s 等が既存、`patch` は予約語。衝突すると GL 全滅→render=none（probe で dataset.render を eval 確認）。
 
 ## 状態フック（document.body.dataset.*）
 plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar barChimes echoes echoPending holding holdHz releases letter letterPlay letterVoiced letterShare ambient stoneLaps vessel vesselCall vesselRing glimmer glints（glimmer.js側）
@@ -28,12 +26,9 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - `app/shots.json` に画面宣言。デモは `/?demo=1`（幽霊の指が自動演奏）。撮影の wait 合計は幅あたり 25s 以下。
 - probe: `node harness/tools/probe.mjs steps.json --viewport desktop|mobile`（要 `npm run build`）。steps.json はプロジェクト内に置く。
 
-## 履歴・方針メモ
-- スコア c17〜c23 は 7 で横ばい。「細部の質感」はもう効かない → 通常訪問者の画面全体を変える案が必要。
-- c27: セル4px・粒半径1.4px(中心はセル内[1.7,2.3])・縁smoothstep(0.2,1)。波頭+0.35(帯内上限0.6)・揺れ1.3px(セル余白内。これ以上はセル境界で欠ける)。shots: hold=pointerdownのみeval(離さない), plate-high=eval で画面比率(0.8W,0.47H)をタップ+待ち600。probe出力先は shots/cycle-027/probe/。
-- c26: 粒を丸く・スマホ間引き・波で砂が応える・hold shot 修復(wait4800+waitFor)。
-- c25 は案A(砂の図形)を実装。結果は FEEDBACKv25 を見る。touched ショットは待ち1100msに変更。
-- 採用済み（再提案不可）: 息の水面・長押し泉・離しの輪・石・砂州+鐘・手紙・ムード・こだま・夜光虫・響の満ち。隅から出す輪は不可。
+## 履歴
+- c17〜c29 は 7〜8 点で横ばい。採用済み（再提案不可）: 息の水面・長押し泉・離しの輪・石・砂州+鐘・手紙・ムード・こだま・夜光虫・響の満ち・砂の図形。隅から出す輪は不可。
+- shots の wait 合計は幅あたり 25s 以下。
 
 ## 落とし穴
 - GL の追加パス・テクスチャ読み取りは避ける（RENDER 内で完結させる）。uK は安定限界 0.5 未満。
