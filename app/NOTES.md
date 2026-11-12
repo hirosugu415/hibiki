@@ -44,3 +44,5 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 
 - 沈む指(c61): main.js `DENT`/`dents`/dentStart/dentEnd/dentStep(tick内)。凹みは sim でなく RENDER の uDent(vec4 x,y,r短辺比,k) をガウス凹みの勾配で `col *= 1+dentK`(縁・塗りなし)。※sim に負 splat を毎フレーム入れると波が輪(rim)になるので不可。反動=離し(>=160ms or 移動0.03)後 120ms で ripple 0.16+audio level0.316、泉が始まった押下は反動なし(泉の離し輪に任せる)。バネ追従 FOLLOW 0.09s。dataset.touch="age,深さ(=0.08*k),rebound数" touchPos="px,py,x,y"。幽霊: ghost.js loopAct で 8.2s に一度 pressStart/pressEnd(350ms)。
 - probe で押下保持: steps の eval で #water に PointerEvent(pointerdown/up,pointerId:7)を dispatch。shot は遅く(~0.5s)泉(260ms)が始まるので凹み単体は撮れない→一時 URL フラグで tap/泉を切って確認した(撤去済)。mobile は stone に当たる(0.45,0.55)を避け(0.3,0.3)。
+
+- 沈む指の強化(c62): DENT={R:0.08,RM:0.095(縦長),GAIN:6,AMP:0.08}。setDent の w=k*GAIN。shader: dg=0.34*dr*dsh; dentK=w*(dg*(dg>0?1:0.5)-0.04*de)=明側1.0/暗側0.5・中心沈み弱め(c61は両側等・w=1で見えず。GAIN7.5/対称は暗葉が「染み」に見えた)。dataset.touch 深さ=0.08*GAIN*k(最大0.48)。`?dent=1`=撮影用: 押下で tap/泉/音を出さず凹みだけ(DENT_ONLY)。shots: press-hold / press-hold-zoom(#water を transform scale(3) 原点30% 30%) / press-hold-live(通常押下)。crop は shots/cycle-62/probe/crop.mjs(pngjs)。

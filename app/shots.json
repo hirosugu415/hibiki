@@ -575,6 +575,42 @@
     },
     {
       "name": "press-hold",
+      "url": "/?demo=1&hour=13&dent=1",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,pointerType:'touch',clientX:innerWidth*0.3,clientY:innerHeight*0.3,button:0,isPrimary:true}));})()"
+        },
+        {
+          "wait": 400
+        }
+      ]
+    },
+    {
+      "name": "press-hold-zoom",
+      "url": "/?demo=1&hour=13&dent=1",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7,pointerType:'touch',clientX:innerWidth*0.3,clientY:innerHeight*0.3,button:0,isPrimary:true}));})()"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='30% 30%';c.style.transform='scale(3)';})()"
+        },
+        {
+          "wait": 200
+        }
+      ]
+    },
+    {
+      "name": "press-hold-live",
       "url": "/?demo=1&hour=13",
       "steps": [
         {

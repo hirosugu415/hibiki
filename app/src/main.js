@@ -522,7 +522,8 @@ function releaseRing(f) {
 
 // ---- 沈む指: 押している間、指の下がごく浅く凹む（勾配だけ）。離すと約 120ms 後に柔らかい輪が 1 つ立つ ----
 // 凹みは毎フレームの負の高さ splat（縁・塗りなし）。指にはバネで少し遅れて付く。通常タップ(<160ms)は何も足さない。
-const DENT = { R: 0.05, AMP: 0.08, REB_MS: 160, DELAY: 120, LEVEL: 0.316, FOLLOW: 0.09, FADE_FROM: 600 };
+const DENT = { R: 0.08, RM: 0.095, AMP: 0.08, GAIN: 6.0, REB_MS: 160, DELAY: 120, LEVEL: 0.316, FOLLOW: 0.09, FADE_FROM: 600 };
+const DENT_ONLY = params.get("dent") === "1";
 const dents = new Map(); // owner -> { x, y, px, py, t0, k, path, fountain, ending }
 let reboundN = 0, dentInfo = [0, 0];
 document.body.dataset.touch = '0,0.0000,0';
@@ -559,9 +560,9 @@ function dentStep(dt, now) {
     if (d.fountain && age > DENT.FADE_FROM) k *= Math.max(0, 1 - (age - DENT.FADE_FROM) / 300);
     if (d.ending) { const e = (now - d.ending) / 140; k *= Math.max(0, 1 - e); if (e >= 1) { dents.delete(id); continue; } }
     d.k = k;
-    if (!shown) { shown = true; if (backend.setDent) backend.setDent(d.px, 1 - d.py, DENT.R, k); }
-    dentInfo = [Math.round(age), DENT.AMP * k];
-    document.body.dataset.touch = Math.round(age) + ',' + (DENT.AMP * k).toFixed(4) + ',' + reboundN;
+    if (!shown) { shown = true; if (backend.setDent) backend.setDent(d.px, 1 - d.py, viewH > viewW ? DENT.RM : DENT.R, k * DENT.GAIN); }
+    dentInfo = [Math.round(age), DENT.AMP * DENT.GAIN * k];
+    document.body.dataset.touch = Math.round(age) + ',' + (DENT.AMP * DENT.GAIN * k).toFixed(4) + ',' + reboundN;
     document.body.dataset.touchPos = [d.px, d.py, d.x, d.y].map((v) => v.toFixed(3)).join(',');
   }
   if (!shown && backend.setDent) backend.setDent(0.5, 0.5, DENT.R, 0);
@@ -603,6 +604,7 @@ function onDown(e) {
   const now = performance.now();
   const p = { id: e.pointerId, x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
   pointers.set(e.pointerId, p);
+  if (DENT_ONLY) { dentStart(e.pointerId, x, y); return; } // 撮影用: 凹み単体（?dent=1）
   tap(x, y, 1);
   memory.tap(x, y, 1, true);
   letterRec.record(x, y, 1);

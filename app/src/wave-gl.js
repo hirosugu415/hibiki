@@ -112,7 +112,8 @@ void main(){
     vec2 dp = (uv - uDent.xy) * uRes / min(uRes.x, uRes.y);
     float dr = uDent.z, de = exp(-dot(dp, dp) / (2.0 * dr * dr));
     float dsh = -dot(dp, vec2(-0.5, 0.86)) / (dr * dr) * de;
-    dentK = uDent.w * (0.34 * dr * dsh - 0.10 * de);
+    float dg = 0.34 * dr * dsh;
+    dentK = uDent.w * (dg * (dg > 0.0 ? 1.0 : 0.5) - 0.04 * de);
   }
   // 横長のときだけ、右上の隅を最大 +15% 持ち上げる（左右の非対称を和らげる。全体は据え置き）
   float rtk = smoothstep(0.68, 1.0, q.x) * smoothstep(0.62, 1.0, q.y) * smoothstep(1.25, 1.6, asp.x);
