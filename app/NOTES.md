@@ -42,9 +42,9 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - IDEAS.md は LF。追記のみ。コミットに Claude/Co-Authored-By を入れない。
 - c28(innovation): IDEAS に A砂紋/B忘れていく水/C二点の干渉を提案。推しA。採用されたらc29で実装(砂の変位は±1.5px・畝は密度で)。
 
-## c29 砂紋（実装済み）
-- wave-gl.js 砂ブロックは 2 格子ループ(4px / 5.3px・17°回転)。粒中心で uState を1回読み wn=h*SAND_K(50)→密度(SAND_D 0.5, 谷は×0.35)と半径(±30%)に反映。変位は無し(欠け回避)。粒 r0 0.9-1.6px, 位置ずれは (半セル-1.3r0) 内。低周波斑 sin。thr は ×0.6(スマホ0.8)。
-- GLSL: `patch` は予約語(GL全滅→render=none)。変数名に注意。
-- main.js: `dataset.sandDrift`="粒半径最大変化px,波頭数"(updateSandDrift, τ1.8s)。shots: drift-early/late/rest は eval で画面比率タップ(0.25,0.5)→(0.64,0.5)。
-- 砂(plate量)は触らないと数秒で消える(既存挙動)。rest では砂ごと薄れるので『元に戻る』証明には弱い。
-- CRLF ファイル: python で書くとLFになる → 書いた後 sed -i 's/$//' で戻す。
+## c30 砂=画素ノイズの帯（c29の格子は廃止）
+- wave-gl.js 砂ブロック(uChl.z>0.001): 格子ループ無し。各画素で節線距離 dcss(CSS px) → band=exp(-(d/w)^2)、w=2.4px(スマホ1.7)×wf、wf=山0.6/谷1.8(wn=h*SAND_K(50)、h=既読の hs.r。追加読み取り0)。濃さ inten=山1.6/谷0.5。keep=step(nz, band*0.95)、nz=2オクターブのデバイスpx固定ハッシュ(時間で動かない)。集まり s は n2 で時間差。輝度上限0.48。quiet(バー/響/ヒント)は P/cp で同式。
+- main.js: dataset.sandHold='1' で砂の図形を保持(plateTouch は figure 変更せず age=0、plateStep は age<=0.5)。撮影専用フック。shots.json drift-*: tap0.25→2.5s→sandHold→tap0.64→early350/late1250/rest5250ms。
+- 検証は shots/cycle-0NN/probe の PNG を pngjs(ルート node_modules)で3x切り出して縦に並べると差が見える。
+- 履歴: c29 の 2格子粒/変位なしは廃止。sandDrift(main.js)は残存だが未使用に近い。
+- python は無い。編集は node -e か Edit。

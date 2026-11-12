@@ -172,6 +172,7 @@ const plate = { n: 0, m: 0, a: 0, age: 9, idx: -1, at: -1e9, figs: 0, shown: '' 
 document.body.dataset.plateFig = '0';
 function plateTouch(x, quiet) {
   const idx = noteIndex(x), now = performance.now();
+  if (document.body.dataset.sandHold === '1' && plate.idx >= 0) { plate.age = 0; return; } // 撮影用: 砂の図形を保つ
   if (idx !== plate.idx && now - plate.at >= 500) {
     plate.idx = idx; plate.at = now; const pm = (Math.min(innerWidth, innerHeight) < 600 ? PLATE_MODES_S : PLATE_MODES)[idx]; plate.n = pm[0]; plate.m = pm[1];
     plate.a = Math.min(plate.a, 0.12); // 砂がいったんほどけて次の図形へ集まり直す
@@ -182,7 +183,7 @@ function plateTouch(x, quiet) {
 }
 function plateStep(dt) {
   if (!backend || !backend.setPlate) return false;
-  if (fountain) plate.age = Math.min(plate.age, 0.5); // 歌っている間は保つ
+  if (fountain || document.body.dataset.sandHold === '1') plate.age = Math.min(plate.age, 0.5); // 歌っている間（と撮影用フック）は保つ
   plate.age += dt;
   if (plate.age < 1.0) plate.a = Math.min(1, plate.a + dt / 0.7);
   else plate.a = Math.max(0, plate.a - dt / 5.0);
