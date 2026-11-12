@@ -104,19 +104,7 @@
       "url": "/?live=1",
       "steps": [
         {
-          "waitFor": "body[data-stone-laps='1']"
-        },
-        {
-          "wait": 4500
-        },
-        {
-          "waitFor": "body[data-stone-laps='2']"
-        },
-        {
-          "waitFor": "body[data-stone-laps='2']"
-        },
-        {
-          "wait": 160
+          "wait": 1500
         }
       ]
     },
@@ -216,6 +204,24 @@
         },
         {
           "wait": 500
+        }
+      ]
+    },
+    {
+      "name": "vessel-full",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 6000
+        },
+        {
+          "wait": 6000
+        },
+        {
+          "waitFor": "body[data-vessel-call='1']"
+        },
+        {
+          "wait": 1500
         }
       ]
     }

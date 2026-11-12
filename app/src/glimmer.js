@@ -47,7 +47,7 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
     if (opts.sound && power > 0.45) { // 縁の点線の光
       while (sparks.length >= 5) sparks.shift();
       const n = W <= 600 ? 12 : 18, r = rng(Math.floor(sx * 7 + sy * 13 + now) | 1), a0 = r() * 6.283, list = [];
-      for (let i = 0; i < n; i++) list.push({ a: a0 + (i + (r() - 0.5) * 0.6) / n * 6.283, ph: r() * 6.283, f: 9 + r() * 7, rad: 1.5 + r() * 1.0 });
+      for (let i = 0; i < n; i++) list.push({ a: a0 + (i + (r() - 0.5) * 0.6) / n * 6.283, ph: r() * 6.283, f: 9 + r() * 7, rad: 1.3 + r() * 0.9, j: (r() - 0.5) * 5 });
       sparks.push({ x: sx, y: sy, t0: now, list });
     }
     const reach = 2000 * Math.max(0.35, Math.min(1.2, power)); // これより遅く届く粒は光らせない
@@ -94,15 +94,16 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
       if (age > SPARK_LIFE) { sparks.splice(k, 1); continue; }
       if (age < 90) continue;
       const u = age / SPARK_LIFE, env = Math.min(1, age / 220) * Math.pow(1 - u, 0.9);
-      const R = sp * age / 1000 * 1.06;
+      const R0 = sp * age / 1000;
       for (const q of s.list) {
+        const R = R0 + q.j; // 輪の縁の近く（± 2.5px の揺れ）
         const x = s.x + Math.cos(q.a) * R, y = s.y + Math.sin(q.a) * R;
         if (x < 6 || x > W - 6 || y < 70 || y > H - 190) continue; // 「響」・ヒント・バーの領域には出さない
         let al = LIT_CAP * env * (0.7 + 0.3 * Math.sin(q.ph + age / 1000 * q.f));
         if (st) { const d = Math.hypot(x - st.x, y - st.y), e = st.r * 1.12; if (d < e + 24) al *= Math.max(0, (d - e) / 24); }
         if (al < 0.02) continue;
-        ctx2.fillStyle = `rgba(${c},${(al * 0.3).toFixed(3)})`;
-        ctx2.beginPath(); ctx2.arc(x, y, q.rad * 3, 0, 6.283); ctx2.fill();
+        ctx2.fillStyle = `rgba(${c},${(al * 0.2).toFixed(3)})`; // 点の 2.2 倍・不透明度 1/5 のごく小さな芯の光
+        ctx2.beginPath(); ctx2.arc(x, y, q.rad * 2.2, 0, 6.283); ctx2.fill();
         ctx2.fillStyle = `rgba(${c},${al.toFixed(3)})`;
         ctx2.beginPath(); ctx2.arc(x, y, q.rad, 0, 6.283); ctx2.fill();
       }
@@ -133,10 +134,10 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
         if (d < e + 24) al *= Math.max(0, (d - e) / 24);
       }
       if (al < 0.01) continue;
-      const r = p.rad * (1 + 0.45 * p.lit);
-      if (p.lit > 0.08) { // 点灯中だけ、ごく淡い芯のにじみ
-        ctx2.fillStyle = `rgba(${c},${(0.1 * p.lit).toFixed(3)})`;
-        ctx2.beginPath(); ctx2.arc(x, y, r * 2.8, 0, 6.283); ctx2.fill();
+      const r = p.rad + 0.6 * p.lit; // 点灯で半径 +0.6px（鋭い点のまま）
+      if (p.lit > 0.08) { // 芯の光: 点の 2.2 倍・不透明度は点の 1/5（ハローにしない）
+        ctx2.fillStyle = `rgba(${c},${(al * 0.2).toFixed(3)})`;
+        ctx2.beginPath(); ctx2.arc(x, y, r * 2.2, 0, 6.283); ctx2.fill();
       }
       ctx2.fillStyle = `rgba(${c},${al.toFixed(3)})`;
       ctx2.beginPath(); ctx2.arc(x, y, r, 0, 6.283); ctx2.fill();

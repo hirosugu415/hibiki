@@ -377,6 +377,7 @@ function onDown(e) {
   pointers.set(e.pointerId, p);
   tap(x, y, 1);
   letterRec.record(x, y, 1);
+  vesselAdd(1);
   armHold(e.pointerId, p);
 }
 function strokeTo(p, x, y, fromGhost) {
@@ -458,6 +459,7 @@ const ghost = createGhost({
     dotShow(x, y);
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
     tap(x, y, vel);
+    vesselAdd(DEMO ? 1.4 : 1); // デモの幽霊は約 10 秒で満たす
   },
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
@@ -646,7 +648,7 @@ function copyFallback(url) {
 function shareLetter() {
   const url = letterRec.commit();
   if (!url) { document.body.dataset.letterShare = 'none'; return; }
-  const done = (ok) => { document.body.dataset.letterShare = ok ? '1' : 'fail'; if (ok) hintSay('手紙を渡しました', 2000); };
+  const done = (ok) => { document.body.dataset.letterShare = ok ? '1' : 'fail'; if (ok) { hintSay('手紙を渡しました', 2000); vesselReset(); } };
   const viaClipboard = () => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -664,6 +666,28 @@ function shareLetter() {
     } catch { viaClipboard(); }
   } else viaClipboard();
 }
+// ---- 「響」が遊んだ量で満ちる（8 打で満ち、満ちたら一度だけ鈴・以後ゆっくり明滅） ----
+const VESSEL_N = 8;
+let vessel = 0, vesselRung = false;
+document.body.dataset.vessel = '0'; document.body.dataset.vesselCall = '0';
+function vesselShow() {
+  const f = Math.min(1, vessel / VESSEL_N), full = f >= 1;
+  wordmark.style.setProperty('--fill', f.toFixed(3));
+  document.body.dataset.vessel = f.toFixed(3);
+  document.body.dataset.vesselCall = full ? '1' : '0';
+  document.body.setAttribute('data-vesselcall', full ? '1' : '0');
+  wordmark.classList.toggle('ready', full);
+  if (full && !vesselRung) {
+    vesselRung = true;
+    setTimeout(() => { // 輪の 1/4 以下の音量の小さな鈴（ミュート時は audio 側で鳴らない）
+      if (document.hidden) return;
+      audio.play(noteFreq(target, 9) * 2, 0.8, 0.4, 0.12, 1.5, 0.22);
+    }, 900);
+  }
+}
+function vesselAdd(w) { if (vessel >= VESSEL_N) return; vessel = Math.min(VESSEL_N, vessel + w); vesselShow(); }
+function vesselReset() { vessel = 0; vesselRung = false; vesselShow(); }
+
 wordmark.addEventListener('click', shareLetter);
 wordmark.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shareLetter(); }
