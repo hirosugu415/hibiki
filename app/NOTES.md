@@ -30,6 +30,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## 履歴・方針メモ
 - スコア c17〜c23 は 7 で横ばい。「細部の質感」はもう効かない → 通常訪問者の画面全体を変える案が必要。
+- c27: セル4px・粒半径1.4px(中心はセル内[1.7,2.3])・縁smoothstep(0.2,1)。波頭+0.35(帯内上限0.6)・揺れ1.3px(セル余白内。これ以上はセル境界で欠ける)。shots: hold=pointerdownのみeval(離さない), plate-high=eval で画面比率(0.8W,0.47H)をタップ+待ち600。probe出力先は shots/cycle-027/probe/。
 - c26: 粒を丸く・スマホ間引き・波で砂が応える・hold shot 修復(wait4800+waitFor)。
 - c25 は案A(砂の図形)を実装。結果は FEEDBACKv25 を見る。touched ショットは待ち1100msに変更。
 - 採用済み（再提案不可）: 息の水面・長押し泉・離しの輪・石・砂州+鐘・手紙・ムード・こだま・夜光虫・響の満ち。隅から出す輪は不可。

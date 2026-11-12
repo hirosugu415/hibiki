@@ -113,13 +113,13 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 4800
+          "wait": 500
         },
         {
-          "waitFor": "body[data-holding='1']"
+          "eval": "(()=>{const c=document.getElementById('water'),x=innerWidth*0.5,y=innerHeight*0.45;const o={clientX:x,clientY:y,pointerId:9,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));return 1})()"
         },
         {
-          "wait": 1200
+          "wait": 1500
         }
       ]
     },
@@ -263,16 +263,13 @@
       "url": "/?demo=1",
       "steps": [
         {
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),x=innerWidth*0.8,y=innerHeight*0.47;const o={clientX:x,clientY:y,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
           "wait": 600
-        },
-        {
-          "clickAt": [
-            1000,
-            400
-          ]
-        },
-        {
-          "wait": 1100
         }
       ]
     }

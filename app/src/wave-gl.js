@@ -171,14 +171,14 @@ void main(){
   if (uChl.z > 0.001) {
     float cp = uCssPx;
     float mob = 1.0 - step(600.0, min(uRes.x, uRes.y) / cp);     // 縦長スマホ: 線を細く・量を下げる
-    float cell = 3.0 * cp;
+    float cell = 4.0 * cp;
     float wv = clamp(length(g) * 5.0, 0.0, 1.0);                 // 波頭の通過（既に読んだ勾配のみ）
-    vec2 P = gl_FragCoord.xy + normalize(g + vec2(1e-6)) * wv * cp; // 波が通る帯だけ最大 1px 揺れる
+    vec2 P = gl_FragCoord.xy + normalize(g + vec2(1e-6)) * wv * 1.3 * cp; // 波が通る帯だけ最大 1.3px 揺れる（セル内余白の範囲）
     vec2 cid = floor(P / cell);
     float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7), h4 = hash(cid + 7.9);
-    vec2 ctr = (cid + (vec2(1.0) + vec2(h1, h2)) / 3.0) * cell; // 粒の中心（半径 1px が 3px セルに収まる）
+    vec2 ctr = (cid + (vec2(1.7) + vec2(h1, h2) * 0.6) / 4.0) * cell; // 粒の中心（半径1.4pxがセルの縁に触れない）
     float rd = length(P - ctr) / cp;
-    if (rd < 1.15) {
+    if (rd < 1.45) {
       float shortS = min(uRes.x, uRes.y);
       vec2 Q = (ctr - uRes * 0.5) / shortS + 0.5;
       float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
@@ -190,14 +190,15 @@ void main(){
       float dn = d / mix(0.012, 0.0085, mob);                 // 節の線からの距離（線幅=短辺の1.2%単位）
       float s = smoothstep(h3 * 0.45, h3 * 0.45 + 0.55, uChl.z); // 粒ごとに時間差で集まる
       float reach = mix(7.0, 0.7, s);
-      float keep = step(h1 + h2 * 0.35, mix(0.18, 1.05, s) - 0.1 * dn / reach - 0.12 * mob);
+      float keep = step(h1 + h2 * 0.35, mix(0.2, 1.2, s) - 0.1 * dn / reach - 0.1 * mob);
       float line = 1.0 - smoothstep(0.55, 1.0, dn / reach);
-      float grain = 1.0 - smoothstep(0.45, 1.0, rd);          // 丸く柔らかい粒
+      float rg = rd / 1.4;
+      float grain = 1.0 - smoothstep(0.2, 1.0, rg); grain *= grain * (3.0 - 2.0 * grain) * 0.4 + 0.6 * grain; // 縁の柔らかい丸粒
       float tone = 0.6 + 0.4 * h4;                            // 粒ごとの明るさのばらつき
       float br = mix(0.05, 0.48, s) * line * keep * grain * tone * smoothstep(0.0, 0.12, uChl.z);
       br *= 1.0 - 0.18 * mob;
-      br += 0.15 * wv * grain * keep * line * s;              // 輪が通る帯だけ砂がわずかに明るい
-      br = min(br, 0.5);
+      br += 0.35 * wv * grain * keep * line * s;              // 輪が通る帯だけ砂が明るい
+      br = min(br, 0.48 + 0.12 * wv);
       // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
       vec2 cs = uRes / cp, qc = ctr / cp;
       float yt = cs.y - qc.y;
