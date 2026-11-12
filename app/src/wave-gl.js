@@ -193,8 +193,8 @@ void main(){
     float s = smoothstep(n2 * 0.45, n2 * 0.45 + 0.55, uChl.z);   // 塊ごとに時間差で集まる
     // 波頭: 山で締まって濃く、谷でほどけて薄く（読み済みの h のみ）
     float wn = clamp(h * SAND_K, -1.0, 1.0);
-    float wf = wn > 0.0 ? mix(1.0, 0.6, wn) : mix(1.0, 1.8, -wn);
-    float inten = wn > 0.0 ? mix(1.0, 1.6, wn) : mix(1.0, 0.5, -wn);
+    float wf = wn > 0.0 ? mix(1.0, 0.8, wn) : mix(1.0, 1.4, -wn);
+    float inten = wn > 0.0 ? mix(1.0, 1.3, wn) : mix(1.0, 0.7, -wn);
     float w = mix(3.3, 2.4, mob) * wf * mix(3.2, 1.0, s);
     float band = exp(-(dcss / w) * (dcss / w)) * inten * mix(0.3, 1.0, s) * mix(1.0, 0.8, mob);
     // 芯は下駄を履かせて抜けにくく、縁だけ smoothstep で粒にほどける
@@ -214,13 +214,13 @@ void main(){
     float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has;
     float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
     float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
-    float br = 0.4 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
+    float br = 0.26 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
     // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
     br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
     br *= mix(1.0, 1.55 * mix(1.0, 2.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
-    float sc = mix(0.32, 0.46, mob);
+    float sc = mix(0.2, 0.3, mob);
     br = sc * (1.0 - exp(-br / sc));   // 交点で光が溜まらないよう soft-clamp
-    br = min(br, mix(0.27, 0.34, mob));
+    br = min(br, mix(0.17, 0.21, mob));
     br *= mix(1.0, smoothstep(0.0, 6.0, dpx), has);   // 石が最前面: 輪郭の内側は 0、外 6px で立ち上がる
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;

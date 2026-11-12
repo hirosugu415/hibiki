@@ -76,7 +76,12 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - afterimage.js: 色 = accent*0.78 + 0.11 + 0.11*[.35,.85,.9]（白混ぜ約11%＋青緑寄り）。probe は shots/cycle-043/probe。steps は shots/cycle-43/probe/{push,wash,shown}.json。
 
 ## c45 覚える水（loop.js 新規）
-- createLoop({play,short,onState,onLearn}).tap(x,y,vel,human)。フレーズ=3〜6打・間隔≤1.5s・全体≤4.6s。直近8s内の前フレーズと一致（位置0.08短辺・間隔±25%/最小90ms・打数一致・2か所以上に散る）で学習→1.2s後に最大4周(AMPS .35/.26/.17/.09, 周期=全体+1.1s≤6s)→off。human の触れは残り2周＋音量半減、1周目前なら中止。同フレーズ再演で再学習。
+- createLoop({play,short,onState,onLearn}).tap(x,y,vel,human)。フレーズ=3〜6打・間隔≤1.5s・全体≤4.6s。直近8s内の前フレーズと一致（位置0.11短辺・間隔±40%(長い方基準)/最小90ms・打数一致・2か所以上に散る）で学習→1.2s後に最大4周(AMPS .35/.26/.17/.09, 周期=全体+1.1s≤6s)→off。human の触れは残り2周＋音量半減、1周目前なら中止。同フレーズ再演で再学習。
 - main.js: `memory`(~404)。onDown→memory.tap(..,true)、DEMO の幽霊の打→false。周回の打は quietTap=true で tap(record=false)（残像に触れない）。dataset.loop=off/learned/cycle,k/4。響の呼吸=#wordmark.learn(CSS)。
 - ghost.js loopAct: 同じ4打(間600ms)を先頭から4.5s間隔で2度、後22秒待つ。seed=1 は最初の一幕、通常demo は motifN===4。shots: loop-cycle(15s)/loop-end(25s)。probe 検証 steps は shots/cycle-45/probe/{loop,fp}.json（偽陽性: 2打・同点3連打・別フレーズは off）。
 - 落とし穴: probe の eval で打を並べるとき、フレーズ長+1.5s 以上待たないと次の run と結合する。
+
+## c46 許容緩和・砂の淡化
+- loop.js POS_TOL .11 / DT_TOL .4（|da-db|≤.4*max(da,db)）。probe のタイマーは±100ms揺れる→「±30%」テストは長い方基準でないと落ちる。フレーズ間は 5.5s 以上あける（<GAP+前フレーズ確定で結合する）。steps は shots/cycle-46/probe/{gen.mjs,tol.json}、偽陽性は cycle-45/probe/fp.json。
+- 砂(wave-gl.js): br係数.4→.26、sc .2/.3、上限 .17/.21(mob)、線幅差を縮小(wf 0.8–1.4, inten 0.7–1.3)。halo倍率は不変。
+- #wordmark.learn は2sで外れ元に戻る(確認済)。'ready'時の青い発光は仕様(呼吸6s周期で見え方が揺れる)。

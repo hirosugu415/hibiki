@@ -1,6 +1,6 @@
 // 覚える水: 人が同じフレーズを 2 度弾くと、水が覚えて静かに最大 4 周まわって溶ける。
-// フレーズ = 3〜6 打・各間隔 ≤1.5s・全体 ≤4.6s。2 つ目が前回と一致（位置 0.08 以内・間隔 ±25%・打数一致）で学習。
-const GAP = 1500, MAX_SPAN = 4600, HORIZON = 8000, POS_TOL = 0.08, DT_TOL = 0.25;
+// フレーズ = 3〜6 打・各間隔 ≤1.5s・全体 ≤4.6s。2 つ目が前回と一致（位置 0.11 以内・間隔 ±40%（長い方基準）・打数一致）で学習。
+const GAP = 1500, MAX_SPAN = 4600, HORIZON = 8000, POS_TOL = 0.11, DT_TOL = 0.4;
 const AMPS = [0.35, 0.26, 0.17, 0.09];
 
 export function createLoop({ play, short, onState, onLearn }) {
@@ -21,7 +21,7 @@ export function createLoop({ play, short, onState, onLearn }) {
       if (Math.hypot((a[i].x - b[i].x) * s.w, (a[i].y - b[i].y) * s.h) / s.m > POS_TOL) return false;
       if (i) {
         const da = a[i].t - a[i - 1].t, db = b[i].t - b[i - 1].t;
-        if (Math.abs(da - db) > Math.max(90, DT_TOL * db)) return false;
+        if (Math.abs(da - db) > Math.max(90, DT_TOL * Math.max(da, db))) return false;
       }
     }
     return true;
