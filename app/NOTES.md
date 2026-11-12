@@ -28,4 +28,4 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - main.js/style.css は CRLF: node で編集時 \r\n 正規化しないと無言で無変更。Bash heredoc に日本語+記号大量は失敗しやすい→Writeで一旦ファイル。
 - IDEAS.md は LF・追記のみ。コミットに Claude/Co-Authored-By を入れない。git の巻き戻し系コマンド禁止。
 - 採否履歴は IDEAS.md の「決定」節。B 空を映す水=c53実装。A 奥行きの音 / C 近づく指 は未実装。
-- probe のスクショは shots/cycle-053/probe/(ゼロ埋め3桁)に出る。輝度比較は pngjs(ルート node_modules)。デモの幽霊の指で±1〜2%は揺れる。
+- probe のスクショは shots/cycle-053/probe/(ゼロ埋め3桁)に出る。輝度比較は pngjs(ルート node_modules)。デモで±1〜2%揺れる。
