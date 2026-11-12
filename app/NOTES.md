@@ -48,3 +48,5 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 縁: keep=smoothstep(nz-0.12,nz+0.12, band*0.95+0.55*core)。core=exp(-(d/(0.5w))^2)*mix(.3,1,s)（芯の下駄）。nz=0.7*n1+0.3*n4(floor(P*0.72) ブロック)。n2 は s の時間差専用に残す。
 - 目覚め: env=max(sqrt(h²+6v²), glow*0.5)（読み済みのみ）、awake=mix(SAND_SLEEP(0.35),1,smoothstep(0.006,0.05,env))を br に掛ける。0.0015〜0.016 では波の尾が広く残り差が出なかった（env×40 のデバッグ表示で確認）。
 - probe: デフォルトはデモ付きURL。素のURLで使うなら `--url "/?q=1"`。steps に goto は無い。出力は shots/cycle-0NN/（3桁）。steps.json は shots/ 外に置くと散らからない。
+
+- c32(innovation): IDEAS に A年輪の石/B曇る水/C初音を提案。推しC(砂を初打まで眠らせ、初打で波頭に乗って目覚める)。採用時は SAND_SLEEP の下限を uniform 化。
