@@ -46,3 +46,7 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - wave-gl.js 底の光: asp.x<0.8（縦長）のとき斜め4点を追加で読み lw を平均 → 金の縁のギザつきが減った（desktop 不変）。打点中心付近の小さな金の欠片は残る。
 - 雫の音: OfflineAudioContext をProxyで包み app/dist に一時ページ(audio_t.js)を置いて計測（dist は git 無視）。ピーク比(雫/主)≈0.55, RMS比≈0.31-0.45。
 - headless の sim 時間は遅く、デモ撮影は打点・時刻が揺れる。mobile 確認は実クリックで `clickAt` 後 wait1500 が安定。
+
+## c95: 金の染み対策 (wave-gl.js uCaus ブロック)
+- 縦長(asp.x<0.8): 帯を rd/z 0.85〜1.15 に狭め、画面端8%で fade、金強度 max 0.56→0.26。全幅: 輪が小さい(uFl*.z<0.07〜0.15)間は金を出さない(中心付近の欠片対策)。「響」中心(CSS 46,40)から 60〜130px で金を 30%→100%。
+- 確認: mobile 5 枚で輪沿いの細い弧のみ・楔なし。desktop 5.8s で響クリア・欠片なし。
