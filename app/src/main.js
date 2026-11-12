@@ -240,6 +240,7 @@ function tick(now) {
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
   last = now;
   if (bowl) bowlStep(dt);
+  springStep(dt);
   const k = 1 - Math.exp(-dt / 0.3);
   let moving = false;
   for (const key of PKEYS) for (let i = 0; i < pal[key].length; i++) {
@@ -476,9 +477,60 @@ const echo = createEcho({
 const HOLD_MS = 260;
 document.body.dataset.holding = '0';
 let fountain = null; // { owner, ref, timer, voice }
+// ---- 双つの泉(c77): 離した泉は約 8 秒、線形に弱まりながら湧き続ける（最大 2 つ）。共有の拍で打つので、2 つ目を置くと干渉縞が静止して見える ----
+const SPRINGS_ON = params.get('springs') !== '0';
+const SPR_DEMO = params.get('springs') === 'demo' || params.get('sprdemo') === '1'; // 撮影用: 1.5s 後に A を置いて離し、続けて B を長押し
+const SPR = { LIFE: 8000, get AMP() { return parseFloat(params.get("spamp")) || (viewW < 600 ? 0.4 : 0.24); }, RAD: 0.016, get LAM() { return parseFloat(params.get("splam")) || (viewW < 600 ? 0.085 : 0.11); }, F: () => 0.68 * 95 * (viewW / 420) / (SPR.LAM * Math.min(viewW, viewH)) }; // 振幅は通常の泉(0.2)の 0.6 倍・波長は短辺の 11%
+const springs = []; // { x, y, idx, t0, end, lv0, voice, n }
+let sprClock = 0;
+const sprLevel = (s, now) => Math.max(0, s.lv0 * (1 - (now - s.t0) / (s.end - s.t0)));
+const springsLive = () => SPRINGS_ON && springs.length > 0;
+function springsData() {
+  const pts = springs.map((s) => [s.x, s.y]);
+  if (fountain && springsLive()) pts.push([fountain.ref.x, fountain.ref.y]);
+  const q = (v) => (+v).toFixed(3);
+  document.body.dataset.springs = pts.length ? pts.length + ',' + pts.slice(0, 2).map((p) => q(p[0]) + ',' + q(p[1])).join(',') : '0';
+}
+function springKill(s, ms) {
+  const now = performance.now();
+  s.lv0 = sprLevel(s, now); s.t0 = now; s.end = now + ms;
+  if (s.voice) { s.voice.fade(ms / 1000); s.voice = null; }
+}
+// 連続駆動: 共有のシミュレーション時間 sprT の正弦で全ての泉を同位相・同周波数で駆動 → 縞が静止して見える
+let sprT = 0, sprPh = 0;
+function springStep(dt) {
+  if (!SPRINGS_ON || !backend) return;
+  const now = performance.now();
+  for (let i = springs.length - 1; i >= 0; i--) if (now >= springs[i].end) springs.splice(i, 1);
+  const f = fountain;
+  if (!springs.length) { if (f && f.shared) { f.shared = false; springsData(); if (!f.timer) fountainTick(f); } else if (sprClock) { sprClock = 0; springsData(); } return; }
+  sprClock = 1;
+  sprT += dt;
+  const w = Math.sin(2 * Math.PI * SPR.F() * sprT), g = SPR.AMP * (dt / 0.07) * w;
+  for (const s of springs) ripple(s.x, s.y, g * sprLevel(s, now), SPR.RAD, 600);
+  if (f && f.shared) ripple(f.ref.x, f.ref.y, g, SPR.RAD, 600);
+  const ph = Math.floor(sprT * SPR.F() / 2); // 2 周期ごとに粒が脈打つ（光だけ）
+  if (ph !== sprPh) {
+    sprPh = ph;
+    for (const s of springs) { const l = sprLevel(s, now); if (l > 0.3) glimmer.hit(s.x, s.y, 0.35 * l); }
+    if (f && f.shared) { glimmer.hit(f.ref.x, f.ref.y, 0.4); if (f.owner === 'ghost') dotShow(f.ref.x, f.ref.y); }
+  }
+  springsData();
+}
+function springClockEnsure() { sprClock = 1; }
+function springAdopt(f) { // 離した泉を余韻の泉にする
+  const now = performance.now();
+  while (springs.length >= 2) springKill(springs.shift(), 400);
+  springs.push({ x: f.ref.x, y: f.ref.y, idx: f.idx, t0: now, end: now + SPR.LIFE, lv0: 1, voice: f.voice, n: 0 });
+  if (f.voice) f.voice.fade(SPR.LIFE / 1000);
+  springClockEnsure();
+  springsData();
+}
 function fountainTick(f) {
   f.timer = 0;
   if (fountain !== f) return;
+  if (springsLive()) { f.shared = true; springClockEnsure(); springsData(); return; } // 共有の拍に合流
+  f.shared = false;
   const k = noteIndex(f.ref.x) / (NOTE_COUNT - 1); // 0=低 … 1=高
   // 低い音ほどゆったり・太く、高い音ほど細かく
   ripple(f.ref.x, f.ref.y, 0.2, mix(0.022, 0.014, k), 1400);
@@ -489,14 +541,23 @@ function fountainTick(f) {
 }
 function fountainStart(owner, ref) {
   if (!backend || fountain) return;
-  const f = fountain = { owner, ref, timer: 0, voice: null };
+  if (SPRINGS_ON) while (springs.length >= 2) springKill(springs.shift(), 400); // 3 つ目: 最古を即フェードアウト
+  const f = fountain = { owner, ref, timer: 0, voice: null, idx: noteIndex(ref.x), shared: false };
   plateTouch(ref.x, false);
-  const m = target, hz = noteFreq(m, noteIndex(ref.x));
+  const m = target;
+  let lv = 1;
+  if (springsLive()) { // 近い 2 音（隣り合う音階音）にして、ごく緩い唸りに
+    const L = springs[springs.length - 1];
+    f.idx = Math.max(0, Math.min(NOTE_COUNT - 1, L.idx + (ref.x >= L.x ? 1 : -1)));
+    lv = 0.72;
+  }
+  const hz = noteFreq(m, f.idx);
   { const dd = dents.get(owner); if (dd) dd.fountain = true; }
-  f.voice = audio.voiceHold(hz, Math.min(1, Math.max(0, 1 - ref.y + m.bright)), (ref.x * 2 - 1) * 0.5);
+  f.voice = audio.voiceHold(hz, Math.min(1, Math.max(0, 1 - ref.y + m.bright)), (ref.x * 2 - 1) * 0.5, lv);
   document.body.dataset.holding = '1';
   document.body.dataset.holdHz = hz.toFixed(1);
   fountainTick(f);
+  springsData();
 }
 // reward=true は正常に離したとき（pointerup / ゴーストの長押し終わり）だけ。1 回の離しにつき必ず 1 回。
 function fountainStop(owner, reward = false) {
@@ -504,9 +565,10 @@ function fountainStop(owner, reward = false) {
   if (!f || (owner !== undefined && f.owner !== owner)) return;
   fountain = null;
   if (f.timer) clearTimeout(f.timer);
-  if (f.voice) f.voice.release();
   document.body.dataset.holding = '0';
   delete document.body.dataset.holdHz;
+  if (reward && SPRINGS_ON && backend) springAdopt(f);
+  else { if (f.voice) f.voice.release(); springsData(); }
   if (reward) releaseRing(f);
 }
 // 離した瞬間の大きなひと輪: 泉の輪より太く（半径 約 1.5 倍）・強く（振幅 約 2 倍）ゆっくり広がる。
@@ -834,6 +896,13 @@ function ghostPlayNote() {
   clearTimeout(ghostPlayTimer);
   ghostPlayTimer = setTimeout(() => { document.body.dataset.ghostPlay = '0'; }, 6000);
 }
+if (SPR_DEMO) {
+  const S = () => Math.min(viewW, viewH), ys = () => (viewH < viewW ? 0.5 : 0.44);
+  const pa = { x: 0.5 - (parseFloat(params.get("spd")) || (viewW < 600 ? 0.34 : 0.28)) / 2 * S() / viewW, y: ys() }, pb = { x: 0.5 + (parseFloat(params.get("spd")) || (viewW < 600 ? 0.34 : 0.28)) / 2 * S() / viewW, y: ys() };
+  setTimeout(() => { tap(pa.x, pa.y, 0.7); fountainStart('demoA', pa); }, 1500);
+  setTimeout(() => fountainStop('demoA', true), 1700);
+  setTimeout(() => { tap(pb.x, pb.y, 0.7); fountainStart('demoB', pb); }, 2700);
+}
 const ghost = createGhost({
   bar() { return { x: shoal.x, y: shoal.y, rx: barRx() / viewW }; },
   stone() { return { x: stone.x, y: stone.y, rx: stoneR() / viewW, ry: stoneR() / viewH }; },
@@ -843,6 +912,7 @@ const ghost = createGhost({
     grabPing(); wake(1800);
   },
   tap(x, y, vel) {
+    if (SPR_DEMO) return;
     if (BOWL_PARAM === 'demo' && (bowl || bowlCount === 0 || performance.now() < 8000)) return; // 撮影用: 花のデモ中は幽霊の打を休ませる（ほどける様子だけを見せる）
     // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
     const sr = stoneR() * 1.25;
@@ -858,7 +928,7 @@ const ghost = createGhost({
     vesselAdd(DEMO ? 2 : 1); // デモの幽霊は約 10 秒で満たす
   },
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
-  holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
+  holdStart(x, y) { if (SPR_DEMO) return; ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
   holdEnd(reward) { fountainStop('ghost', !!reward); },
   pressStart(x, y) { dotShow(x, y); dentStart('ghostPress', x, y); },
   pressEnd() { dentEnd('ghostPress', true); },
@@ -959,7 +1029,7 @@ let stoneLaps = 0;
 document.body.dataset.stoneLaps = '0';
 function stoneLap() {
   if (document.hidden || !backend || backend.kind !== 'webgl2') return false;
-  if (stone.grab || fountain || pointers.size || performance.now() - lastTouch < 3500) return false;
+  if (stone.grab || fountain || springsLive() || pointers.size || performance.now() - lastTouch < 3500) return false;
   const r = stoneR() * 1.06, N = 18;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2;
@@ -1021,7 +1091,7 @@ function rainDrop() {
   const now = performance.now();
   while (rainLive.length && rainLive[0] < now) rainLive.shift();
   document.body.dataset.rainLive = String(rainLive.length);
-  if (document.hidden || !backend || backend.kind !== 'webgl2' || rainLive.length >= RAIN_MAX_LIVE || pointers.size || fountain) return false;
+  if (document.hidden || !backend || backend.kind !== 'webgl2' || rainLive.length >= RAIN_MAX_LIVE || pointers.size || fountain || springsLive()) return false;
   const sx = stone.x * viewW, sy = stone.y * viewH, avoid = stoneR() * 1.9;
   const top = 100 / viewH, bottom = 1 - 225 / viewH;
   for (let tries = 0; tries < 8; tries++) {

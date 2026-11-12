@@ -40,3 +40,11 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - mobile の ×0.72 を撤廃(MOBILE_AMP 既定1, ?bamp= で試せる)。mobile は desktop よりやや淡く丸いが6枚数えられる。
 - 駆動は終端 0.9s かけて減衰(余韻)。BOWL_PARAM=demo 中は幽霊の打を止める(撮影の花以外の波を出さない)。bowl-late は wait 3900(発火後約2.4s)。mobile は desktop より早く消える(4.3s でほぼ消滅)。
 - probe 出力先は shots/cycle-0NN(3桁)。
+
+## c77: 双つの泉(springs)
+- main.js SPR/springs[]/springStep(dt)/springAdopt/springKill(fountain節の直後)。離した泉(pointerup, reward)は springAdopt で余韻の泉(8s線形)に。最大2(3つ目で最古を400msで消す)。tick から springStep(dt): 共有sim時間 sprT の sin で全泉を同位相・同周波数の**連続駆動**(インパルス打ちは波が届かず縞にならなかった)。held の泉は springs があれば f.shared=true で合流、無くなれば元のタイマーへ戻る。
+- 波長 LAM=短辺の11%(mobile 8.5%)、AMP desktop0.24/mobile0.4(0.12では縞が出ない)、f=v/(LAM*S), v=0.68*95*viewW/420。mobile は波速がpx換算で遅く届かないので高振幅・短波長が必要。
+- 音: audio.voiceHold(freq,bright,pan,level) / voice.fade(sec)。2つ目は隣の音階音(idx±1)・level0.72。
+- フラグ: ?springs=0 で無効、?sprdemo=1 または ?springs=demo で撮影用(1.5s A置き→1.7s離す→2.7s B長押し、ghostのtap/holdは抑止)。?spamp= ?splam= ?spd= で調整。dataset.springs="本数,x1,y1,x2,y2"。
+- ghost.js springsAct: seed デモ 17s 付近(loopAct内)。stone/rain は springsLive() 中は休む。
+- 作業メモ: 一時ファイルは shots/cycle-77/ に置く(/tmp は使わない)。

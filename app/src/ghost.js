@@ -45,7 +45,19 @@ export function createGhost(api, { demo, seed }) {
     // 一度だけの長めの押下（沈む指）: 凹みと、離した後の柔らかい反動
     if (api.pressStart) { later(() => { if (alive) api.pressStart(0.62, 0.6); }, 8200); later(() => { if (api.pressEnd) api.pressEnd(); }, 8550); }
     later(rub, 12500);
+    later(springsAct, 17000);
     later(playMotif, 6300 + 22000);
+  }
+
+  // 双つの泉（デモ）: 長押しして離す → 少し離れた場所でもう一度長押し。余韻の泉と新しい泉が干渉縞を作る
+  function springsAct() {
+    if (!alive || !api.metric) return;
+    const m = api.metric(), S = Math.min(m.w, m.h), d = (m.w < 600 ? 0.34 : 0.28) * S / m.w;
+    const x1 = Math.max(0.12, 0.5 - d / 2), y = m.h > m.w ? 0.5 : 0.56, x2 = x1 + d;
+    api.tap(x1, y, 0.6); later(() => { if (alive) api.holdStart(x1, y); }, 280);
+    later(() => { api.holdEnd(true); api.dotHide(); }, 1900);
+    later(() => { if (alive) api.tap(x2, y, 0.6); }, 3200); later(() => { if (alive) api.holdStart(x2, y); }, 3480);
+    later(() => { api.holdEnd(true); api.dotHide(); }, 7500);
   }
 
   function playMotif() {

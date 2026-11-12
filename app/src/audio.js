@@ -170,14 +170,14 @@ export function createAudio() {
 
 
   // 持続する声（長押しの泉）。サステイン + 5Hz・約 ±0.3% のビブラート。release() で 0.6 秒以内に必ず止まる。
-  function voiceHold(freq, bright, pan = 0) {
+  function voiceHold(freq, bright, pan = 0, level = 1) {
     if (unavailable || muted || !gesture || !ctx || ctx.state !== 'running') return null;
     try {
       const t = ctx.currentTime;
       trim();
       const out = ctx.createGain();
       out.gain.setValueAtTime(0, t);
-      out.gain.linearRampToValueAtTime(1, t + 0.22);
+      out.gain.linearRampToValueAtTime(level, t + 0.22);
       const filt = ctx.createBiquadFilter();
       filt.type = 'lowpass'; filt.Q.value = 0.4;
       filt.frequency.value = 900 + 6000 * Math.pow(bright, 1.4);
@@ -209,6 +209,7 @@ export function createAudio() {
         try { out.disconnect(); filt.disconnect(); } catch { /* noop */ }
       };
       return {
+        fade(sec) { if (done) return; done = true; try { const n = ctx.currentTime; if (out.gain.cancelAndHoldAtTime) out.gain.cancelAndHoldAtTime(n); else out.gain.cancelScheduledValues(n); out.gain.linearRampToValueAtTime(0, n + sec); rec.stop(n + sec + 0.1); } catch { /* noop */ } },
         release() {
           if (done) return; done = true;
           try {

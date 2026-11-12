@@ -854,6 +854,33 @@
           "wait": 3200
         }
       ]
+    },
+    {
+      "name": "springs-one",
+      "url": "/?demo=1&seed=1&hour=13&sprdemo=1",
+      "steps": [
+        {
+          "wait": 2200
+        }
+      ]
+    },
+    {
+      "name": "springs-two",
+      "url": "/?demo=1&seed=1&hour=13&sprdemo=1",
+      "steps": [
+        {
+          "wait": 4800
+        }
+      ]
+    },
+    {
+      "name": "springs-off",
+      "url": "/?demo=1&seed=1&hour=13&sprdemo=1&springs=0",
+      "steps": [
+        {
+          "wait": 4800
+        }
+      ]
     }
   ]
 }
