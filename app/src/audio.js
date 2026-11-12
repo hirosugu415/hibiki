@@ -73,11 +73,14 @@ export function createAudio() {
     publish();
   }
 
+  let revK = 1, lastMood = null;
+  function setReverbK(k) { revK = k; if (lastMood) setMood(lastMood); }
   function setMood(m) {
+    lastMood = m;
     if (!ctx) { pendingMood = m; return; }
     const t = ctx.currentTime;
-    wetS.gain.setTargetAtTime(m.wetShort, t, 0.25);
-    wetL.gain.setTargetAtTime(m.wetLong, t, 0.25);
+    wetS.gain.setTargetAtTime(m.wetShort * (2 - revK), t, 0.25);
+    wetL.gain.setTargetAtTime(m.wetLong * revK, t, 0.25);
     echoSend.gain.setTargetAtTime(m.echo, t, 0.25);
   }
   let pendingMood = null;
@@ -239,5 +242,5 @@ export function createAudio() {
   function applyPendingMood() { if (ctx && pendingMood) { setMood(pendingMood); pendingMood = null; } }
 
   publish();
-  return { unlock, play, voiceHold, sand, setMood, setMuted, applyPendingMood, get muted() { return muted; }, get live() { return !!(ctx && !unavailable && !muted && gesture && ctx.state === 'running'); } };
+  return { unlock, setReverbK, play, voiceHold, sand, setMood, setMuted, applyPendingMood, get muted() { return muted; }, get live() { return !!(ctx && !unavailable && !muted && gesture && ctx.state === 'running'); } };
 }

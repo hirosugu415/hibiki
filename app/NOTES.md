@@ -20,8 +20,10 @@
 - 右上の持ち上げ(c55): wave-gl の base 直後 rtk(右30%×上38%×横長のみ)で base+15%、vignette 係数も×(1-.3rtk)。mobile 不変。
 - 空 on/off(c55実測,9s,デモ固定): desktop L 40.8(off)/41.9(on) 、mobile 50.0/50.6。差+2.6%/+1.2%、色味同じ→空は問題なし。probe は出力名が desktop-s.png で毎回上書き→都度 mv。URL は "/" 単独だと MSYS が壊すので必ず "/?demo=1" 形式。
 
+- 刻の水(c57): moods.js の hourTint(hour)=HOUR_KEYS(1夜/6朝/13昼/19夕,循環,ease補間)→{mul,add,semis,rev}。main.js applyHour(): ?hour=0–24 固定、無効/未指定は実時刻(60sごと再計算)。空色は tick 内で palT.sky=sky*mul+add (add≤0.08) を backend.frame に渡す(pal自体は不変)。音階は setHourPitch(semis)→noteFreq、残響は audio.setReverbK(k): wetLong*k, wetShort*(2-k)。dataset.hour="h,m..+a..,rev", dataset.hourPitch。hour=13 は恒等(回帰ゼロ)。shots.json は全画面 hour=13 固定+hour-morning/evening/night。
+
 ## 状態フック（document.body.dataset.*）
-plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive sky depth
+plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive sky depth hour hourPitch
 
 ## 撮影・probe
 - `app/shots.json` に画面宣言。デモ `/?demo=1&seed=1`（幽霊の指が自動演奏。開始4.5s）。撮影 wait 合計は幅あたり25s以下。

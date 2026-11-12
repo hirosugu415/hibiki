@@ -1,5 +1,5 @@
 import './style.css';
-import { MOODS, MOOD_ORDER, NOTE_COUNT, noteFreq, noteIndex } from './moods.js';
+import { MOODS, MOOD_ORDER, NOTE_COUNT, noteFreq, noteIndex, hourTint, setHourPitch } from './moods.js';
 import { createGL } from './wave-gl.js';
 import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
@@ -69,6 +69,22 @@ snapPalette(mood);
 let lastTouch = -1e9; // 最後に人が触れた時刻（雨粒の抑制に使う）
 const audio = createAudio();
 audio.setMood(mood);
+// ---- 刻の水: ?hour=0–24 で固定。無効・未指定は実時刻（60秒に1回だけ更新） ----
+const hourParam = params.has('hour') && params.get('hour') !== '' ? Number(params.get('hour')) : NaN;
+const HOUR_FIXED = Number.isFinite(hourParam) && hourParam >= 0 && hourParam <= 24;
+let hourTintNow = hourTint(13), hourNow = 13;
+function applyHour() {
+  const d = new Date();
+  hourNow = HOUR_FIXED ? hourParam : d.getHours() + d.getMinutes() / 60;
+  hourTintNow = hourTint(hourNow);
+  setHourPitch(hourTintNow.semis);
+  audio.setReverbK(hourTintNow.rev);
+  const t = hourTintNow, f = (v, n) => v.toFixed(n);
+  document.body.dataset.hour = f(hourNow, 1) + ',m' + t.mul.map((v) => f(v, 2)).join(':') + '+a' + t.add.map((v) => f(v, 3)).join(':') + ',' + f(t.rev, 3);
+  document.body.dataset.hourPitch = f(t.semis, 2);
+}
+applyHour();
+if (!HOUR_FIXED) setInterval(() => { applyHour(); wake(600); }, 60000);
 window.addEventListener('pointerdown', (e) => {
   lastTouch = performance.now(); audio.unlock(); audio.applyPendingMood();
   if (!(e.target && e.target.closest && e.target.closest('#wordmark'))) letterVoice();
@@ -256,7 +272,8 @@ function tick(now) {
   document.body.dataset.clearK = clearK.toFixed(3);
   if (backend.setSky) backend.setSky(SKY_K);
   document.body.dataset.sky = target.id + ',' + SKY_K.toFixed(2) + ',' + (1 - 0.2 * Math.min(1, innerWidth / innerHeight)).toFixed(3);
-  try { backend.frame(dt, clearK ? { ...pal, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : pal); } catch { /* 描画失敗でも落とさない */ }
+  const palT = { ...pal, sky: pal.sky.map((v, i) => Math.max(0, v * hourTintNow.mul[i] + hourTintNow.add[i])) };
+  try { backend.frame(dt, clearK ? { ...palT, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : palT); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
