@@ -8,12 +8,8 @@
 ## 状態フック（document.body.dataset.*）
 plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR afterimage rain sky depth hour touch disp hover floor gather bowl springs gate shell shells
 
-## c85-86: 巻貝(shell.js)
-- buildShell(taps,{turns,rot})/paintShell(ctx,size,taps,accent,strength,opts): 対数螺旋(g=1.85/周)、巻き数=clamp(1.6+n*0.1,2,3.2)、部屋の角度幅=0.55+0.9*音高、x平均=色相±22°。同入力→同形。
-- フラグ: ?shell=show(固定12打,dataset.shell="12,2.8",消えない)、?shell=0(off)、?shells=N(seed固定。デモでも出る)。デモは保存/読込しない。PNG保存は未実装。
-
-## c87: 床の殻の演奏再生(shell.js の createShell 後半)
-
+## 巻貝(shell.js)
+- buildShell/paintShell: 対数螺旋、同入力→同形。?shell=show / ?shell=0 / ?shells=N。デモは保存しない。
 
 ## 撮影・probe
 - shots.json: デモは `/?demo=1&seed=1&hour=13`。撮影 wait 合計は幅あたり25s以下。gate-split は ?gate=1 付き。
@@ -23,7 +19,7 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 ## 落とし穴
 - GL の追加パス・テクスチャ読み取り禁止。GLSL の `patch` は予約語。衝突で GL 全滅→dataset.render=none。
 - 塗り円盤・強い発光=「泡」、直線=「筋」、細い断片=「髪の毛」で減点。低コントラストの物理効果(潮の門)は静止画で読めず退却→輪郭のはっきりした絵を。
-- 分散 ?disp / guard() は閉じた。砂/石/空/刻/雨/泉/bowl は調整済み。触らない。
+- 分散/guard/砂/石/空/刻/雨/泉/bowl は調整済み。触らない。
 - audio.js/glimmer.js のみ CRLF。sed -i 全置換・python heredoc はハングしがち。IDEAS.md は追記のみ。
 - コミットに Claude/Co-Authored-By を入れない。git 巻き戻し系禁止。
 
