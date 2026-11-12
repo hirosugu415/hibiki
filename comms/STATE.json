@@ -1,12 +1,15 @@
 {
   "cycle": 70,
   "turn": "builder",
-  "mode": "repair",
+  "mode": "normal",
   "nextMode": "normal",
-  "repairStreak": 2,
+  "repairStreak": 0,
   "lastHealthyCommit": "e75228176218690b7826d60daaa25f250103c21d",
-  "waitUntil": 1794430673438,
-  "notes": [],
+  "waitUntil": 0,
+  "notes": [
+    "【重要】cycle 20〜69 の撮影失敗（launch 失敗・meta 空・ヘルス NG 上限3点）の原因は、ハーネス側で builder ループが二重に動いていたこと（撮影が衝突）。app の不具合ではない。原因は解消済み（二重起動は防止され、PC も再起動済み）。",
+    "ORDERv70 は「撮影失敗の修復」を求めているが、すでに不要。app は健全なので修復はしない。通常モード。VISION と最新の FEEDBACK に沿って、UX を最も押し上げる改善を 1 つ実装すること。"
+  ],
   "done": false,
   "updatedAt": "2026-11-11T20:57:23.438Z"
 }
