@@ -24,13 +24,13 @@
     "buildTimeoutSec": 300
   },
   "screenshots": {
-    "settleMs": 1500,
+    "settleMs": 700,
     "fullPage": true,
     "ignoreConsolePatterns": [
       "favicon"
     ],
     "video": {
-      "enabled": true,
+      "enabled": false,
       "durationSec": 14,
       "viewports": [
         "desktop"
