@@ -7,7 +7,7 @@ const SIM = `#version 300 es
 precision highp float; precision highp int;
 uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDisp; uniform float uDif; uniform float uTs; uniform float uDamp; uniform float uGlowDecay;
 uniform vec4 uSplat[16]; uniform int uCount; uniform vec4 uStone; uniform vec4 uBar; uniform vec4 uBowl; uniform vec4 uGate;
-const float BOWLK = 0.11; const float GATEK = 0.85; const float GATED = 0.07;
+const float BOWLK = 0.11; const float GATEK = 0.85; const float GATED = 0.04;
 out vec4 o;
 void main(){
   ivec2 p = ivec2(gl_FragCoord.xy);
@@ -328,9 +328,9 @@ void main(){
   // 堤の陰影: 線は引かず、帯の中をわずかに沈める（門のところだけ切れる）
   if (uGateC.w > 0.0) {
     vec2 gp = gl_FragCoord.xy / uCssPx;
-    float wy = 1.0 - smoothstep(0.0, uGateC.w, abs(gp.y - uGateC.x));
-    float gx = smoothstep(uGateC.z * 0.7, uGateC.z * 1.6, abs(gp.x - uGateC.y));
-    col *= 1.0 - 0.45 * wy * gx;
+    float wy = exp(-2.2 * pow(abs(gp.y - uGateC.x) / (uGateC.w * 1.15), 2.0));
+    float gx = smoothstep(uGateC.z * 0.3, uGateC.z * 2.4, abs(gp.x - uGateC.y));
+    col *= 1.0 - 0.2 * wy * gx;
   }
   o = vec4(col, 1.0);
 }`;

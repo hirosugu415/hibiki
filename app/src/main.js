@@ -137,14 +137,14 @@ function pushBar() {
 
 // ---- 潮の門(c81): 水面を横切る堤と1つの門。堤で割れた波は門を抜けた分だけ反対側へ半円に広がる（回折）。?gate=0 で無効、デモは既定 on、通常は ?gate=1 のオプトイン ----
 const GATE_PARAM = params.get('gate');
-const GATE_ON = GATE_PARAM === '1' || (DEMO && GATE_PARAM !== '0');
+const GATE_ON = GATE_PARAM !== '0';
 const gate = { k: GATE_ON ? 1 : 0, key: '', echoT: 0 };
 document.body.dataset.gate = GATE_ON ? '0,0,0' : 'off';
 document.body.dataset.gateHits = '0';
 const gateS = () => Math.min(viewW, viewH);
 const gateYf = () => (viewH > viewW ? 0.47 : 0.5);              // 堤の中心 y（上からの画面比。石・砂州・ヒントを避ける）
 const gateHw = () => Math.max(0.065 * gateS(), 26);               // 堤の半幅 CSS px（帯の全幅は短辺の 13%）
-const gateGw = () => Math.max(0.07 * gateS(), 26);                // 門の半幅
+const gateGw = () => (viewH > viewW ? Math.max(0.085 * gateS(), 30) : 0.052 * gateS());                // 門の半幅
 const gateXf = () => 0.55 + 0.05 * Math.sin(2 * Math.PI * performance.now() / 180000 + 0.7); // 約3分で画面幅の1割ゆっくり漂う
 function pushGate() {
   if (!GATE_ON || !backend || !backend.setGate) return;
