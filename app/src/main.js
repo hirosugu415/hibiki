@@ -459,7 +459,8 @@ const ghost = createGhost({
     dotShow(x, y);
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
     tap(x, y, vel);
-    vesselAdd(DEMO ? 1.4 : 1); // デモの幽霊は約 10 秒で満たす
+    if (DEMO) letterRec.record(x, y, vel); // デモ時のみ、幽霊の打も手紙に記録（「響」を押せるように）
+    vesselAdd(DEMO ? 2 : 1); // デモの幽霊は約 10 秒で満たす
   },
   drag(x, y) { dotShow(x, y); strokeTo(ghostPtr, x, y, true); },
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
@@ -646,9 +647,14 @@ function copyFallback(url) {
   } catch { return false; }
 }
 function shareLetter() {
+  ghost.retreat(); // 押したら幽霊の指は静かに退く（通常のタップと同じ）
   const url = letterRec.commit();
   if (!url) { document.body.dataset.letterShare = 'none'; return; }
-  const done = (ok) => { document.body.dataset.letterShare = ok ? '1' : 'fail'; if (ok) { hintSay('手紙を渡しました', 2000); vesselReset(); } };
+  const done = (ok) => {
+    document.body.dataset.letterShare = ok ? '1' : 'fail';
+    if (ok) hintSay('手紙を渡しました', 2000);
+    if (ok || DEMO) { vesselReset(); vesselRing(); } // デモはクリップボード不可でも、押した体験（輪）を見せる
+  };
   const viaClipboard = () => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -679,11 +685,22 @@ function vesselShow() {
   wordmark.classList.toggle('ready', full);
   if (full && !vesselRung) {
     vesselRung = true;
+    vesselRing();
     setTimeout(() => { // 輪の 1/4 以下の音量の小さな鈴（ミュート時は audio 側で鳴らない）
       if (document.hidden) return;
       audio.play(noteFreq(target, 9) * 2, 0.8, 0.4, 0.12, 1.5, 0.22);
     }, 900);
   }
+}
+// 「響」の中心から水面全体へ、静かな大きな輪を 1 つ（音は足さない。手紙・満ちには記録しない）
+let vesselRings = 0;
+document.body.dataset.vesselRing = '0';
+function vesselRing() {
+  try {
+    const r = wordmark.getBoundingClientRect();
+    ripple((r.left + r.width / 2) / viewW, (r.top + r.height / 2) / viewH, 0.36, 0.04, 2600);
+    document.body.dataset.vesselRing = String(++vesselRings);
+  } catch { /* noop */ }
 }
 function vesselAdd(w) { if (vessel >= VESSEL_N) return; vessel = Math.min(VESSEL_N, vessel + w); vesselShow(); }
 function vesselReset() { vessel = 0; vesselRung = false; vesselShow(); }

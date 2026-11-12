@@ -215,13 +215,28 @@
           "wait": 6000
         },
         {
-          "wait": 6000
-        },
-        {
           "waitFor": "body[data-vessel-call='1']"
         },
         {
-          "wait": 1500
+          "wait": 800
+        }
+      ]
+    },
+    {
+      "name": "vessel-pressed",
+      "url": "/?demo=1",
+      "steps": [
+        {
+          "wait": 6000
+        },
+        {
+          "wait": 6500
+        },
+        {
+          "click": "#wordmark"
+        },
+        {
+          "wait": 900
         }
       ]
     }
