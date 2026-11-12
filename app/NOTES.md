@@ -26,3 +26,8 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - audio.js/glimmer.js のみ CRLF。node で EOL 保持編集。sed -i 全置換・python heredoc はハングしがち。Bash heredoc に日本語大量は避ける。
 - IDEAS.md は LF・追記のみ。コミットに Claude/Co-Authored-By を入れない。git 巻き戻し系禁止。
 - 未実装案: A 奥行きの音(済), C 近づく指。決定履歴は IDEAS.md「決定」節。
+
+## 近づく指(c67)
+- main.js hoverMove/hoverStep/hoverLeave（dentStep 冒頭で dents 空なら hoverStep）。沈む指と同じ setDent uniform を弱い GAIN=8,R=0.1 で再利用（追加パスなし）。マウスのみ(pointerType mouse,buttons0,pointers空)。HOLD700ms→FADE2.6s。?hover=0 で無効。dataset.hover=on/off, hoverK。
+- 効果は GAIN 線形：5 は不可視、10 でやや帯状、8 を採用。確認は eval で pointermove を dispatch→crop。非デモ homeは起動時に輪が出るので 7s 待ってから比較。
+- 撮影 disp-on/off,hf-off は tap 後 450+200ms に変更済。hover-near 追加。

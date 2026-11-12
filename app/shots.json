@@ -674,13 +674,13 @@
           ]
         },
         {
-          "wait": 1500
+          "wait": 450
         },
         {
           "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='300px 300px';c.style.transform='scale(1.8)';})()"
         },
         {
-          "wait": 300
+          "wait": 200
         }
       ]
     },
@@ -698,13 +698,13 @@
           ]
         },
         {
-          "wait": 1500
+          "wait": 450
         },
         {
           "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='300px 300px';c.style.transform='scale(1.8)';})()"
         },
         {
-          "wait": 300
+          "wait": 200
         }
       ]
     },
@@ -722,13 +722,31 @@
           ]
         },
         {
-          "wait": 1500
+          "wait": 450
         },
         {
           "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='300px 300px';c.style.transform='scale(1.8)';})()"
         },
         {
-          "wait": 300
+          "wait": 200
+        }
+      ]
+    },
+    {
+      "name": "hover-near",
+      "url": "/?hour=13",
+      "steps": [
+        {
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById(\"water\");for(let i=0;i<8;i++){c.dispatchEvent(new PointerEvent(\"pointermove\",{clientX:innerWidth*0.5-80+i*10,clientY:innerHeight*0.45,pointerId:1,pointerType:\"mouse\",buttons:0,bubbles:true}))}return document.body.dataset.hover})()"
+        },
+        {
+          "hover": "#water"
+        },
+        {
+          "wait": 600
         }
       ]
     }

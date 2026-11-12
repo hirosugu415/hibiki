@@ -549,8 +549,34 @@ function dentEnd(id, reward) {
     document.body.dataset.touch = dentInfo[0] + ',' + dentInfo[1].toFixed(4) + ',' + reboundN;
   }, DENT.DELAY);
 }
+// ---- 近づく指: マウスが押さずに動いているとき、カーソルの下にごく弱い窪み（沈む指と同じ描画 uniform の弱い版）。音なし・タッチでは出ない ----
+const HOVER_ON = params.get("hover") !== "0";
+const HOVER = { R: 0.1, RM: 0.1, GAIN: 8, HOLD: 700, FADE: 2600, FOLLOW: 0.14 };
+const hover = { x: 0.5, y: 0.5, px: 0.5, py: 0.5, k: 0, last: 0, live: false };
+document.body.dataset.hover = HOVER_ON ? "on" : "off";
+function hoverMove(e) {
+  if (!HOVER_ON || !backend || e.pointerType !== "mouse" || e.buttons || pointers.size || dents.size || (stone.grab)) return;
+  const x = e.clientX / viewW, y = e.clientY / viewH;
+  if (!hover.live) { hover.px = x; hover.py = y; hover.live = true; }
+  hover.x = x; hover.y = y; hover.last = performance.now();
+  wake(HOVER.HOLD + HOVER.FADE + 200);
+}
+function hoverStep(dt, now) {
+  if (!hover.live) return false;
+  const idle = now - hover.last;
+  let tgt = idle < HOVER.HOLD ? 1 : Math.max(0, 1 - (idle - HOVER.HOLD) / HOVER.FADE);
+  tgt = tgt * tgt * (3 - 2 * tgt);
+  hover.k += (tgt - hover.k) * (1 - Math.exp(-dt / (tgt > hover.k ? 0.35 : 0.5)));
+  hover.px += (hover.x - hover.px) * (1 - Math.exp(-dt / HOVER.FOLLOW)); hover.py += (hover.y - hover.py) * (1 - Math.exp(-dt / HOVER.FOLLOW));
+  if (idle > HOVER.HOLD + HOVER.FADE && hover.k < 0.004) { hover.live = false; hover.k = 0; if (backend.setDent) backend.setDent(0.5, 0.5, HOVER.R, 0); document.body.dataset.hoverK = "0"; return false; }
+  if (backend.setDent) backend.setDent(hover.px, 1 - hover.py, viewH > viewW ? HOVER.RM : HOVER.R, hover.k * HOVER.GAIN);
+  document.body.dataset.hoverK = hover.k.toFixed(3);
+  return true;
+}
+function hoverLeave() { hover.last = Math.min(hover.last, performance.now() - HOVER.HOLD); }
 function dentStep(dt, now) {
-  if (!dents.size) return false;
+  if (!dents.size) return hoverStep(dt, now);
+  hover.live = false; hover.k = 0;
   let shown = false;
   for (const [id, d] of dents) {
     const age = now - d.t0;
@@ -644,7 +670,7 @@ function onMove(e) {
     return;
   }
   const p = pointers.get(e.pointerId);
-  if (!p) return;
+  if (!p) { hoverMove(e); return; }
   e.preventDefault();
   lastTouch = performance.now();
   if (Math.hypot(e.clientX - p.lx, e.clientY - p.ly) > 4) { p.moveT = lastTouch; p.lx = e.clientX; p.ly = e.clientY; }
@@ -670,6 +696,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) relea
 function bindCanvas(el) {
   el.addEventListener('pointerdown', onDown);
   el.addEventListener('pointermove', onMove);
+  el.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hoverLeave(); });
   el.addEventListener('pointerup', onUp);
   el.addEventListener('pointercancel', onUp);
   el.addEventListener('lostpointercapture', onUp);
