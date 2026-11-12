@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec3 uSky; uniform vec3 uSkyC;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -165,6 +165,15 @@ void main(){
   col += uAcc * outB * (gl * 0.9 + (0.25 + 0.5 * facing) * 0.07 + 0.3 * uPulse * (0.4 + 0.6 * facing));
   col += uAcc * inB * (0.12 * uPulse + gl * 0.5);
 
+  // 空の映り込み: 反射ベクトルの y 成分（q.y + 法線の傾き）の勾配だけ。線は作らず、上端の帯にだけ薄く乗せる。石の上では弱める
+  if (uSky.x > 0.0001) {
+    float hb = uSky.y;
+    float sy = mix(uv.y, q.y, 0.5) + clamp(n.y, -0.12, 0.12) * 0.55 * (1.0 - smoothstep(0.94, 1.0, uv.y)) + sin(q.x * asp.x * 2.1 + uTime * 0.07) * 0.006;
+    float sb = smoothstep(1.0 - hb, 1.0, sy);
+    float fres = mix(0.35, 1.0, pow(sb, uSky.z));                  // 浅い視線ほど強い
+    float sk = sb * fres * (1.0 - m * 0.85);
+    col += uSkyC * uSky.x * sk;
+  }
   vec2 vc = (uv - 0.5) * vec2(1.0, 1.15);
   col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
@@ -278,7 +287,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -331,6 +340,7 @@ export function createGL(canvas) {
     // 石: ux, uy は 0–1（uy は下が 0）、rPx は CSS ピクセル半径
     function setStone(ux, uy, rPx) { stone.x = ux; stone.y = uy; stone.r = rPx; stone.on = 1; }
     function firePulse() { pulse = 1; }
+    function setSky(v) { skyK = v; }
     function setSleep(v) { sleep = v; }
     function setCalm(v) { calm = v; }
     function setLife(v) { life = v; }
@@ -405,6 +415,8 @@ export function createGL(canvas) {
       gl.uniform1f(ren.u.uCalm, calm);
       gl.uniform1f(ren.u.uLife, life);
       gl.uniform4fv(ren.u.uWakeA, wakeA);
+      gl.uniform3f(ren.u.uSky, skyK, 0.2 * Math.min(1, canvas.width / canvas.height), 1.6);
+      gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);
@@ -414,7 +426,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSleep, setCalm, setLife, setWake };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setSleep, setCalm, setLife, setWake };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;

@@ -11,6 +11,7 @@ import { createAfterimage } from './afterimage.js';
 import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
+const SKY_K = params.has('sky') ? Math.max(0, Math.min(2, parseFloat(params.get('sky')) || 0)) : 1; // 空の映り込みの強さ（?sky=0 で無し）
 const DEMO = params.get('demo') === '1';
 
 const SEED = params.get('seed') === '1';
@@ -49,8 +50,8 @@ if (!backend) { document.body.dataset.render = 'none'; }
 document.body.dataset.render = backend ? backend.kind : 'none';
 
 // ---- パレット（ムード切替で約 1 秒クロスフェード） ----
-const PKEYS = ['deep', 'mid', 'accent', 'look'];
-const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...MOODS.calm.accent], look: [...MOODS.calm.look] };
+const PKEYS = ['deep', 'mid', 'accent', 'look', 'sky'];
+const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...MOODS.calm.accent], look: [...MOODS.calm.look], sky: [...MOODS.calm.sky] };
 let mood = MOODS[store.get('mood')] || MOODS.calm;
 let target = mood;
 const afterimage = createAfterimage({ el: document.getElementById('afterimage'), accent: () => mood.accent, demoSeed: DEMO && SEED });
@@ -253,6 +254,8 @@ function tick(now) {
   clearK += (clearT - clearK) * (1 - Math.exp(-dt / (clearT ? 0.8 : 1.2)));
   if (clearK < 0.002 && !clearT) clearK = 0; else moving = true;
   document.body.dataset.clearK = clearK.toFixed(3);
+  if (backend.setSky) backend.setSky(SKY_K);
+  document.body.dataset.sky = target.id + ',' + SKY_K.toFixed(2) + ',' + (1 - 0.2 * Math.min(1, innerWidth / innerHeight)).toFixed(3);
   try { backend.frame(dt, clearK ? { ...pal, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : pal); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;

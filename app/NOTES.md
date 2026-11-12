@@ -13,8 +13,10 @@
 - 覚える水: 3〜6打・同位置(0.11短辺)・間隔±40% を2度→最大4周を quietTap(record=false)で。dataset.loop。フレーズ間は5.5s以上あける。
 - 雨(c49-50): 無操作40s未満0。dataset.rain/weather(dry|drizzle|rain|clearing)/clearK/rainLive。`?demo=1&seed=1&rain=0.3|1`。雨とhomeの背景輝度差は±4%以内(c51; 差に見えるのは#aura位相)。
 
+- 空の映り込み(c53): wave-gl RENDER の vignette 直前、sy=uv.y/q.y+n.y の勾配×フレネルで上端 ~20%(短辺比)に uSkyC(moods.js の sky 色, PKEYS 経由でムード補間)を加算。uSky=(強さ,帯高,指数)。石の上は ×0.15。?sky=0 で無し(SKY_K)。dataset.sky=mood,強さ,地平y。線・円盤なし。強さは moods.js の色の大きさで調整(夜は極弱)。
+
 ## 状態フック（document.body.dataset.*）
-plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive
+plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes holding releases letter letterPlay ambient vessel glimmer glints sandSleep sandCalm hatsune wakeR afterimage loop wmGlow rain weather clearK rainLive sky
 
 ## 撮影・probe
 - `app/shots.json` に画面宣言。デモ `/?demo=1&seed=1`（幽霊の指が自動演奏。開始4.5s）。撮影 wait 合計は幅あたり25s以下。
@@ -25,4 +27,5 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - 塗り円盤・強い発光=「泡」、直線=「筋」、細い断片=「髪の毛」で評価が落ちた。縁なし低コントラストに。
 - main.js/style.css は CRLF: node で編集時 \r\n 正規化しないと無言で無変更。Bash heredoc に日本語+記号大量は失敗しやすい→Writeで一旦ファイル。
 - IDEAS.md は LF・追記のみ。コミットに Claude/Co-Authored-By を入れない。git の巻き戻し系コマンド禁止。
-- 採否履歴は IDEAS.md の「決定」節。c52 提案(未決): A 奥行きの音 / B 空を映す水(推し) / C 近づく指(hover)。
+- 採否履歴は IDEAS.md の「決定」節。B 空を映す水=c53実装。A 奥行きの音 / C 近づく指 は未実装。
+- probe のスクショは shots/cycle-053/probe/(ゼロ埋め3桁)に出る。輝度比較は pngjs(ルート node_modules)。デモの幽霊の指で±1〜2%は揺れる。

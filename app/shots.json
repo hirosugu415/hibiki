@@ -509,6 +509,42 @@
           "wait": 2200
         }
       ]
+    },
+    {
+      "name": "sky-on",
+      "url": "/?demo=1&seed=1&sky=1",
+      "steps": [
+        {
+          "wait": 800
+        }
+      ]
+    },
+    {
+      "name": "sky-off",
+      "url": "/?demo=1&seed=1&sky=0",
+      "steps": [
+        {
+          "wait": 800
+        }
+      ]
+    },
+    {
+      "name": "sky-top-tap",
+      "url": "/?demo=1&seed=1&sky=1",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "clickAt": [
+            300,
+            70
+          ]
+        },
+        {
+          "wait": 700
+        }
+      ]
     }
   ]
 }

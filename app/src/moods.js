@@ -9,6 +9,7 @@ export const MOODS = {
     wetShort: 0.34, wetLong: 0.12, echo: 0.22, bright: 0,
     // look: [屈折, リム光, 鏡面, 減衰/ステップ, リム幅]
     look: [1.0, 0.95, 2.2, 0.9974, 1.0, 0.9915],
+    sky: rgb(20, 30, 44), // 映り込む空（薄青）。RENDER で上端にだけ足す
   },
   night: {
     id: 'night', label: '夜',
@@ -16,6 +17,7 @@ export const MOODS = {
     scale: [0, 3, 5, 7, 10], root: 220.0, // A 短調ペンタトニック
     wetShort: 0.1, wetLong: 0.5, echo: 0.3, bright: -0.1,
     look: [0.45, 0.7, 3.0, 0.9979, 0.8, 0.9940],
+    sky: rgb(6, 8, 20), // 極弱い群青
   },
   dawn: {
     id: 'dawn', label: '暁',
@@ -23,6 +25,7 @@ export const MOODS = {
     scale: [0, 2, 4, 7, 9], root: 293.66, // D 長調、やや高く明るめ
     wetShort: 0.3, wetLong: 0.14, echo: 0.2, bright: 0.18,
     look: [0.8, 1.35, 1.2, 0.9974, 2.2, 0.9915],
+    sky: rgb(46, 26, 26), // 桃色の地平
   },
 };
 export const MOOD_ORDER = ['calm', 'night', 'dawn'];
