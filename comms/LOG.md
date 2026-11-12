@@ -48,3 +48,4 @@
 - [cycle 040] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、画質は c39 と同一で8点維持
 - [cycle 041] mode=normal | score 8/10 | health=ok | polish | 水面の残像は再訪時に淡く浮かび一打で洗われ動作確認OK。ただ洗い後の画面に直線の筋が残り8点維持
 - [cycle 042] mode=normal | score 8/10 | health=ok | polish | 残像は home と見分けられるほど出て直線の筋は曲がったが、細い髪の毛状の線とモバイルの明るい一筋が残り8点維持
+- [cycle 043] mode=normal | score 8/10 | health=ok | polish | 残像は青緑寄りで home と区別できる。砂は細い糸状の弧と mobile の明るい斜線が残り8点維持
