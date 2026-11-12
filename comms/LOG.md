@@ -86,3 +86,4 @@
 - [cycle 078] mode=normal | score 8/10 | health=ok | polish | 双つの泉でdesktopにも節線の縞が出て中心も滑らか。mobileも落ち着き、回帰なし
 - [cycle 079] mode=normal | score 8/10 | health=ok | polish | 双つの泉の縞が左右対称になりdesktop・mobileとも整う。回帰なし、8点据え置き
 - [cycle 080] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでapp無変更。home・泉とも静かで回帰なし、8点据え置き
+- [cycle 081] mode=normal | score 7/10 | health=ok | polish | 潮の門は機能するが堤が暗い帯に見え、規定のgate-split撮影は半円が淡く読めない
