@@ -39,3 +39,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - main.js gatherTrack(p,px,py)(strokeTo末尾から呼ぶ)/gatherFire。軌跡 p.trail(px,直近1.5s)。判定: 始終点距離<周長L*0.12 ∧ L>=0.5S ∧ 多角形面積>0.03S²(S=短辺) ∧ 4πA/L²>=0.6、クールダウン2s。発火で輪上最大14点に ripple(0.1)、R/波速(clamp500-2600ms)後に中心 splat0.6＋3和音(0/+2/+4音、vel0.3,0.26,0.22)。
 - dataset.gather="回数,中心x,中心y,収束ms"(?gather=0 で 'off'・検出ごと無効=退路)。ghost.js circle(): motifN===2 と以降3の倍数で交互(seed=1 では約30–45s で初回)。api.metric() 追加。
 - 検証: shots/cycle-71/probe/gen.mjs(誤検出表)・gen2.mjs(draw/focus)。eval は async 可(awaitされる)。ロード直後(<2s)は timer が遅れ 1.5s を超え不発になる→ shots は wait2500 後に eval。desktop 1280x800 の中央下に石があり輪と重なる。
+
+## こすると水が歌う(c73)
+- main.js bowlTrack(p,px,py)(strokeTo末尾)/bowlFire(fx,fy,n)/bowlStep(dt)(tick内)。検出: 向き反転(ヒステリシス max(8,2%S))を直近1s に4回以上 ∧ 反転点bbox≤0.24S → n=3+(回数/s-4)*5/6 を3〜8に丸め、中心=反転点平均。発火中(bowl!=null)は再検出なし。?bowl=0 で無効、?bowl=demo で1.5s後に(0.5,0.4)発火、?bowln=3..8。
+- 駆動: 半径R=0.14S の輪上24点に ripple(0.055*(dt/0.07)*e*sin(2πft)*cos(nθ), 半径0.034S)。f=v*7/(2πR), v=0.68*95*viewW/420。**sim時間(tick の dt、≤0.05)で進める**: setTimeout 駆動だと headless(1/3速)で波長が崩れて星に見えない。DUR=3s 振幅 1→.62→.34。音は setTimeout 6回(450ms)。
+- dataset.bowl="n,x,y,持続ms"(終了で ms=0 / 未発火"0" / 無効"off")。ghost.js rub(): loopAct の 12.5s 後(=絶対約17s)に 170ms 往復×8。ghostPtr.rub を tap でリセット。
+- 検証: probe d.json(gen.cjs)で 直線/円/遅い往復=不発・速い往復=発火。shots bowl-on/bowl-off は wait3200。

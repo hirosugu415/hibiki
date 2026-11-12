@@ -827,6 +827,24 @@
           "wait": 1500
         }
       ]
+    },
+    {
+      "name": "bowl-on",
+      "url": "/?demo=1&seed=1&hour=13&bowl=demo",
+      "steps": [
+        {
+          "wait": 3200
+        }
+      ]
+    },
+    {
+      "name": "bowl-off",
+      "url": "/?demo=1&seed=1&hour=13&bowl=0",
+      "steps": [
+        {
+          "wait": 3200
+        }
+      ]
     }
   ]
 }

@@ -44,6 +44,7 @@ export function createGhost(api, { demo, seed }) {
     }));
     // 一度だけの長めの押下（沈む指）: 凹みと、離した後の柔らかい反動
     if (api.pressStart) { later(() => { if (alive) api.pressStart(0.62, 0.6); }, 8200); later(() => { if (api.pressEnd) api.pressEnd(); }, 8550); }
+    later(rub, 12500);
     later(playMotif, 6300 + 22000);
   }
 
@@ -85,6 +86,21 @@ export function createGhost(api, { demo, seed }) {
         api.drag(x0 + (x1 - x0) * k, y0 - Math.sin(k * Math.PI) * 0.14 - k * 0.06);
         if (i === N) { api.dotHide(); later(playMotif, 1600); }
       }, i * 70);
+    }
+  }
+
+  // 往復のモチーフ: 小さくこする（約 170ms ごとに向きが反転）。水が歌い、花びらの模様が立つ
+  function rub() {
+    if (!alive) return;
+    const m = api.metric ? api.metric() : { w: 800, h: 600 }, S = Math.min(m.w, m.h), A = 0.055 * S;
+    const cx = 0.5 * m.w, cy = 0.4 * m.h;
+    api.tap((cx - A) / m.w, cy / m.h, 0.4);
+    for (let i = 1; i <= 8; i++) {
+      later(() => {
+        if (!alive) return;
+        api.drag((cx + (i % 2 ? A : -A)) / m.w, cy / m.h);
+        if (i === 8) { api.dotHide(); }
+      }, 300 + i * 170);
     }
   }
 

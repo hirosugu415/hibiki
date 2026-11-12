@@ -239,6 +239,7 @@ function tick(now) {
   updateSandDrift(performance.now());
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
   last = now;
+  if (bowl) bowlStep(dt);
   const k = 1 - Math.exp(-dt / 0.3);
   let moving = false;
   for (const key of PKEYS) for (let i = 0; i < pal[key].length; i++) {
@@ -652,6 +653,7 @@ function strokeTo(p, x, y, fromGhost) {
   if (idx !== p.idx && now - p.t > (fromGhost ? 220 : 110)) { note(x, y, 0.7); p.idx = idx; p.t = now; }
   { const d = dents.get(p.id); if (d) { d.path += dist; d.x = x; d.y = y; } }
   gatherTrack(p, x * viewW, y * viewH);
+  bowlTrack(p, x * viewW, y * viewH);
   p.x = x; p.y = y;
 }
 // ---- 集まる輪(c71): ほぼ閉じた円を 1.5 秒以内に描くと、波が内側へ集まり中心に一点が立つ。?gather=0 で無効 ----
@@ -705,6 +707,65 @@ function gatherFire(pts) {
     }, j * 90));
   }, ms);
 }
+// ---- こすると水が歌う(c73): 小さな往復ドラッグで、指の周りに n 重対称の定在模様を立てる。?bowl=0 で無効、?bowl=demo で 1.5s 後に自動発火 ----
+const BOWL_PARAM = params.get('bowl');
+const BOWL_ON = BOWL_PARAM !== '0';
+const BOWL_N = Math.max(3, Math.min(8, parseInt(params.get('bowln')) || 5));
+let bowlCount = 0;
+document.body.dataset.bowl = BOWL_ON ? '0' : 'off';
+function bowlTrack(p, px, py) {
+  if (!BOWL_ON) return;
+  const now = performance.now(), S = Math.min(viewW, viewH), H = Math.max(8, S * 0.02);
+  let r = p.rub;
+  if (!r || now - r.t > 450) r = p.rub = { u: null, ox: px, oy: py, ext: 0, revs: r ? r.revs : [], t: now };
+  r.t = now;
+  const dx = px - r.ox, dy = py - r.oy;
+  if (!r.u) { const d = Math.hypot(dx, dy); if (d < H) return; r.u = [dx / d, dy / d]; r.ext = d; return; }
+  const s = dx * r.u[0] + dy * r.u[1];
+  if (s > r.ext) { r.ext = s; return; }
+  if (s >= r.ext - H) return;
+  const ex = r.ox + r.u[0] * r.ext, ey = r.oy + r.u[1] * r.ext;
+  r.revs.push({ x: ex, y: ey, t: now });
+  r.ox = ex; r.oy = ey; r.u = [-r.u[0], -r.u[1]];
+  r.ext = Math.max(0, (px - ex) * r.u[0] + (py - ey) * r.u[1]);
+  const rv = r.revs;
+  while (rv.length && now - rv[0].t > 1000) rv.shift();
+  if (rv.length < 4 || bowl) return;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, mx = 0, my = 0;
+  for (const q of rv) { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); mx += q.x; my += q.y; }
+  if (Math.max(x1 - x0, y1 - y0) > S * 0.24) return;
+  const rate = 1000 / ((rv[rv.length - 1].t - rv[0].t) / (rv.length - 1) || 250);
+  const n = Math.max(3, Math.min(8, Math.round(3 + (rate - 4) * 5 / 6)));
+  r.revs = [];
+  bowlFire(mx / rv.length / viewW, my / rv.length / viewH, n);
+}
+const BOWL_DUR = 3, BOWL_K = 24;
+let bowl = null; // 発火中の状態（シミュレーション時間 t 秒で駆動: 低 fps でも波速と周波数の比が崩れない）
+function bowlFire(fx, fy, n) {
+  const S = Math.min(viewW, viewH), R = S * 0.14, v = 0.68 * 95 * (viewW / 420);
+  bowl = { fx, fy, n, t: 0, R, f: v * 7 / (2 * Math.PI * R) }; // 輪の縁で kR≈7（J_n の山が輪の内側に入る）
+  bowlCount++;
+  document.body.dataset.bowl = `${n},${fx.toFixed(3)},${fy.toFixed(3)},${BOWL_DUR * 1000}`;
+  wake(1200);
+  const b = noteIndex(fx);
+  for (let j = 0; j < 6; j++) setTimeout(() => {
+    if (document.hidden) return;
+    audio.play(noteFreq(target, Math.min(NOTE_COUNT - 1, b + (j % 2 ? 2 : 0))), 0.45, 0.3 * (j < 3 ? 1 : j < 5 ? 0.62 : 0.34), fx, 1.8, 1, 0, 1 - fy);
+  }, j * 450);
+  glimmer.hit(fx, fy, 0.25, { sound: false });
+}
+function bowlStep(dt) {
+  const B = bowl; if (!B) return;
+  B.t += dt;
+  if (B.t >= BOWL_DUR) { bowl = null; document.body.dataset.bowl = `${B.n},${B.fx.toFixed(3)},${B.fy.toFixed(3)},0`; return; }
+  const w = Math.sin(2 * Math.PI * B.f * B.t), t = B.t;
+  const e = (t < 1.2 ? 1 : t < 2.4 ? 0.62 : 0.34) * (t > BOWL_DUR - 0.3 ? (BOWL_DUR - t) / 0.3 : 1) * Math.min(1, t / 0.15);
+  for (let i = 0; i < BOWL_K; i++) {
+    const th = i / BOWL_K * Math.PI * 2;
+    ripple(B.fx + Math.cos(th) * B.R / viewW, B.fy + Math.sin(th) * B.R / viewH, 0.055 * (dt / 0.07) * e * w * Math.cos(B.n * th), 0.034, 600);
+  }
+}
+if (BOWL_PARAM === 'demo') setTimeout(() => bowlFire(0.5, 0.4, BOWL_N), 1500);
 // 石を掴んだ瞬間のわずかな波（縁のすぐ外に小さく 4 点）と、縁の光
 function grabPing() {
   const r = stoneR() * 1.18;
@@ -777,7 +838,7 @@ const ghost = createGhost({
     // 石の真上には打たない（石に吸われてしまうので、少し上へずらす）
     const sr = stoneR() * 1.25;
     if (Math.hypot((x - stone.x) * viewW, (y - stone.y) * viewH) < sr) y = stone.y - sr / viewH;
-    ghostPtr.trail = null;
+    ghostPtr.trail = null; ghostPtr.rub = null;
     dotShow(x, y);
     ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
