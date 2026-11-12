@@ -137,7 +137,7 @@ function pushBar() {
 
 // ---- 潮の門(c81): 水面を横切る堤と1つの門。堤で割れた波は門を抜けた分だけ反対側へ半円に広がる（回折）。?gate=0 で無効、デモは既定 on、通常は ?gate=1 のオプトイン ----
 const GATE_PARAM = params.get('gate');
-const GATE_ON = GATE_PARAM !== '0';
+const GATE_ON = GATE_PARAM === '1';
 const gate = { k: GATE_ON ? 1 : 0, key: '', echoT: 0 };
 document.body.dataset.gate = GATE_ON ? '0,0,0' : 'off';
 document.body.dataset.gateHits = '0';
