@@ -55,3 +55,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 ## c35 静けさ
 - uCalm(wave-gl.js, setCalm)/main.js stepCalm: 最後の打(wakeLast)から0.4s後に減衰→4sで0.55、wakeAll×0.72、letterPlay×0.8。波エネルギー env 高い所(波頭)は mix(uCalm,1,smoothstep(.02,.1,env))で据え置き。dataset.sandCalm。縁: nz を 0.6 倍に圧縮、keep の smoothstep 幅 .17。
 - ヒント: body[data-letter-play=1]/[data-ghost-play=1] で #hint を非表示(CSS, 文言差替中 data-say は除外)。ghostPlayNote() が打・手紙終了から6s保持。style.css は CRLF、main/wave-gl は LF。
+
+## c36 innovation
+- app無変更。IDEAS.md に案A共鳴/B深まる水/C石の砂場を追記。推しC（砂の輝度基準を uStoneC への距離にする）。
