@@ -70,3 +70,4 @@
 - [cycle 062] mode=normal | score 7/10 | health=ok | polish | 凹みの強化は静止画でほぼ見えず撮影枠も外れる。home は不変で静か、回帰なし
 - [cycle 063] mode=normal | score 7/10 | health=ok | polish | 石の硬い白弧が消え、濡れた艶と接地の影で home が一段上質に。回帰なし
 - [cycle 064] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。home・輪・石は静かで一貫、回帰なし。7点維持
+- [cycle 065] mode=normal | score 7/10 | health=ok | polish | 分散は入ったが効果は控えめ（輪が少し繊細に）。home・石・雨は静かで回帰なし
