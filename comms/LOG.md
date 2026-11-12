@@ -67,3 +67,4 @@
 - [cycle 059] mode=normal | score 7/10 | health=ok | polish | 夕の帯は暗く薄くなり濁りは減ったが、上端の帯と下の谷は残る。home は不変で静か
 - [cycle 060] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、回帰なし。7点維持
 - [cycle 061] mode=normal | score 7/10 | health=ok | polish | 沈む指は実装済みだが凹みは静止画で見えず。反動の輪は出る。home 不変で静か
+- [cycle 062] mode=normal | score 7/10 | health=ok | polish | 凹みの強化は静止画でほぼ見えず撮影枠も外れる。home は不変で静か、回帰なし
