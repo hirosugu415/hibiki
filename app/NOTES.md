@@ -85,3 +85,8 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - loop.js POS_TOL .11 / DT_TOL .4（|da-db|≤.4*max(da,db)）。probe のタイマーは±100ms揺れる→「±30%」テストは長い方基準でないと落ちる。フレーズ間は 5.5s 以上あける（<GAP+前フレーズ確定で結合する）。steps は shots/cycle-46/probe/{gen.mjs,tol.json}、偽陽性は cycle-45/probe/fp.json。
 - 砂(wave-gl.js): br係数.4→.26、sc .2/.3、上限 .17/.21(mob)、線幅差を縮小(wf 0.8–1.4, inten 0.7–1.3)。halo倍率は不変。
 - #wordmark.learn は2sで外れ元に戻る(確認済)。'ready'時の青い発光は仕様(呼吸6s周期で見え方が揺れる)。
+
+## c47 砂線の寿命・響の発光
+- wave-gl.js: uLife(setLife)。halo = 従来 * uLife * 0.6（halo は 石の砂場の強さ全般を左右）。main.js stepLife(tick内): 石の速さ(画面比/秒)>0.035 で stoneMoveT 更新（pushStone内。累積ドリフト判定は常時発火して失敗済み）、止まってから 2.5s で life=(1-u)^2。dataset.stoneLife。shots: sandfield-push(350ms後)/sandfield-rest(4s後)。
+- 「響」: --fill は full かつ wmGlow=false なら 0（home と同じ見え方）。wmGlowSet: onLearn で2s、cycle中は点灯、off で2s後に消灯。.ready の呼吸アニメは廃止。dataset.wmGlow。
+- 人手ばらつき probe: shots/cycle-47/probe/gen.mjs → tol.json(desktop)/tolm.json(mobile は縦のずれを短辺比に合わせる; 画面比 .05 だと mobile は .118 で .11 超え→off)。

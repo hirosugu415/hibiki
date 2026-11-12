@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform vec4 uWakeA; uniform vec4 uWakeB;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -211,7 +211,7 @@ void main(){
     float stR = max(uStoneC.w, 1.0);
     float dsC = length((vUv - uStoneC.xy) * asp) * uRes.y / cp;
     float hOut = max(3.2 * stR, 0.28 * shortS / cp);
-    float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has;
+    float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has * uLife * 0.6;   // 石が動いている間だけ(uLife)・最大は従来の約6割
     float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
     float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
     float br = 0.26 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
@@ -278,7 +278,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let sleep = 0.05, calm = 1, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -333,6 +333,7 @@ export function createGL(canvas) {
     function firePulse() { pulse = 1; }
     function setSleep(v) { sleep = v; }
     function setCalm(v) { calm = v; }
+    function setLife(v) { life = v; }
     function setWake(a, b) { wakeA = a; wakeB = b; }
     function setPlate(n, m, a, ph) { plate[0] = n; plate[1] = m; plate[2] = a; plate[3] = ph; }
     // 砂州: ux, uy は 0–1（uy は下が 0）、rxPx / ryPx は CSS ピクセル半径（楕円）
@@ -402,6 +403,7 @@ export function createGL(canvas) {
       gl.uniform1f(ren.u.uCssPx, canvas.width / lastCss[0]);
       gl.uniform1f(ren.u.uSleep, sleep);
       gl.uniform1f(ren.u.uCalm, calm);
+      gl.uniform1f(ren.u.uLife, life);
       gl.uniform4fv(ren.u.uWakeA, wakeA);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
@@ -412,7 +414,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSleep, setCalm, setWake };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSleep, setCalm, setLife, setWake };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;

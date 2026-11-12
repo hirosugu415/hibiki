@@ -395,7 +395,25 @@
           "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number);const mk=(t,x,y)=>c.dispatchEvent(new PointerEvent(t,{clientX:x,clientY:y,pointerId:9,pointerType:'mouse',button:0,buttons:1,bubbles:true}));mk('pointerdown',sx*W,sy*H);for(let i=1;i<=8;i++)mk('pointermove',sx*W+(W*0.22-sx*W+sx*W*0)*i/8*0+ (-W*0.2)*i/8,sy*H-(H*0.18)*i/8);mk('pointerup',sx*W-W*0.2,sy*H-H*0.18);return document.body.dataset.stone})()"
         },
         {
-          "wait": 2500
+          "wait": 350
+        }
+      ]
+    },
+    {
+      "name": "sandfield-rest",
+      "url": "/?demo=1#w=PHn_AItg_xSzn_8V",
+      "steps": [
+        {
+          "wait": 1500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),W=innerWidth,H=innerHeight,[sx,sy]=document.body.dataset.stone.split(',').map(Number);const mk=(t,x,y)=>c.dispatchEvent(new PointerEvent(t,{clientX:x,clientY:y,pointerId:9,pointerType:'mouse',button:0,buttons:1,bubbles:true}));mk('pointerdown',sx*W,sy*H);for(let i=1;i<=8;i++)mk('pointermove',sx*W+(W*0.22-sx*W+sx*W*0)*i/8*0+ (-W*0.2)*i/8,sy*H-(H*0.18)*i/8);mk('pointerup',sx*W-W*0.2,sy*H-H*0.18);return document.body.dataset.stone})()"
+        },
+        {
+          "wait": 4000
+        },
+        {
+          "eval": "document.body.dataset.stoneLife"
         }
       ]
     },

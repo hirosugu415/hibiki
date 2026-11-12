@@ -85,8 +85,12 @@ function clampStone(x, y) {
   const top = (84 + r) / viewH, bottom = 1 - (112 + r) / viewH;
   return [Math.min(1 - rx, Math.max(rx, x)), Math.min(Math.max(top, bottom), Math.max(top, y))];
 }
+let stoneMoveT = -1e9, stoneLife = 0, lastSX = -1, lastSY = -1, lastST = 0;
 function pushStone() {
   if (!backend || !backend.setStone) return;
+  { const now = performance.now(), dt = Math.max(1, now - lastST) / 1000; // 速さ(画面比/秒)で判定。ゆっくりの漂いは動きとみなさない
+    if (lastSX >= 0 && (Math.abs(stone.x - lastSX) + Math.abs(stone.y - lastSY)) / dt > 0.035) stoneMoveT = now;
+    lastSX = stone.x; lastSY = stone.y; lastST = now; }
   backend.setStone(stone.x, 1 - stone.y, stoneR());
   pushBar();
   document.body.dataset.stones = '1';
@@ -169,6 +173,18 @@ function stepWake() {
   document.body.dataset.wakeR = wakeAll ? '1.00+' : wakeB ? Math.min(1, rB / wakeFull(wakeB)).toFixed(2) : '0.00';
   return !full && !!wakeB;
 }
+// 石の砂線の寿命: 動いている間 1、止まってから 2.5 秒で ease-out に 0（乗算ゲート）
+function stepLife(dt) {
+  const el = (performance.now() - stoneMoveT) / 1000;
+  const u = Math.min(1, Math.max(0, el / 2.5));
+  const tgt = (1 - u) * (1 - u);
+  const d = tgt - stoneLife;
+  if (!d) return false;
+  stoneLife = Math.abs(d) < 0.001 ? tgt : stoneLife + d * (1 - Math.exp(-dt / (d > 0 ? 0.12 : 0.05)));
+  if (backend && backend.setLife) backend.setLife(stoneLife);
+  document.body.dataset.stoneLife = stoneLife.toFixed(2);
+  return true;
+}
 // 輪が通り過ぎた後の砂線: 最後の打から0.4秒後に静まり始め約4秒で約55%、全面覚醒中は0.72倍・手紙再生中は0.8倍。次の打で戻る
 function stepCalm(dt) {
   const el = (performance.now() - wakeLast) / 1000;
@@ -213,6 +229,7 @@ function tick(now) {
   }
   if (stepSleep(dt)) moving = true;
   if (stepWake()) moving = true;
+  if (stepLife(dt)) moving = true;
   if (stepCalm(dt) || (wakeLast && performance.now() - wakeLast < 4500)) moving = true;
   if (moving) applyCss();
   { // 石の追従（軽い慣性）
@@ -407,8 +424,9 @@ const memory = createLoop({
     quietTap = true; try { tap(x, yTop, Math.max(0.12, vel), false); } finally { quietTap = false; }
   },
   short: () => ({ w: viewW, h: viewH, m: Math.min(viewW, viewH) }),
-  onState(s) { document.body.dataset.loop = s; },
+  onState(s) { document.body.dataset.loop = s; wmGlowSet(s.startsWith('cycle') ? 1 : 0); },
   onLearn() { // 「響」が一度だけ呼吸する
+    wmGlowSet(2000);
     wordmark.classList.remove('learn'); void wordmark.offsetWidth; wordmark.classList.add('learn');
     setTimeout(() => wordmark.classList.remove('learn'), 2000);
   },
@@ -819,13 +837,22 @@ function shareLetter() {
 const VESSEL_N = 8;
 let vessel = 0, vesselRung = false;
 document.body.dataset.vessel = '0'; document.body.dataset.vesselCall = '0';
+// 満ちた「響」の発光は学習・周回中だけ淡く出し、終了後 2 秒で通常(home と同じ見え方)へ
+let wmGlow = false, wmGlowTimer = 0;
+function wmGlowSet(v) {
+  clearTimeout(wmGlowTimer);
+  if (v === 1) { wmGlow = true; vesselShow(); return; }
+  if (v === 0) { wmGlowTimer = setTimeout(() => { wmGlow = false; vesselShow(); }, 2000); return; }
+  wmGlow = true; vesselShow(); wmGlowTimer = setTimeout(() => { wmGlow = false; vesselShow(); }, v);
+}
 function vesselShow() {
   const f = Math.min(1, vessel / VESSEL_N), full = f >= 1;
-  wordmark.style.setProperty('--fill', f.toFixed(3));
+  wordmark.style.setProperty('--fill', (full && !wmGlow ? 0 : f).toFixed(3));
   document.body.dataset.vessel = f.toFixed(3);
   document.body.dataset.vesselCall = full ? '1' : '0';
   document.body.setAttribute('data-vesselcall', full ? '1' : '0');
   wordmark.classList.toggle('ready', full);
+  document.body.dataset.wmGlow = full && !wmGlow ? '0' : '1';
   if (full && !vesselRung) {
     vesselRung = true;
     vesselRing();
