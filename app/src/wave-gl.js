@@ -168,32 +168,43 @@ void main(){
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
 
   // クラドニ図形: 板 f=cos(nπX)cos(mπY)−cos(mπX)cos(nπY) の節の線に砂粒(2px)が集まる。解析式のみ・追加読み取り無し
-  if (uChl.z > 0.001) {
-    float cell = 3.0 * uCssPx;
-    vec2 P = gl_FragCoord.xy, cid = floor(P / cell);
-    vec2 loc = (P / cell - cid) * 3.0;
-    float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7);
-    vec2 off = vec2(h1, h2) * 1.0;
-    vec2 inb = step(off, loc) * step(loc, off + 2.0);
-    float grain = inb.x * inb.y;
-    if (grain > 0.5) {
+    float cp = uCssPx;
+    float mob = 1.0 - step(600.0, min(uRes.x, uRes.y) / cp);     // 縦長スマホ: 線を細く・量を下げる
+    float cell = 3.0 * cp;
+    float wv = clamp(length(g) * 5.0, 0.0, 1.0);                 // 波頭の通過（既に読んだ勾配のみ）
+    vec2 P = gl_FragCoord.xy + normalize(g + vec2(1e-6)) * wv * cp; // 波が通る帯だけ最大 1px 揺れる
+    vec2 cid = floor(P / cell);
+    float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7), h4 = hash(cid + 7.9);
+    vec2 ctr = (cid + (vec2(1.0) + vec2(h1, h2)) / 3.0) * cell; // 粒の中心（半径 1px が 3px セルに収まる）
+    float rd = length(P - ctr) / cp;
+    if (rd < 1.15) {
       float shortS = min(uRes.x, uRes.y);
-      vec2 Q = ((cid + 0.5) * cell - uRes * 0.5) / shortS + 0.5;
+      vec2 Q = (ctr - uRes * 0.5) / shortS + 0.5;
       float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
       float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
       float f = cnx * cmy - cmx * cny;
       vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
                      -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
       float d = abs(f) / max(length(gr), 1.6);
-      float dn = d / 0.012;                                   // 節の線からの距離（線幅=短辺の1.2%単位）
+      float dn = d / mix(0.012, 0.0085, mob);                 // 節の線からの距離（線幅=短辺の1.2%単位）
       float s = smoothstep(h3 * 0.45, h3 * 0.45 + 0.55, uChl.z); // 粒ごとに時間差で集まる
       float reach = mix(7.0, 0.7, s);
-      float keep = step(h1 + h2 * 0.35, mix(0.18, 1.05, s) - 0.1 * dn / reach);
+      float keep = step(h1 + h2 * 0.35, mix(0.18, 1.05, s) - 0.1 * dn / reach - 0.12 * mob);
       float line = 1.0 - smoothstep(0.55, 1.0, dn / reach);
-      float br = mix(0.05, 0.48, s) * line * keep * smoothstep(0.0, 0.12, uChl.z);
-      br *= 1.0 + min(1.2, length(g) * 5.0);                  // 輪が通ると砂が瞬く
-      br = min(br, 0.5) * (0.35 + 0.65 * smoothstep(0.1, 0.22, vUv.y)); // 下端（バー）は静かに
-      col += mix(vec3(1.0), uAcc, 0.3) * br;
+      float grain = 1.0 - smoothstep(0.45, 1.0, rd);          // 丸く柔らかい粒
+      float tone = 0.6 + 0.4 * h4;                            // 粒ごとの明るさのばらつき
+      float br = mix(0.05, 0.48, s) * line * keep * grain * tone * smoothstep(0.0, 0.12, uChl.z);
+      br *= 1.0 - 0.18 * mob;
+      br += 0.15 * wv * grain * keep * line * s;              // 輪が通る帯だけ砂がわずかに明るい
+      br = min(br, 0.5);
+      // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
+      vec2 cs = vec2(uRes.x, uRes.y) / cp, pc = ctr / cp;
+      float yt = cs.y - pc.y;
+      float quiet = 0.35 + 0.65 * smoothstep(mix(0.1, 0.13, mob), mix(0.22, 0.27, mob), vUv.y);
+      quiet *= 0.25 + 0.75 * smoothstep(34.0, 96.0, length(vec2(pc.x - 56.0, yt - 40.0)));
+      vec2 hq = vec2((pc.x - cs.x * 0.5) / 170.0, (pc.y - 122.0) / 30.0);
+      quiet *= 0.3 + 0.7 * smoothstep(0.6, 1.3, length(hq));
+      col += mix(vec3(1.0), uAcc, 0.3) * br * quiet;
     }
   }
   o = vec4(col, 1.0);
@@ -372,7 +383,7 @@ export function createGL(canvas) {
 
     return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate };
   } catch (e) {
-    try { console.warn('webgl unavailable, falling back'); } catch { /* noop */ }
+    try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;
   }
 }

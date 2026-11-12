@@ -166,12 +166,13 @@ function tick(now) {
 
 // ---- 砂の図形（クラドニ）: 音の高さ(横位置の度数)が板の振動モード (n,m) を決め、砂が節の線に集まる ----
 const PLATE_MODES = [[1, 2], [1, 3], [2, 3], [2, 5], [3, 4], [3, 5], [4, 7], [3, 8], [5, 8], [6, 9]];
+const PLATE_MODES_S = [[1, 2], [1, 3], [2, 3], [1, 4], [2, 5], [3, 4], [2, 7], [3, 5], [4, 5], [3, 7]]; // スマホ用: 線の少ない組
 const plate = { n: 0, m: 0, a: 0, age: 9, idx: -1, at: -1e9, figs: 0, shown: '' };
 document.body.dataset.plateFig = '0';
 function plateTouch(x, quiet) {
   const idx = noteIndex(x), now = performance.now();
   if (idx !== plate.idx && now - plate.at >= 500) {
-    plate.idx = idx; plate.at = now; plate.n = PLATE_MODES[idx][0]; plate.m = PLATE_MODES[idx][1];
+    plate.idx = idx; plate.at = now; const pm = (Math.min(innerWidth, innerHeight) < 600 ? PLATE_MODES_S : PLATE_MODES)[idx]; plate.n = pm[0]; plate.m = pm[1];
     plate.a = Math.min(plate.a, 0.12); // 砂がいったんほどけて次の図形へ集まり直す
     plate.figs++; document.body.dataset.plateFig = String(plate.figs);
     if (!quiet) audio.sand((x * 2 - 1) * 0.5);

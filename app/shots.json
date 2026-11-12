@@ -113,13 +113,13 @@
       "url": "/?demo=1",
       "steps": [
         {
-          "wait": 1500
+          "wait": 4800
         },
         {
           "waitFor": "body[data-holding='1']"
         },
         {
-          "wait": 1500
+          "wait": 1200
         }
       ]
     },
