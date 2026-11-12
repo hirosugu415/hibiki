@@ -135,6 +135,52 @@ function pushBar() {
   if (k !== shoal.key) { shoal.key = k; document.body.dataset.bar = k; }
 }
 
+// ---- 潮の門(c81): 水面を横切る堤と1つの門。堤で割れた波は門を抜けた分だけ反対側へ半円に広がる（回折）。?gate=0 で無効、デモは既定 on、通常は ?gate=1 のオプトイン ----
+const GATE_PARAM = params.get('gate');
+const GATE_ON = GATE_PARAM === '1' || (DEMO && GATE_PARAM !== '0');
+const gate = { k: GATE_ON ? 1 : 0, key: '', echoT: 0 };
+document.body.dataset.gate = GATE_ON ? '0,0,0' : 'off';
+document.body.dataset.gateHits = '0';
+const gateS = () => Math.min(viewW, viewH);
+const gateYf = () => (viewH > viewW ? 0.47 : 0.5);              // 堤の中心 y（上からの画面比。石・砂州・ヒントを避ける）
+const gateHw = () => Math.max(0.065 * gateS(), 26);               // 堤の半幅 CSS px（帯の全幅は短辺の 13%）
+const gateGw = () => Math.max(0.07 * gateS(), 26);                // 門の半幅
+const gateXf = () => 0.55 + 0.05 * Math.sin(2 * Math.PI * performance.now() / 180000 + 0.7); // 約3分で画面幅の1割ゆっくり漂う
+function pushGate() {
+  if (!GATE_ON || !backend || !backend.setGate) return;
+  const k = gate.k;
+  if (k < 0.01) { backend.setGate(0, 0, 0, 0); } else backend.setGate((1 - gateYf()) * viewH, gateXf() * viewW, gateGw(), gateHw() * k);
+  const key = gateYf().toFixed(3) + ',' + gateXf().toFixed(3) + ',' + (2 * gateGw() / viewW).toFixed(3);
+  if (key !== gate.key) { gate.key = key; document.body.dataset.gate = key; }
+}
+// 泉・こすって咲く花・長押しの泉が出ている間は、堤をそっとほどく（干渉させない）
+function gateStep(dt) {
+  if (!GATE_ON) return;
+  const off = fountain || springsLive() || bowl;
+  const tk = off ? 0 : 1;
+  gate.k += (tk - gate.k) * (1 - Math.exp(-dt / 0.6));
+  if (Math.abs(tk - gate.k) < 0.004) gate.k = tk;
+  document.body.dataset.gateK = gate.k.toFixed(2);
+  pushGate();
+}
+// 門を抜けた輪が届く頃に 1 音（石の響きと同じ仕組み）。堤を挟んで反対側の波が門から出る。1 タップ最大 1 回
+function gateEcho(x, yTop) {
+  if (!GATE_ON || !backend || backend.kind !== 'webgl2' || gate.k < 0.5) return;
+  const gx = gateXf(), gy = gateYf(), band = gateHw() / viewH;
+  if (Math.abs(yTop - gy) < band * 0.8) return;
+  const dist = Math.hypot((x - gx) * viewW, (yTop - gy) * viewH);
+  const speed = 0.68 * 95 * (viewW / 420);
+  const delay = Math.max(250, Math.min(4500, dist / speed * 1000 * 1.15));
+  const hz = noteFreq(target, noteIndex(gx));
+  setTimeout(() => {
+    const now = performance.now();
+    if (audio.muted || document.hidden || gate.k < 0.5 || now - gate.echoT < 500) return;
+    gate.echoT = now;
+    document.body.dataset.gateHits = String((+document.body.dataset.gateHits || 0) + 1);
+    audio.play(Math.min(1800, hz * 2), 0.45, 0.3, gx, 1.4);
+  }, delay);
+}
+
 // ---- 夜光虫: 水中の光の粒（波面が届くと光り、押され、鈴を鳴らす）。ループが回っている間だけ描く ----
 const WAVE_SPEED = () => 0.68 * 95 * (Math.max(viewW, viewH) / 420); // px/秒（sim は長辺 420 セルなので長辺で割る）
 const glimmer = createGlimmer({
@@ -240,6 +286,7 @@ function tick(now) {
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
   last = now;
   if (bowl) bowlStep(dt);
+  gateStep(dt);
   springStep(dt);
   const k = 1 - Math.exp(-dt / 0.3);
   let moving = false;
@@ -440,6 +487,7 @@ function tap(x, yTop, vel = 1, record = true) {
   if (!hatsune(x, yTop, vel)) note(x, yTop, vel);
   stoneEcho(x, yTop);
   barChime(x, yTop);
+  gateEcho(x, yTop);
   glimmer.hit(x, yTop, 0.6 + 0.4 * vel, { sound: true });
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
@@ -909,6 +957,7 @@ if (SPR_DEMO) {
 const ghost = createGhost({
   bar() { return { x: shoal.x, y: shoal.y, rx: barRx() / viewW }; },
   stone() { return { x: stone.x, y: stone.y, rx: stoneR() / viewW, ry: stoneR() / viewH }; },
+  gate() { return GATE_ON ? { x: gateXf(), y: gateYf(), hw: gateHw() / viewH } : null; },
   nudge(dx, dy) { // 石をそっとずらす（掴んで離すだけの小さな移動）
     stone.glide = false; stone.vx = stone.vy = 0;
     [stone.tx, stone.ty] = clampStone(stone.x + dx, stone.y + dy);

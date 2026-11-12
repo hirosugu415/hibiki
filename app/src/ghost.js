@@ -22,8 +22,10 @@ export function createGhost(api, { demo, seed }) {
   function firstAct() {
     const st = api.stone ? api.stone() : null;
     if (!st) { later(() => hold(xOf(7), 0.46, 3000), 200); return; }
-    const x1 = Math.max(0.06, st.x - st.rx - 0.1), y1 = st.y - 0.02;
-    const x2 = Math.min(0.94, st.x + st.rx + 0.16), y2 = Math.max(0.2, st.y - st.ry * 2.2);
+    let x1 = Math.max(0.06, st.x - st.rx - 0.1), y1 = st.y - 0.02;
+    let x2 = Math.min(0.94, st.x + st.rx + 0.16), y2 = Math.max(0.2, st.y - st.ry * 2.2);
+    const gt = api.gate ? api.gate() : null; // 潮の門: 最初の打は堤の上側（堤で割れて門から半円が出る）
+    if (gt) { x1 = Math.max(0.12, gt.x - 0.04); y1 = Math.max(0.2, gt.y - gt.hw - 0.05); x2 = Math.min(0.9, gt.x + 0.2); y2 = Math.max(0.2, gt.y - gt.hw - 0.16); }
     later(() => { if (alive) { lastIdx = 3; api.tap(x1, y1, 0.75); } }, 0);
     later(() => { if (alive) { lastIdx = 7; api.tap(x2, y2, 0.6); } }, 2300);
     // 砂州の手前（中心の左 25%）で一音: 輪が浅瀬で歪み、遅れて鐘が返る

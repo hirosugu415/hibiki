@@ -58,3 +58,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - sprLevel を「hold(既定3000ms, ?sprhold=)の間は lv0 を保ち、その後 smoothstep でほどける」に変更。springAdopt が hold を付与、springKill は hold=0。新旧の振幅が揃い縞が左右対称に。8秒の寿命は不変。
 - デモ座標点検: bowl=demo / ghost.springsAct(api.metric) / sprdemo(pt()) は全て発火時計算で問題なし。module 初期化時 viewW=1 の値を使う箇所は他に無い(定数は全て関数/getter)。
 - 実操作 probe: eval で #water に PointerEvent(down→1.2s→up→0.8s→down→2.8s)。非デモURL "/?seed=1&hour=13"。dataset.springs="2,.375,.375,.625,.375"。
+
+## c81: 潮の門(gate)
+- main.js「潮の門」節: GATE_ON(?gate=1 or demo かつ ?gate!=0)/gateYf(縦0.47,横0.5)/gateHw(短辺6.5%,min26)/gateGw(7%)/gateXf(0.55±0.05,180s周期,performance.now)/pushGate/gateStep(dt)/gateEcho(tapから呼ぶ,音1回)。泉・bowl・長押し中は gate.k→0 で堤をほどく。dataset.gate="y,x,幅"|off, gateK, gateHits。ghost.api.gate() で firstAct の最初の打を堤の上側(門のすぐ上)へ。
+- wave-gl.js: SIM uGate(y,x,gw,hw セル)=帯で kk×(1-0.85gz)・damp-0.07gz。RENDER uGateC(CSS px)=col*(1-0.45w) の陰影のみ。setGate(yPx,xPx,gwPx,hwPx)。
+- **落とし穴**: 最終 col の乗算は見た目で約1/3〜1/4にしか効かない(0.9で20%減)。波は3秒で消えるので回折は門の近く(堤の上端のすぐ上)で打たないと見えない。shots.json は eval の PointerEvent で画面比の位置を打つ(clickAt は幅で座標が変わるため)。
