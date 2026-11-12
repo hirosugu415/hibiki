@@ -42,3 +42,4 @@
 - [cycle 034] mode=normal | score 8/10 | health=ok | polish | 砂の目覚めが波頭から外へ広がり初画面は石が主役に。全面覚醒時と手紙再生では線が強い
 - [cycle 035] mode=normal | score 8/10 | health=ok | polish | 手紙再生中のヒントは消え縁は少し滑らかに。ただ全面覚醒時の砂線はまだ石より強く8点維持
 - [cycle 036] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、全面覚醒時の砂線が石より強い課題が残り8点維持
+- [cycle 037] mode=normal | score 8/10 | health=ok | polish | 砂線が石の周りに局在し遠景は気配だけに。石>砂の階層は改善、石への線の重なりと節の結び目が残り8点維持
