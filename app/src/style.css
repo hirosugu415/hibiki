@@ -189,3 +189,7 @@ body[data-mood="dawn"] .sep { background: rgb(255 255 255 / .3); }
   filter: blur(2.2px);
   mix-blend-mode: screen; will-change: transform, opacity;
 }
+
+/* 巻貝が浮かぶ間は残像・ゴーストを静める */
+body[data-shell-calm="1"] #afterimage { filter: blur(20px) opacity(.3); }
+body[data-shell-calm="1"] #ghost-dot { filter: opacity(.4); }

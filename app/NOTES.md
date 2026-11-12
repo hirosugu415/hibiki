@@ -8,11 +8,12 @@
 ## 状態フック（document.body.dataset.*）
 plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR afterimage rain sky depth hour touch disp hover floor gather bowl springs gate shell shells
 
-## c85: 巻貝(shell.js)
-- buildShell(taps)/paintShell(ctx,size,taps,accent,strength): 対数螺旋(g=1.85/周)、巻き数=clamp(1.6+n*0.1,2,3.2)、部屋の角度幅=0.55+0.9*音高、強さ=隔壁の濃さ、x平均=色相±22°(<0.5は鏡像)。同入力→同形。
-- createShell({accent,demo,shellParam,shellsParam}): main.js の tap(record=true) から shell.record(x,y,vel,pitch)。8打以上+10s無操作で一度だけ #shell(canvas, mix-blend screen, top44%)を 3.2s で浮上→1.4s後 3.4s で沈む。pointerdown/keydown で dismiss。非デモは localStorage 'hibiki.shells'(最大12,{x,y,t:[[x,p,v]]})に保存、再訪で最新5個を #shells(全面canvas)に strength0.5 で表示(タップで薄れ9s後復帰)。
-- フラグ: ?shell=show(0.3s後に固定12打で発火・消えない)、?shell=0(off)、?shells=N(保存なし・seed固定のN個、デモでも出る)。dataset.shell="打数,巻き数"/"0"/"off"、dataset.shells="個数"。デモ(DEMO)は保存も読み込みもしない(画素一致のため)。
-- shots.json に shell-show(wait3600)/shells-floor(wait4800)。PNG長押し保存は未実装(#water の長押し泉と衝突)。
+## c85-86: 巻貝(shell.js)
+- buildShell(taps,{turns,rot})/paintShell(ctx,size,taps,accent,strength,opts): 対数螺旋(g=1.85/周)、巻き数=clamp(1.6+n*0.1,2,3.2)、部屋の角度幅=0.55+0.9*音高、x平均=色相±22°。同入力→同形。
+- c86 質感: 部屋ごとに放射グラデ(内→外)+弧沿いの白い光沢、色相を部屋ごとに±14°ずらす。外縁=太線(size*0.011,min3px)+滲み+内側0.982倍の細いハイライト線。隔壁は細く(size*0.0042)低コントラスト。
+- createShell: 8打以上+10s無操作で一度だけ #shell(canvas, screen)を浮上→沈む。centerY(size): 石(dataset.stone)の影(r*1.7)の12px上に収め、足りなければ size を縮める(石が無ければ44%)。自然発火中は body[data-shell-calm=1] で CSS が #afterimage/#ghost-dot を減光(remove/dismiss で解除)。
+- 非デモは localStorage 'hibiki.shells'(最大12)、再訪で最新5個を #shells に strength0.33 で表示。MULT/TURNS/ROT 配列で大きさ0.65-1.3倍・巻き数2-3.2・向きを変える。
+- フラグ: ?shell=show(固定12打,dataset.shell="12,2.8",消えない)、?shell=0(off)、?shells=N(seed固定。デモでも出る)。デモは保存/読込しない。PNG保存は未実装。
 
 ## 撮影・probe
 - shots.json: デモは `/?demo=1&seed=1&hour=13`。撮影 wait 合計は幅あたり25s以下。gate-split は ?gate=1 付き。

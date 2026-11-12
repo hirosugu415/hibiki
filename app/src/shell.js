@@ -22,16 +22,16 @@ function rgbToHsl(r, g, b) {
 }
 
 // 貝殻の形（正規化座標）。turns: 巻き数 / chambers: 部屋ごとの角度境界 / 点列関数
-export function buildShell(taps) {
+export function buildShell(taps, opts = {}) {
   const n = taps.length;
-  const turns = Math.max(2, Math.min(3.2, 1.6 + n * 0.1));
+  const turns = opts.turns || Math.max(2, Math.min(3.2, 1.6 + n * 0.1));
   const Th = turns * TAU;
   const w = taps.map((t) => 0.55 + 0.9 * t.p);
   const sum = w.reduce((a, b) => a + b, 0);
   const th = [0]; let acc = 0;
   for (let i = 0; i < n; i++) { acc += w[i]; th.push(Th * acc / sum); }
   const hs = hashTaps(taps), rnd = mulberry32(hs);
-  const phi = rnd() * TAU;
+  const phi = rnd() * TAU + (opts.rot || 0);
   const xm = taps.reduce((a, t) => a + t.x, 0) / n;
   const dir = xm < 0.5 ? 1 : -1;
   const b = Math.log(1.85) / TAU;
@@ -40,8 +40,8 @@ export function buildShell(taps) {
 }
 
 // strength: 全体の濃さ(0-1)。size: 描画する正方形の一辺(px)。accent: 0-1 の RGB。
-export function paintShell(ctx, size, taps, accent, strength = 1) {
-  const S = buildShell(taps), { th, P, n, Th } = S;
+export function paintShell(ctx, size, taps, accent, strength = 1, opts = {}) {
+  const S = buildShell(taps, opts), { th, P, n, Th } = S;
   // 境界ボックスで中央に収める
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (let t = -TAU * 0.8; t <= Th; t += 0.05) { const [x, y] = P(t); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
@@ -53,40 +53,49 @@ export function paintShell(ctx, size, taps, accent, strength = 1) {
   const [h0, s0, l0] = rgbToHsl(accent[0], accent[1], accent[2]);
   const hue = (h0 + (S.xm - 0.5) * 44 + 360) % 360;
   const col = (l, a) => `hsla(${hue.toFixed(0)},${Math.round(30 + s0 * 55)}%,${Math.round(l * 100)}%,${(a * strength).toFixed(3)})`;
-  const lw = Math.max(2, size * 0.0085);
+  const lw = Math.max(3, size * 0.011);
+  const bb = Math.log(1.85) / TAU;
+  const colH = (dh, l, a, sat = 0) => `hsla(${((hue + dh + 360) % 360).toFixed(0)},${Math.round(30 + s0 * 55 + sat)}%,${Math.round(l * 100)}%,${(a * strength).toFixed(3)})`;
   ctx.save();
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  // 部屋の面（ガラス質の濃淡）
+  // 部屋の面: 真珠層。内→外の放射グラデ＋弧に沿った光沢。部屋ごとに色相をわずかにずらす
   for (let i = 0; i < n; i++) {
     const a = th[i], b = th[i + 1], tp = taps[i];
     const steps = Math.max(4, Math.ceil((b - a) / 0.08));
+    const dh = ((i * 37) % 5 - 2) * 7 + (tp.p - 0.5) * 10, k = 0.35 + 0.65 * tp.v, odd = i % 2;
+    const rIn = Math.exp(bb * (a - TAU)) * sc, rOut = Math.exp(bb * b) * sc;
+    const rg = ctx.createRadialGradient(C[0], C[1], rIn, C[0], C[1], rOut);
+    rg.addColorStop(0, colH(dh + 10, 0.9, 0.03 + 0.04 * k));
+    rg.addColorStop(0.5, colH(dh, 0.8, 0.14 + 0.16 * k * (0.75 + 0.25 * odd), 10));
+    rg.addColorStop(1, colH(dh - 12, 0.7, 0.06 + 0.07 * k));
     ctx.beginPath();
-    for (let k = 0; k <= steps; k++) { const [x, y] = Q(a + (b - a) * k / steps); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-    for (let k = steps; k >= 0; k--) { const [x, y] = Q(a + (b - a) * k / steps - TAU); ctx.lineTo(x, y); }
+    for (let q = 0; q <= steps; q++) { const [x, y] = Q(a + (b - a) * q / steps); q ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    for (let q = steps; q >= 0; q--) { const [x, y] = Q(a + (b - a) * q / steps - TAU); ctx.lineTo(x, y); }
     ctx.closePath();
-    ctx.fillStyle = col(0.78, 0.05 + 0.13 * (0.35 + 0.65 * tp.v) * (0.7 + 0.3 * (i % 2)));
-    ctx.fill();
+    ctx.fillStyle = rg; ctx.fill();
+    // 光沢: 部屋の弧に沿って片側から白がにじむ
+    const [gx0, gy0] = Q(a - TAU * 0.5), [gx1, gy1] = Q(b - TAU * 0.5);
+    const lg = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+    lg.addColorStop(0, colH(dh + 25, 0.97, 0.0)); lg.addColorStop(0.35, colH(dh + 25, 0.97, 0.10 + 0.08 * k)); lg.addColorStop(1, colH(dh + 25, 0.97, 0.0));
+    ctx.fillStyle = lg; ctx.fill();
   }
-  // 隔壁（強さ=濃さ）。わずかに内側へ膨らむ曲線
-  ctx.lineWidth = lw * 0.85;
+  // 隔壁: 細く低コントラスト（強さ=濃さ）。わずかに内側へ膨らむ曲線
+  ctx.lineWidth = Math.max(1, size * 0.0042);
   for (let i = 0; i < n; i++) {
     const [ax, ay] = Q(th[i]), [bx, by] = Q(th[i] - TAU);
     const mx = (ax + bx) / 2, my = (ay + by) / 2;
     const cx = mx + (C[0] - mx) * 0.14, cy = my + (C[1] - my) * 0.14;
     ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(cx, cy, bx, by);
-    ctx.strokeStyle = col(0.84, 0.3 + 0.45 * taps[i].v);
+    ctx.strokeStyle = col(0.86, 0.16 + 0.26 * taps[i].v);
     ctx.stroke();
   }
-  // 殻の輪郭（螺旋）
-  const outline = (width, l, a, dx, dy) => {
-    ctx.beginPath();
-    for (let t = -TAU * 0.8, first = true; t <= Th + 0.02; t += 0.04) { const [x, y] = Q(t); first ? ctx.moveTo(x + dx, y + dy) : ctx.lineTo(x + dx, y + dy); first = false; }
-    ctx.lineWidth = width; ctx.strokeStyle = col(l, a); ctx.stroke();
-  };
-  outline(lw * 1.6, 0.7, 0.2, 0, 0); // ガラスの縁の滲み
-  outline(lw * 1.15, 0.86, 0.6, 0, 0);
+  // 殻の輪郭: 太い外線＋内側の細いハイライト線＋外へのやわらかい滲み
+  const path = (k) => { ctx.beginPath(); for (let t = -TAU * 0.8, f = true; t <= Th + 0.02; t += 0.04) { const [x, y] = Q(t); const px = C[0] + (x - C[0]) * k, py = C[1] + (y - C[1]) * k; f ? ctx.moveTo(px, py) : ctx.lineTo(px, py); f = false; } };
+  path(1); ctx.lineWidth = lw * 3.2; ctx.strokeStyle = col(0.75, 0.09); ctx.stroke();
+  path(1); ctx.lineWidth = lw; ctx.strokeStyle = col(0.8, 0.5); ctx.stroke();
+  path(0.982); ctx.lineWidth = Math.max(1, lw * 0.34); ctx.strokeStyle = colH(18, 0.97, 0.62); ctx.stroke();
   // 開口の端
-  { const [ex, ey] = Q(Th), [fx, fy] = Q(Th - TAU); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(fx, fy); ctx.lineWidth = lw; ctx.strokeStyle = col(0.88, 0.5); ctx.stroke(); }
+  { const [ex, ey] = Q(Th), [fx, fy] = Q(Th - TAU); ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(fx, fy); ctx.lineWidth = lw * 0.8; ctx.strokeStyle = col(0.86, 0.4); ctx.stroke(); }
   ctx.restore();
   return S;
 }
@@ -96,6 +105,7 @@ function loadSaved() {
 }
 function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* 保存できなくても動く */ } }
 
+const MULT = [1.1, 0.65, 0.9, 1.3, 0.75], TURNS = [2.2, 3.2, 2.6, 2.0, 3.0], ROT = [0.4, 2.3, 4.1, 5.5, 1.2];
 const q2 = (v) => Math.round(v * 100) / 100;
 
 export function createShell({ accent, demo, shellParam, shellsParam }) {
@@ -111,18 +121,31 @@ export function createShell({ accent, demo, shellParam, shellsParam }) {
   const dprOf = () => Math.min(2, window.devicePixelRatio || 1);
   const mainSize = () => Math.round(Math.max(200, Math.min(innerWidth * 0.78, innerHeight * 0.52, 520)));
 
+  // 石（と影）の上方に収める。石が無ければ従来の 44%
+  function centerY(size) {
+    const H = innerHeight, W = innerWidth, def = H * 0.44;
+    const st = (body.dataset.stone || '').split(',').map(Number);
+    if (st.length < 2 || !isFinite(st[1])) return def;
+    const r = Math.max(0.07 * Math.min(W, H), 44), top = st[1] * H - r * 1.7;
+    const half = size * 0.47, lim = top - 12 - half;
+    return Math.max(half + 64, Math.min(def, lim));
+  }
   function fire(list) {
     if (fired || document.hidden) return;
     fired = true;
-    const size = mainSize(), dpr = dprOf();
+    let size = mainSize(); const dpr = dprOf();
+    { const st = (body.dataset.stone || '').split(',').map(Number), H = innerHeight, r = Math.max(0.07 * Math.min(innerWidth, H), 44);
+      if (st.length > 1 && isFinite(st[1])) { const room = (st[1] * H - r * 1.7 - 12 - 64) / 0.94; if (room < size) size = Math.round(Math.max(200, room)); } }
     cv = document.createElement('canvas');
     cv.id = 'shell'; cv.setAttribute('aria-hidden', 'true');
     cv.width = Math.round(size * dpr); cv.height = Math.round(size * dpr);
-    cv.style.cssText = `position:fixed;left:50%;top:44%;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transform:scale(.93);filter:blur(5px);transition:opacity 3.2s cubic-bezier(.22,.7,.2,1),transform 3.6s cubic-bezier(.22,.7,.2,1),filter 3.2s ease-out;will-change:opacity,transform`;
+    const cy = centerY(size);
+    cv.style.cssText = `position:fixed;left:50%;top:${cy}px;width:${size}px;height:${size}px;margin:${-size / 2}px 0 0 ${-size / 2}px;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transform:scale(.93);filter:blur(5px);transition:opacity 3.2s cubic-bezier(.22,.7,.2,1),transform 3.6s cubic-bezier(.22,.7,.2,1),filter 3.2s ease-out;will-change:opacity,transform`;
     const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
     const S = paintShell(ctx, size, list, accent(), 1);
     document.body.appendChild(cv);
     body.dataset.shell = `${S.n},${S.turns.toFixed(1)}`;
+    if (!SHOW) body.dataset.shellCalm = '1';
     void cv.offsetWidth;
     cv.style.opacity = '0.92'; cv.style.transform = 'scale(1)'; cv.style.filter = 'blur(0px)';
     if (!SHOW) {
@@ -139,11 +162,11 @@ export function createShell({ accent, demo, shellParam, shellsParam }) {
       save(all.slice(-12));
     }
   }
-  function remove() { clearTimeout(sinkT); clearTimeout(hideT); if (cv) { cv.remove(); cv = null; } }
+  function remove() { delete body.dataset.shellCalm; clearTimeout(sinkT); clearTimeout(hideT); if (cv) { cv.remove(); cv = null; } }
   function dismiss() { // 新しい操作で即座に薄れる
     clearTimeout(idleT);
     if (!cv) return;
-    clearTimeout(sinkT); clearTimeout(hideT);
+    delete body.dataset.shellCalm; clearTimeout(sinkT); clearTimeout(hideT);
     cv.style.transition = 'opacity .5s ease-out,transform .6s ease-out,filter .5s ease-out';
     cv.style.opacity = '0'; cv.style.filter = 'blur(6px)';
     hideT = setTimeout(remove, 700);
@@ -183,10 +206,10 @@ export function createShell({ accent, demo, shellParam, shellsParam }) {
     fc.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transition:opacity 3s ease-out`;
     const fctx = fc.getContext('2d');
     list.forEach((e, i) => {
-      const sz = Math.round(Sm * (0.2 + 0.07 * ((i * 7) % 4) / 3) * (W < 600 ? 1.15 : 1));
+      const sz = Math.round(Sm * 0.23 * MULT[i % MULT.length] * (W < 600 ? 1.15 : 1));
       const t = document.createElement('canvas'); t.width = t.height = Math.round(sz * dpr);
       const tc = t.getContext('2d'); tc.scale(dpr, dpr);
-      paintShell(tc, sz, e.taps, accent(), 0.5);
+      paintShell(tc, sz, e.taps, accent(), 0.33, { turns: TURNS[i % TURNS.length], rot: ROT[i % ROT.length] });
       fctx.drawImage(t, Math.round(e.x * W - sz / 2) * dpr, Math.round(e.y * H - sz / 2) * dpr);
     });
     document.body.appendChild(fc);
