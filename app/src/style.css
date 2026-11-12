@@ -56,6 +56,9 @@ body { position: fixed; inset: 0; }
 #wordmark:active { color: #fff; transition-duration: .12s; }
 #wordmark:focus-visible { outline: 1px solid rgb(255 255 255 / .55); outline-offset: 8px; border-radius: 8px; }
 
+/* ---- 水面の残像: 前回の打の淡い光。水の上・環境光の下 ---- */
+#afterimage { position: fixed; inset: -6vmax; width: calc(100vw + 12vmax); height: calc(100dvh + 12vmax); z-index: 1; pointer-events: none; opacity: 0; filter: blur(20px); mix-blend-mode: screen; }
+
 /* ---- 生きた環境: 呼吸する光と漂う塵（transform / opacity のみ） ---- */
 #aura { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; contain: strict; }
 #glimmer { position: fixed; left: 0; top: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }

@@ -71,3 +71,8 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## c40 innovation
 - app無変更。IDEAS.md に案A撚り/B水面の残像/C触れ方で変わる水を追記。推しB（localStorage に静止時の淡い絵、再訪で初打が洗う）。
+
+## c41 水面の残像（afterimage.js 新規）
+- localStorage 'hibiki.afterimage'={p:[[x,y,vel]..最大14]}（GL読み出しはせず打点版）。main.js tap() 冒頭で record+wash（幽霊の打は DEMO 以外では無視: ghostTap フラグ）。stepCalm で最後の打から>4s に save()、pagehide/visibilitychange でも保存。
+- 表示: `<canvas id="afterimage">`(48px幅にグラデ点→CSS blur20px, opacity .22, screen, z1。#aura の前)。起動時に保存あり→shown(1.4sフェードイン)、tap→washing(2.5s)→washed。dataset.afterimage=none/saved/shown/washing/washed。
+- `?demo=1&seed=1` は固定 SEED を即表示（フェードなし）。手紙ハッシュ付きURLを再読込すると letterPlay の tap で洗われる（仕様）。probe で再訪確認は eval で `location.replace(pathname+search)`。shots: afterimage-shown/washed。

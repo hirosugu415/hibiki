@@ -6,11 +6,13 @@ import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
 import { createEcho } from './echo.js';
 import { createGlimmer } from './glimmer.js';
+import { createAfterimage } from './afterimage.js';
 import { decodeLetter, createLetterRecorder } from './letter.js';
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
 
+const SEED = params.get('seed') === '1';
 const store = {
   get(k) { try { return localStorage.getItem('hibiki.' + k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem('hibiki.' + k, v); } catch { /* noop */ } },
@@ -50,6 +52,7 @@ const PKEYS = ['deep', 'mid', 'accent', 'look'];
 const pal = { deep: [...MOODS.calm.deep], mid: [...MOODS.calm.mid], accent: [...MOODS.calm.accent], look: [...MOODS.calm.look] };
 let mood = MOODS[store.get('mood')] || MOODS.calm;
 let target = mood;
+const afterimage = createAfterimage({ el: document.getElementById('afterimage'), accent: () => mood.accent, demoSeed: DEMO && SEED });
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const to255 = (c) => c.map((v) => Math.round(v * 255)).join(' ');
 function applyCss() {
@@ -169,6 +172,7 @@ function stepWake() {
 function stepCalm(dt) {
   const el = (performance.now() - wakeLast) / 1000;
   const q = Math.min(1, Math.max(0, (el - 0.4) / 3.6));
+  if (wakeLast && el > 4) afterimage.save(); // 約4秒の静けさで水面の記憶を残す
   const tgt = wakeLast ? (1 - 0.45 * q * q * (3 - 2 * q)) * (wakeAll ? 0.72 : 1) * (document.body.dataset.letterPlay === '1' ? 0.8 : 1) : 1;
   const d = tgt - calm;
   if (Math.abs(d) < 0.001) { if (!d) return false; calm = tgt; }
@@ -379,7 +383,9 @@ function barChime(x, yTop) {
   }, delay);
 }
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
+let ghostTap = false; // 幽霊の指の打か（デモ以外では残像を洗わず・覚えない）
 function tap(x, yTop, vel = 1, record = true) {
+  if (!ghostTap || DEMO) { afterimage.wash(); afterimage.record(x, yTop, vel); }
   plateTouch(x, !record);
   sandWake(x, yTop);
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
@@ -576,7 +582,7 @@ const ghost = createGhost({
     dotShow(x, y);
     ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
-    tap(x, y, vel);
+    ghostTap = true; try { tap(x, y, vel); } finally { ghostTap = false; }
     if (DEMO) letterRec.record(x, y, vel); // デモ時のみ、幽霊の打も手紙に記録（「響」を押せるように）
     vesselAdd(DEMO ? 2 : 1); // デモの幽霊は約 10 秒で満たす
   },
@@ -827,3 +833,6 @@ wordmark.addEventListener('click', shareLetter);
 wordmark.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shareLetter(); }
 });
+
+addEventListener('pagehide', () => afterimage.save());
+document.addEventListener('visibilitychange', () => { if (document.hidden) afterimage.save(); });

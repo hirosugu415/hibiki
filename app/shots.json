@@ -398,6 +398,33 @@
           "wait": 2500
         }
       ]
+    },
+    {
+      "name": "afterimage-shown",
+      "url": "/?demo=1&seed=1",
+      "steps": [
+        {
+          "wait": 500
+        }
+      ]
+    },
+    {
+      "name": "afterimage-washed",
+      "url": "/?demo=1&seed=1",
+      "steps": [
+        {
+          "wait": 300
+        },
+        {
+          "clickAt": [
+            600,
+            260
+          ]
+        },
+        {
+          "wait": 2800
+        }
+      ]
     }
   ]
 }
