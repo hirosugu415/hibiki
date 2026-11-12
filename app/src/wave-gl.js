@@ -200,7 +200,8 @@ void main(){
     float rdA = length(dA) * uRes.y / min(uRes.x, uRes.y), rdB = length(dB) * uRes.y / min(uRes.x, uRes.y);
     float bgA = smoothstep(0.72, 0.88, rdA / max(uFlA.z, 0.05)) * (1.0 - smoothstep(1.1, 1.3, rdA / max(uFlA.z, 0.05)));
     float bgB = smoothstep(0.72, 0.88, rdB / max(uFlB.z, 0.05)) * (1.0 - smoothstep(1.1, 1.3, rdB / max(uFlB.z, 0.05)));
-    cx *= max(bgA * smoothstep(0.07, 0.15, uFlA.z) * (1.0 - smoothstep(0.26, 0.48, uFlA.z)), bgB * smoothstep(0.07, 0.15, uFlB.z) * (1.0 - smoothstep(0.26, 0.48, uFlB.z)));
+    float inA = step(0.08, min(min(uFlA.x, 1.0 - uFlA.x), min(uFlA.y, 1.0 - uFlA.y))), inB = step(0.08, min(min(uFlB.x, 1.0 - uFlB.x), min(uFlB.y, 1.0 - uFlB.y)));
+    cx *= max(bgA * inA * smoothstep(0.07, 0.15, uFlA.z) * (1.0 - smoothstep(0.26, 0.48, uFlA.z)), bgB * inB * smoothstep(0.07, 0.15, uFlB.z) * (1.0 - smoothstep(0.26, 0.48, uFlB.z)));
     if (asp.x < 0.8) { // c95 縦長: 帯を狭め(rd/z 0.85〜1.15)、画面端 8% は退かせ、曲率をしきい値でなく smoothstep で滑らかに
       float zA = rdA / max(uFlA.z, 0.05), zB = rdB / max(uFlB.z, 0.05);
       float nb = max(smoothstep(0.85, 0.95, zA) * (1.0 - smoothstep(1.05, 1.15, zA)) * step(0.001, uFlA.z), smoothstep(0.85, 0.95, zB) * (1.0 - smoothstep(1.05, 1.15, zB)) * step(0.001, uFlB.z));
@@ -210,6 +211,12 @@ void main(){
     // c95 「響」の近傍（中心から ~110 CSS px 以内）は金を最大 30% に
     vec2 wmP = vec2(uv.x * uRes.x, (1.0 - uv.y) * uRes.y) / uCssPx - vec2(46.0, 40.0);
     cx *= mix(0.3, 1.0, smoothstep(60.0, 130.0, length(wmP)));
+    // c97 隅・端では金を確実にゼロに: 画面端から短辺の 12% 以内は 0（22% で全開）、打点が画面外の輪は金なし、「響」周辺 200px 四方も 0
+    vec2 edp = min(uv, 1.0 - uv) * uRes / uCssPx;
+    float edm = min(edp.x, edp.y) / (min(uRes.x, uRes.y) / uCssPx);
+    cx *= smoothstep(0.12, 0.22, edm);
+    vec2 wq = vec2(uv.x * uRes.x, (1.0 - uv.y) * uRes.y) / uCssPx;
+    cx *= smoothstep(200.0, 260.0, max(wq.x, wq.y * 1.15));
     float ce = uCaus.y * 0.95 * 1.4 * cx / (0.49 + cx * cx);   // 山形の応答: 曲率が強すぎる所（混み合った水面）では逆に退き、べた塗りの金にならない
     base *= mix(vec3(1.0), vec3(1.0, 0.46, 0.08), min(1.0, 1.35 * ce));
     base += uWarm * ce * uCaus.z * (1.0 - 0.35 * smoothstep(0.0, 0.6, dot(base, vec3(0.333))));

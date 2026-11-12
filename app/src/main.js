@@ -503,7 +503,38 @@ function reboundDrop(x, yTop, vel) {
     document.body.dataset.rebound = rebN + ',' + (amp / main).toFixed(2);
   }, REB.DELAY);
 }
+// ---- 出会いの音(c97): 近い時刻の 2 打の輪が出会う点（解析計算）に、1 オクターブ上の小さな澄んだ音と光の粒。?meet=0 で無効 ----
+const MEET_ON = params.get('meet') !== '0';
+const meetHits = []; let meetN = 0; const meetFired = [];
+document.body.dataset.meet = MEET_ON ? '0' : 'off';
+function meetCheck(x, yTop) {
+  if (!MEET_ON || quietTap || !backend || backend.kind !== 'webgl2') return;
+  const now = performance.now(), sp = WAVE_SPEED();
+  const cur = { x: x * viewW, y: yTop * viewH, t: now };
+  for (const p of meetHits) {
+    const d = Math.hypot(cur.x - p.x, cur.y - p.y), dt = (now - p.t) / 1000;
+    if (d < 40 || dt > 3) continue;
+    const r1 = (d / sp + dt) / 2 * sp, r2 = d - r1; // p の輪の半径 r1・新しい輪の半径 r2（出会う瞬間）
+    if (r2 <= 0 || r1 >= d || Math.max(r1, r2) > viewW * 0.7) continue;
+    const mx = (p.x + (cur.x - p.x) * r1 / d) / viewW, my = (p.y + (cur.y - p.y) * r1 / d) / viewH;
+    if (mx < 0.05 || mx > 0.95 || my < 0.1 || my > 0.9) continue;
+    const delay = r2 / sp * 1000;
+    setTimeout(() => {
+      if (document.hidden) return;
+      const t = performance.now();
+      while (meetFired.length && t - meetFired[0] > 1000) meetFired.shift();
+      if (meetFired.length >= 2) return;
+      meetFired.push(t);
+      glimmer.spark(mx, my);
+      audio.play(Math.min(2600, noteFreq(target, noteIndex(mx)) * 2), 0.8, 0.3, mx, 0.45, 1, 0, 1 - my);
+      meetN++;
+      document.body.dataset.meet = [meetN, mx.toFixed(2), my.toFixed(2), Math.round(t)].join(',');
+    }, delay);
+  }
+  meetHits.push(cur); while (meetHits.length > 6) meetHits.shift();
+}
 function tap(x, yTop, vel = 1, record = true) {
+  meetCheck(x, yTop);
   reboundDrop(x, yTop, vel);
   if (!quietTap && (!ghostTap || DEMO)) { afterimage.wash(); afterimage.record(x, yTop, vel); }
   plateTouch(x, !record);

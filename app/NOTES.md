@@ -31,9 +31,7 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 ## c90-91: 底の光 (wave-gl.js RENDER の uCaus ブロック ~L183-205)
 - 色: 乗算 tint vec3(1,.46,.08)×min(1,1.35ce) で青を潰し、加算 uWarm（昼 1,.68,.24 / 夜 1,.40,.12）。金×青い輪=灰/オリーブになるので tint は強め。応答は山形 ce=env*1.33*cx/(0.49+cx²)。
 - c91 輪の帯ゲート: 打点 A/B から輪の半径 uFl*.z（床の輪=波頭と同じ半径, 短辺単位, ≒0.22/s）に対し rd/z が 0.72〜0.88 で立ち上がり 1.1〜1.3 で消える帯だけ金を許可。z>0.26〜0.48 で消す（大きな輪のリボン防止）。これで mobile 中央の染み（原因: dd の最近点が非活性の B=画面中央を選んでいた/反射波）が消えた。dd は活性な打点のうち輪の半径に近い方。
-- 金は依然 青い輪の外側（波頭の山の位置）に出る。屈折オフセット(uCaus.w*2.1テクセル)は 4.5 に増やしても位置が変わらず原因不明（未達）。内側に出すなら輪の半径に対する帯の中心を内へ寄せる方が確実。
 - mobile(<500px): k×1.25, max 0.56, 幅×1.3。desktop: k×1.5, max 0.62。dataset.caustic / dataset.flr(=床の輪の半径, デバッグ用) / ?caustic=0 ?caustick ?causw。
-- 混んだ水面(demo 30s)では輪近傍に金の塊が出る（未解決）。
 - probe 出力は shots/cycle-091/（3桁）。PNG 解析は node + 根の node_modules/pngjs。python heredoc/長い sed はハングしがち→ node スクリプトで編集。
 
 ## c93: 跳ね返る雫 (main.js reboundDrop, tap() の直前 ~L482)
@@ -44,9 +42,12 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 ## c94: mobile 仕上げ
 - reboundDrop: innerWidth<600 は amp=min(0.42,主×1.0)・半径0.0095（desktop は 0.3/×0.7/0.0072 のまま）。dataset.rebound 比は mobile で ~0.84-0.95。
 - wave-gl.js 底の光: asp.x<0.8（縦長）のとき斜め4点を追加で読み lw を平均 → 金の縁のギザつきが減った（desktop 不変）。打点中心付近の小さな金の欠片は残る。
-- 雫の音: OfflineAudioContext をProxyで包み app/dist に一時ページ(audio_t.js)を置いて計測（dist は git 無視）。ピーク比(雫/主)≈0.55, RMS比≈0.31-0.45。
 - headless の sim 時間は遅く、デモ撮影は打点・時刻が揺れる。mobile 確認は実クリックで `clickAt` 後 wait1500 が安定。
 
 ## c95: 金の染み対策 (wave-gl.js uCaus ブロック)
 - 縦長(asp.x<0.8): 帯を rd/z 0.85〜1.15 に狭め、画面端8%で fade、金強度 max 0.56→0.26。全幅: 輪が小さい(uFl*.z<0.07〜0.15)間は金を出さない(中心付近の欠片対策)。「響」中心(CSS 46,40)から 60〜130px で金を 30%→100%。
-- 確認: mobile 5 枚で輪沿いの細い弧のみ・楔なし。desktop 5.8s で響クリア・欠片なし。
+
+## c97: 隅の金ゼロ + 出会いの音
+- wave-gl.js uCaus ブロック末尾: 画面端から短辺の 12%(22%で全開)で cx を 0、打点 A/B が端 8% の外なら輪の帯を無効(inA/inB)、「響」周辺 200×~174 CSS px 箱は 0(→260px で全開)。隅・響周りは金ゼロを確認済み(mobile/desktop rebound-ring, caustic-ring)。輪沿いの細い金の弧は内側に残る。
+- 出会いの音: main.js meetCheck(tap 冒頭, ~L506)。直前 6 打(3 秒以内, 距離>=40px)と解析計算: 輪が出会う半径 r1=(d/sp+dt)/2*sp (sp=WAVE_SPEED)、接点が 5-95%x/10-90%y 外・半径>0.7 幅なら出さない。1 秒 2 個まで、quietTap 除外。音は noteFreq*2 vel0.3、粒は glimmer.spark(x,y) (半径 6.5px 青白い芯+薄い縁, 1.1 秒)。?meet=0 / dataset.meet="回数,x,y,perf時刻"/off。
+- デモ seed=1 は perf 5.4s/6.0s/6.6s に発火。shots meet-spark/meet-off は wait 4800(ページ読込~0.8s 後が perf 時刻)。headless は揺れる。

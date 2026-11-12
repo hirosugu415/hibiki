@@ -1043,6 +1043,24 @@
           "wait": 5800
         }
       ]
+    },
+    {
+      "name": "meet-spark",
+      "url": "/?demo=1&seed=1&hour=13",
+      "steps": [
+        {
+          "wait": 4800
+        }
+      ]
+    },
+    {
+      "name": "meet-off",
+      "url": "/?demo=1&seed=1&hour=13&meet=0",
+      "steps": [
+        {
+          "wait": 4800
+        }
+      ]
     }
   ]
 }

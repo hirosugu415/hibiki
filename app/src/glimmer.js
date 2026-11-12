@@ -87,6 +87,26 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
     }
   }
 
+  // c97 出会いの粒: 2 つの輪が出会う点に一粒だけ（半径 ~6.5px の青白い芯 + ごく薄い縁、~1.1 秒で消える）
+  const meets = [];
+  function spark(x, y) {
+    if (!ctx2) return;
+    meets.push({ x: x * W, y: y * H, t0: performance.now() });
+    while (meets.length > 3) meets.shift();
+    wake(1400);
+  }
+  function drawMeets(now, c) {
+    for (let k = meets.length - 1; k >= 0; k--) {
+      const m = meets[k], age = now - m.t0, LIFE = 1100;
+      if (age > LIFE) { meets.splice(k, 1); continue; }
+      const u = age / LIFE, env = Math.min(1, age / 90) * Math.pow(1 - u, 1.3), r = 6.5 + 1.5 * u;
+      ctx2.fillStyle = `rgba(200,228,255,${(0.2 * env).toFixed(3)})`;
+      ctx2.beginPath(); ctx2.arc(m.x, m.y, r * 2.1, 0, 6.283); ctx2.fill();
+      ctx2.fillStyle = `rgba(244,250,255,${(0.97 * env).toFixed(3)})`;
+      ctx2.beginPath(); ctx2.arc(m.x, m.y, r, 0, 6.283); ctx2.fill();
+    }
+  }
+
   function drawSparks(now, c, st) {
     const sp = speed();
     for (let k = sparks.length - 1; k >= 0; k--) {
@@ -119,6 +139,7 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
     const kd = Math.exp(-dt / 0.4), w = 1 / 0.6;
     ctx2.clearRect(0, 0, W, H);
     drawSparks(now, c, st);
+    drawMeets(now, c);
     for (const p of parts) {
       for (let i = p.pend.length - 1; i >= 0; i--) if (now >= p.pend[i].at) { fire(p, p.pend[i], now); p.pend.splice(i, 1); }
       p.lit *= kd;
@@ -145,5 +166,5 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
   }
 
   layout();
-  return { layout, hit, frame, get count() { return count; } };
+  return { layout, hit, spark, frame, get count() { return count; } };
 }
