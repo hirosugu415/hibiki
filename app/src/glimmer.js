@@ -99,10 +99,13 @@ export function createGlimmer({ canvas, view, accent, stone, speed, sound, wake 
     for (let k = meets.length - 1; k >= 0; k--) {
       const m = meets[k], age = now - m.t0, LIFE = 1100;
       if (age > LIFE) { meets.splice(k, 1); continue; }
-      const u = age / LIFE, env = Math.min(1, age / 90) * Math.pow(1 - u, 1.3), r = 6.5 + 1.5 * u;
-      ctx2.fillStyle = `rgba(200,228,255,${(0.2 * env).toFixed(3)})`;
-      ctx2.beginPath(); ctx2.arc(m.x, m.y, r * 2.1, 0, 6.283); ctx2.fill();
-      ctx2.fillStyle = `rgba(244,250,255,${(0.97 * env).toFixed(3)})`;
+      const u = age / LIFE, env = Math.min(1, age / 90) * Math.pow(1 - u, 1.3), r = 7 + 1.5 * u;
+      const g = ctx2.createRadialGradient(m.x, m.y, r * 0.5, m.x, m.y, r * 3.4);
+      g.addColorStop(0, `rgba(190,222,255,${(0.5 * env).toFixed(3)})`); g.addColorStop(1, 'rgba(190,222,255,0)');
+      ctx2.fillStyle = g; ctx2.beginPath(); ctx2.arc(m.x, m.y, r * 3.4, 0, 6.283); ctx2.fill();
+      ctx2.strokeStyle = `rgba(220,238,255,${(0.55 * env).toFixed(3)})`; ctx2.lineWidth = 1.2;
+      ctx2.beginPath(); ctx2.arc(m.x, m.y, r + 4 + 16 * u, 0, 6.283); ctx2.stroke();
+      ctx2.fillStyle = `rgba(246,251,255,${(0.98 * env).toFixed(3)})`;
       ctx2.beginPath(); ctx2.arc(m.x, m.y, r, 0, 6.283); ctx2.fill();
     }
   }

@@ -51,3 +51,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - wave-gl.js uCaus ブロック末尾: 画面端から短辺の 12%(22%で全開)で cx を 0、打点 A/B が端 8% の外なら輪の帯を無効(inA/inB)、「響」周辺 200×~174 CSS px 箱は 0(→260px で全開)。隅・響周りは金ゼロを確認済み(mobile/desktop rebound-ring, caustic-ring)。輪沿いの細い金の弧は内側に残る。
 - 出会いの音: main.js meetCheck(tap 冒頭, ~L506)。直前 6 打(3 秒以内, 距離>=40px)と解析計算: 輪が出会う半径 r1=(d/sp+dt)/2*sp (sp=WAVE_SPEED)、接点が 5-95%x/10-90%y 外・半径>0.7 幅なら出さない。1 秒 2 個まで、quietTap 除外。音は noteFreq*2 vel0.3、粒は glimmer.spark(x,y) (半径 6.5px 青白い芯+薄い縁, 1.1 秒)。?meet=0 / dataset.meet="回数,x,y,perf時刻"/off。
 - デモ seed=1 は perf 5.4s/6.0s/6.6s に発火。shots meet-spark/meet-off は wait 4800(ページ読込~0.8s 後が perf 時刻)。headless は揺れる。
+
+## c98: 響周りの箱の原因 + mobile 金停止
+- 「響」周りの的・四角い影の正体は vesselRing()(main.js ~L1352)。器が満ちると 響 の中心(角)に amp0.36 の大きな輪→壁反射で箱。今は角から短辺の28%内側(画面中心方向)に amp0.27 で出す（amp>=0.28 は床の金 floorAct を起こすので 0.28 未満厳守）。
+- mobile(innerWidth<500) は uCaus.y を 0 にして金を完全に出さない(wave-gl.js ~L638)。濁りオリーブ対策。desktop の金は不変。
+- 出会いの粒(glimmer.js drawMeets): 半径7px 芯 + 放射グラデの暈(3.4r) + 広がる細い輪(1.2px)。
+- probe 出力先は shots/cycle-098/probe/(3桁)。bash の node -e に backtick を入れるとシェルが展開→ファイルに .cjs を書いて実行。

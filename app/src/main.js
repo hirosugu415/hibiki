@@ -1352,7 +1352,10 @@ document.body.dataset.vesselRing = '0';
 function vesselRing() {
   try {
     const r = wordmark.getBoundingClientRect();
-    ripple((r.left + r.width / 2) / viewW, (r.top + r.height / 2) / viewH, 0.36, 0.04, 2600);
+    // 角に置くと壁で跳ね返って「響」の周りに四角い影と的ができる。輪は角から短辺の 28% 内側に置く
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, off = Math.min(viewW, viewH) * 0.28;
+    const dx = viewW / 2 - cx, dy = viewH / 2 - cy, dl = Math.hypot(dx, dy) || 1;
+    ripple((cx + dx / dl * off) / viewW, (cy + dy / dl * off) / viewH, 0.27, 0.04, 2600);
     document.body.dataset.vesselRing = String(++vesselRings);
   } catch { /* noop */ }
 }

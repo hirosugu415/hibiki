@@ -635,7 +635,7 @@ export function createGL(canvas) {
         const w = [1.0, 0.40 + 0.28 * nt, 0.12 + 0.12 * nt];                // 夜は淡い琥珀、昼は淡い金
         const env = CAUS_ON && CAUS_K > 0 ? Math.min(1, Math.max(0, floorAct * 1.6 - 0.1)) : 0;
         const mob = innerWidth < 500;
-        gl.uniform4f(ren.u.uCaus, CAUS_K * (mob ? 1.25 : 1.5), env * env * (3 - 2 * env), mob ? 0.26 : 0.62, mob ? CAUS_W * 1.3 : CAUS_W);
+        gl.uniform4f(ren.u.uCaus, CAUS_K * (mob ? 1.25 : 1.5), mob ? 0 : env * env * (3 - 2 * env), /* c98: 狭い画面は青が濁るので金を出さない */ mob ? 0.26 : 0.62, mob ? CAUS_W * 1.3 : CAUS_W);
         gl.uniform3f(ren.u.uWarm, w[0], w[1], w[2]);
         try { document.body.dataset.flr = (flTa < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTa)).toFixed(3); document.body.dataset.caustic = CAUS_ON && CAUS_K > 0 ? CAUS_K + ',' + (0.42 * env).toFixed(2) : 'off'; } catch { /* noop */ }
       }
