@@ -50,3 +50,4 @@
 - [cycle 042] mode=normal | score 8/10 | health=ok | polish | 残像は home と見分けられるほど出て直線の筋は曲がったが、細い髪の毛状の線とモバイルの明るい一筋が残り8点維持
 - [cycle 043] mode=normal | score 8/10 | health=ok | polish | 残像は青緑寄りで home と区別できる。砂は細い糸状の弧と mobile の明るい斜線が残り8点維持
 - [cycle 044] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫、画質は c43 と同一で8点維持
+- [cycle 045] mode=normal | score 8/10 | health=ok | polish | 覚える水は周回の輪が静かに成立し終了後は無地に戻る。砂の糸状線は残り8点維持
