@@ -32,9 +32,10 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - 暖色は hour(dataset.hour 先頭)で昼=淡い金/夜=淡い琥珀(JS側で uWarm)。dataset.caustic="k,max強度" / 'off'。URL: ?caustic=0, ?caustick=(既定16), ?causw=(既定14)。max=0.42。
 - 検証: headless は fps~5 で sim 時間が実時間の~1/3。「消える」確認は wait 30s が必要。shots.json に caustic-ring / caustic-off。
 
-## c90: 底の光の再調整 (wave-gl.js RENDER の uCaus ブロック)
-- 色: 乗算 tint vec3(1,.46,.08)×0.9ce で青を潰し、加算 uWarm（昼 1,.68,.24 / 夜 1,.40,.12）。灰褐色の原因は青いリングの G が加算で R と並ぶこと→青を先に潰す。
-- 応答は山形 ce=env*1.33*cx/(0.49+cx²)（cx=-lw*k）。混み合った水面で強曲率域がべた塗りの金になるのを防ぐ（c89 の clamp 版は 30s 後に金の塊）。
-- 屈折: 打点(uFlA/uFlB の近い方)から外向きに uCaus.w*2.1 テクセルずらして読む。効果は小さく金帯は依然青線の外側に主に出る（未解決）。
-- mobile(<500px): k×1.25, max 0.56, 幅×1.3。desktop: k×1.5, max 0.5。
-- probe 出力は shots/cycle-090/（3桁）。PNG 解析は node + 根の node_modules/pngjs。
+## c90-91: 底の光 (wave-gl.js RENDER の uCaus ブロック ~L183-205)
+- 色: 乗算 tint vec3(1,.46,.08)×min(1,1.35ce) で青を潰し、加算 uWarm（昼 1,.68,.24 / 夜 1,.40,.12）。金×青い輪=灰/オリーブになるので tint は強め。応答は山形 ce=env*1.33*cx/(0.49+cx²)。
+- c91 輪の帯ゲート: 打点 A/B から輪の半径 uFl*.z（床の輪=波頭と同じ半径, 短辺単位, ≒0.22/s）に対し rd/z が 0.72〜0.88 で立ち上がり 1.1〜1.3 で消える帯だけ金を許可。z>0.26〜0.48 で消す（大きな輪のリボン防止）。これで mobile 中央の染み（原因: dd の最近点が非活性の B=画面中央を選んでいた/反射波）が消えた。dd は活性な打点のうち輪の半径に近い方。
+- 金は依然 青い輪の外側（波頭の山の位置）に出る。屈折オフセット(uCaus.w*2.1テクセル)は 4.5 に増やしても位置が変わらず原因不明（未達）。内側に出すなら輪の半径に対する帯の中心を内へ寄せる方が確実。
+- mobile(<500px): k×1.25, max 0.56, 幅×1.3。desktop: k×1.5, max 0.62。dataset.caustic / dataset.flr(=床の輪の半径, デバッグ用) / ?caustic=0 ?caustick ?causw。
+- 混んだ水面(demo 30s)では輪近傍に金の塊が出る（未解決）。
+- probe 出力は shots/cycle-091/（3桁）。PNG 解析は node + 根の node_modules/pngjs。python heredoc/長い sed はハングしがち→ node スクリプトで編集。

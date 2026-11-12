@@ -183,7 +183,7 @@ void main(){
   if (uCaus.y > 0.0001) {
     // c90 屈折: 打点（輪の中心）から外向きにサンプル位置をずらす＝光は波頭より内側に落ちる。読み取りは従来と同じ 4 回
     vec2 dA = (uv - uFlA.xy) * asp, dB = (uv - uFlB.xy) * asp;
-    vec2 dd = dot(dA, dA) < dot(dB, dB) ? dA : dB;
+    vec2 dd = (uFlB.z > 0.001 && (uFlA.z <= 0.001 || abs(length(dB) - uFlB.z * min(uRes.x, uRes.y) / uRes.y) < abs(length(dA) - uFlA.z * min(uRes.x, uRes.y) / uRes.y))) ? dB : dA;
     vec2 dn = dd / max(length(dd), 1e-4);
     vec2 so = uv + dn / asp * (uCaus.w * 2.1) * tx;
     vec2 co = tx * uCaus.w;
@@ -191,8 +191,13 @@ void main(){
     float cb = clamp(-lw * uCaus.x, 0.0, 1.0), cd = clamp(lw * uCaus.x, 0.0, 1.0);
     base *= 1.0 - 0.1 * cd * uCaus.y;
     float cx = max(-lw * uCaus.x, 0.0);
+    // 輪の帯: 最新の打点から広がる波頭（床の輪と同じ半径 uFl*.z, 短辺単位）の近傍だけ。反射波・中心・遠方の染みを断つ
+    float rdA = length(dA) * uRes.y / min(uRes.x, uRes.y), rdB = length(dB) * uRes.y / min(uRes.x, uRes.y);
+    float bgA = smoothstep(0.72, 0.88, rdA / max(uFlA.z, 0.05)) * (1.0 - smoothstep(1.1, 1.3, rdA / max(uFlA.z, 0.05)));
+    float bgB = smoothstep(0.72, 0.88, rdB / max(uFlB.z, 0.05)) * (1.0 - smoothstep(1.1, 1.3, rdB / max(uFlB.z, 0.05)));
+    cx *= max(bgA * step(0.001, uFlA.z) * (1.0 - smoothstep(0.26, 0.48, uFlA.z)), bgB * step(0.001, uFlB.z) * (1.0 - smoothstep(0.26, 0.48, uFlB.z)));
     float ce = uCaus.y * 0.95 * 1.4 * cx / (0.49 + cx * cx);   // 山形の応答: 曲率が強すぎる所（混み合った水面）では逆に退き、べた塗りの金にならない
-    base *= mix(vec3(1.0), vec3(1.0, 0.46, 0.08), 0.9 * ce);
+    base *= mix(vec3(1.0), vec3(1.0, 0.46, 0.08), min(1.0, 1.35 * ce));
     base += uWarm * ce * uCaus.z * (1.0 - 0.35 * smoothstep(0.0, 0.6, dot(base, vec3(0.333))));
   }
   // 砂州の手がかり: 縁を持たない低コントラストのうねり（浅い所がほんのり明るい）。屈折後の座標 q で描く
@@ -609,9 +614,9 @@ export function createGL(canvas) {
         const w = [1.0, 0.40 + 0.28 * nt, 0.12 + 0.12 * nt];                // 夜は淡い琥珀、昼は淡い金
         const env = CAUS_ON && CAUS_K > 0 ? Math.min(1, Math.max(0, floorAct * 1.6 - 0.1)) : 0;
         const mob = innerWidth < 500;
-        gl.uniform4f(ren.u.uCaus, CAUS_K * (mob ? 1.25 : 1.5), env * env * (3 - 2 * env), mob ? 0.56 : 0.5, mob ? CAUS_W * 1.3 : CAUS_W);
+        gl.uniform4f(ren.u.uCaus, CAUS_K * (mob ? 1.25 : 1.5), env * env * (3 - 2 * env), mob ? 0.56 : 0.62, mob ? CAUS_W * 1.3 : CAUS_W);
         gl.uniform3f(ren.u.uWarm, w[0], w[1], w[2]);
-        try { document.body.dataset.caustic = CAUS_ON && CAUS_K > 0 ? CAUS_K + ',' + (0.42 * env).toFixed(2) : 'off'; } catch { /* noop */ }
+        try { document.body.dataset.flr = (flTa < -1e3 ? 0 : 0.05 + 0.22 * Math.max(0, time - flTa)).toFixed(3); document.body.dataset.caustic = CAUS_ON && CAUS_K > 0 ? CAUS_K + ',' + (0.42 * env).toFixed(2) : 'off'; } catch { /* noop */ }
       }
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
