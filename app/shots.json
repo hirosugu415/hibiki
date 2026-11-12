@@ -659,6 +659,54 @@
           "wait": 300
         }
       ]
+    },
+    {
+      "name": "disp-on",
+      "url": "/?hour=13&disp=0.03",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "clickAt": [
+            300,
+            300
+          ]
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='300px 300px';c.style.transform='scale(1.8)';})()"
+        },
+        {
+          "wait": 300
+        }
+      ]
+    },
+    {
+      "name": "disp-off",
+      "url": "/?hour=13&disp=0",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "clickAt": [
+            300,
+            300
+          ]
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='300px 300px';c.style.transform='scale(1.8)';})()"
+        },
+        {
+          "wait": 300
+        }
+      ]
     }
   ]
 }

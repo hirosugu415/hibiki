@@ -5,7 +5,7 @@ void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 
 const SIM = `#version 300 es
 precision highp float; precision highp int;
-uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDamp; uniform float uGlowDecay;
+uniform sampler2D uState; uniform ivec2 uSize; uniform float uK; uniform float uDisp; uniform float uDif; uniform float uTs; uniform float uDamp; uniform float uGlowDecay;
 uniform vec4 uSplat[16]; uniform int uCount; uniform vec4 uStone; uniform vec4 uBar;
 out vec4 o;
 void main(){
@@ -17,6 +17,15 @@ void main(){
   vec3 D4 = texelFetch(uState, clamp(p + ivec2( 0,-1), ivec2(0), mx), 0).rgb; float d = D4.r;
   vec3 U4 = texelFetch(uState, clamp(p + ivec2( 0, 1), ivec2(0), mx), 0).rgb; float u = U4.r;
   float lap = l + r + d + u - 4.0 * c.r;
+  // 4 次の分散項（毛管波: 短い波ほど先に走る）。軸方向 ±2 の外側 4 点のみ追加で読む
+  float bil = 0.0;
+  if (uDisp > 0.0) {
+    float l2 = texelFetch(uState, clamp(p + ivec2(-2, 0), ivec2(0), mx), 0).r;
+    float r2 = texelFetch(uState, clamp(p + ivec2( 2, 0), ivec2(0), mx), 0).r;
+    float d2 = texelFetch(uState, clamp(p + ivec2( 0,-2), ivec2(0), mx), 0).r;
+    float u2 = texelFetch(uState, clamp(p + ivec2( 0, 2), ivec2(0), mx), 0).r;
+    bil = 12.0 * c.r - 4.0 * (l + r + d + u) + l2 + r2 + d2 + u2;
+  }
   // 媒質マスク（A チャンネル）: 0=水, 1=石。少し歪んだ小石の形、縁は約 3 セルで柔らかく
   float mk = 0.0;
   if (uStone.w > 0.5) {
@@ -31,17 +40,19 @@ void main(){
   if (uBar.w > 0.5) {
     vec2 bd = ((vec2(p) + 0.5) - uBar.xy) / uBar.zw;
     float sdc = (length(bd) - 1.0) * min(uBar.z, uBar.w);
-    kk = uK - 0.14 * (1.0 - smoothstep(-16.0, 16.0, sdc));
+    kk = uK - 0.14 * (uK / 0.44) * (1.0 - smoothstep(-16.0, 16.0, sdc));
   }
   float ed = min(min(float(p.x), float(mx.x - p.x)), min(float(p.y), float(mx.y - p.y)));
   float sponge = 1.0 - smoothstep(0.0, 12.0, ed);
-  float damp = uDamp - sponge * 0.028;
-  float v = (c.g + kk * wet * lap) * damp;
+  float damp = pow(uDamp - sponge * 0.028, uTs);
+  float v = (c.g + kk * wet * lap - uDisp * wet * bil) * damp;
+  v = clamp(v, -1.5, 1.5);
   v -= sign(v) * min(abs(v), 0.00006);
   // 高さへの弱い拡散: 格子の分散で生まれる高波数の尾（縁の二重線・ちぎれ）だけを静かに均す
-  float h = (c.r + v + 0.03 * wet * lap) * 0.9992;
+  float h = (c.r + v + uDif * wet * lap) * pow(0.9992, uTs);
+  h = clamp(h, -3.0, 3.0);
   // 光の滲み: 近傍へ拡散しつつ約 1.5 秒で消える（波とは別チャンネル）
-  float glow = mix(c3.b, (L4.b + R4.b + D4.b + U4.b) * 0.25, 0.35) * uGlowDecay;
+  float glow = mix(c3.b, (L4.b + R4.b + D4.b + U4.b) * 0.25, 0.35) * pow(uGlowDecay, uTs);
   for (int i = 0; i < 16; i++) {
     if (i >= uCount) break;
     vec4 s = uSplat[i];
@@ -290,10 +301,23 @@ function program(gl, frag) {
   return { pr, u };
 }
 
-const STEP_HZ = 95;
+const STEP_HZ0 = 95;
+// 分散 (c65): ?disp=<係数>（既定 0.004、0 で従来式）。実効波速は uK+0.03 の平方根なので、uK を下げた分だけステップ数を増やして速さを保つ
+const DISP_DEF = 0.03;
+const DISP_K0 = 0.44; // 従来の uK
+function readDisp() {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('disp')) { const v = parseFloat(q.get('disp')); return Number.isFinite(v) ? Math.max(0, Math.min(0.035, v)) : DISP_DEF; }
+  } catch { /* noop */ }
+  return DISP_DEF;
+}
 const LONG_SIDE_CELLS = 420;
 const MAX_LONG_PX = 1024; // 内部描画の長辺の上限（CSS で拡大。バイリニアで滑らか）
-const MAX_STEPS = 4;
+const MAX_STEPS = 5;
+const DIF_ON = (() => { try { const v = parseFloat(new URLSearchParams(location.search).get('dif')); return Number.isFinite(v) ? Math.max(0, Math.min(0.05, v)) : 0.006; } catch { return 0.006; } })();
+const GUARD_EVERY = 2.5; // 秒。発散検知の間隔
+const GUARD_LIMIT = 1.0; // |h| がこれを超えたら分散を切る
 
 export function createGL(canvas) {
   try {
@@ -313,6 +337,17 @@ export function createGL(canvas) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
     let dent = [0.5, 0.5, 0.05, 0], skyK = 1, sleep = 0.05, calm = 1, life = 0, wakeA = [0.5, 0.5, 0, 0], wakeB = [0.5, 0.5, 0, 0], plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    const dispCoef = readDisp();
+    let dispOn = dispCoef; let dispOffUntil = 0, guardT = 0, guardTrips = 0, guardMs = 0;
+    // 長波の波速² = uK（拡散 uDif は速度への減衰項で速さに効かない）を保つ: uK = 0.44 - 3.3β（β=0.012 で 0.40。安定条件 8K + 32β ≤ 4 は β≤0.035 で満たす）。波速が不変になるようステップ数を増やし、減衰は pow(,uTs) で時間基準に直す
+    const difNow = () => (dispOn > 0 ? DIF_ON : 0.03);
+    const kNow = () => (dispOn > 0 ? DISP_K0 - 3.3 * dispOn : DISP_K0);
+    const stepHz = () => (dispOn > 0 ? STEP_HZ0 * Math.sqrt(DISP_K0 / (DISP_K0 - 3.3 * dispOn)) : STEP_HZ0);
+    let guardBuf = null;
+    function setDispDataset() {
+      try { document.body.dataset.disp = dispCoef <= 0 ? 'off' : dispCoef + ',' + (dispOn > 0 ? Math.max(1, Math.round(dispCoef / 0.002)) : 0) + ',trips' + guardTrips; } catch { /* noop */ }
+    }
+    setDispDataset();
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -382,7 +417,10 @@ export function createGL(canvas) {
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[cur]);
       gl.uniform1i(sim.u.uState, 0);
       gl.uniform2i(sim.u.uSize, W, H);
-      gl.uniform1f(sim.u.uK, 0.44); // 拡散項 0.03 と合わせて実効 0.47（2D の安定限界 0.5 の手前）
+      gl.uniform1f(sim.u.uK, kNow()); // 拡散項 0.03 と合わせて実効 0.47（分散なし）/ 0.43（分散あり）
+      gl.uniform1f(sim.u.uDisp, dispOn);
+      gl.uniform1f(sim.u.uDif, difNow());
+      gl.uniform1f(sim.u.uTs, STEP_HZ0 / stepHz());
       gl.uniform1f(sim.u.uDamp, look[3]);
       gl.uniform1f(sim.u.uGlowDecay, look[5]);
       const n = withSplats ? Math.min(16, queue.length / 4) : 0;
@@ -410,16 +448,46 @@ export function createGL(canvas) {
       }
     }
 
+    // 発散防止: 一定間隔で状態を読み、|h| が閾値超え（または NaN）なら分散を 8 秒切る。従来式は安定なので残った振動は自然に減衰する
+    function guard(dt) {
+      if (dispCoef <= 0) return;
+      guardT += dt;
+      if (dispOn <= 0 && time > dispOffUntil) { dispOn = dispCoef; setDispDataset(); }
+      if (guardT < GUARD_EVERY || dispOn <= 0 || sleep > 0.95) return;
+      guardT = 0;
+      try {
+        const t0 = performance.now();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[cur]);
+        // RGBA16F の読み出し型は実装依存（FLOAT 不可の環境がある）。実装が示す型で読み、半精度は手で復号する
+        const half = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE) === gl.HALF_FLOAT;
+        if (!guardBuf || guardBuf.length !== W * H * 4) guardBuf = half ? new Uint16Array(W * H * 4) : new Float32Array(W * H * 4);
+        gl.readPixels(0, 0, W, H, gl.RGBA, half ? gl.HALF_FLOAT : gl.FLOAT, guardBuf);
+        if (gl.getError() !== gl.NO_ERROR) { guardT = -1e9; return; }
+        let mx = 0, bad = false;
+        for (let i = 0; i < guardBuf.length; i += 16) {
+          let a = guardBuf[i];
+          if (half) { const e = (a >> 10) & 31; if (e === 31) { bad = true; break; } a = e === 0 ? 0 : Math.pow(2, e - 15) * (1 + (a & 1023) / 1024); }
+          else if (a !== a) { bad = true; break; } else if (a < 0) a = -a;
+          if (a > mx) mx = a;
+        }
+        guardMs = performance.now() - t0;
+        try { document.body.dataset.dispMax = mx.toFixed(3) + ",ms" + guardMs.toFixed(1); } catch { /* noop */ }
+        if (bad || mx > GUARD_LIMIT) { guardTrips++; dispOn = 0; dispOffUntil = time + 8; setDispDataset(); }
+      } catch { guardT = -1e9; /* 読めない環境では検知を止める（シェーダー内 clamp が最後の砦） */ }
+    }
+
     function frame(dt, pal) {
       if (lost || !tex.length) return;
       adapt(dt);
       if (pal.look) look = pal.look;
       acc += dt;
-      let n = Math.min(Math.floor(acc * STEP_HZ), MAX_STEPS);
-      acc = Math.min(acc - n / STEP_HZ, 1 / STEP_HZ);
+      const hz = stepHz();
+      let n = Math.min(Math.floor(acc * hz), MAX_STEPS);
+      acc = Math.min(acc - n / hz, 1 / hz);
       if (n === 0 && pending) n = 1;
       for (let i = 0; i < n; i++) step(true);
       time += dt;
+      guard(dt);
       pulse = Math.max(0, pulse - dt / 1.4);
       gl.useProgram(ren.pr);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -454,7 +522,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setDent, setSleep, setCalm, setLife, setWake };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate, setSky, setDent, setSleep, setCalm, setLife, setWake, guardInfo: () => ({ ms: guardMs, trips: guardTrips, on: dispOn }) };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back', e && e.message); } catch { /* noop */ }
     return null;
