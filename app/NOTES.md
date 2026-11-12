@@ -56,8 +56,6 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - uCalm(wave-gl.js, setCalm)/main.js stepCalm: 最後の打(wakeLast)から0.4s後に減衰→4sで0.55、wakeAll×0.72、letterPlay×0.8。波エネルギー env 高い所(波頭)は mix(uCalm,1,smoothstep(.02,.1,env))で据え置き。dataset.sandCalm。縁: nz を 0.6 倍に圧縮、keep の smoothstep 幅 .17。
 - ヒント: body[data-letter-play=1]/[data-ghost-play=1] で #hint を非表示(CSS, 文言差替中 data-say は除外)。ghostPlayNote() が打・手紙終了から6s保持。style.css は CRLF、main/wave-gl は LF。
 
-## c36 innovation
-- app無変更。IDEAS.md に案A共鳴/B深まる水/C石の砂場を追記。推しC（砂の輝度基準を uStoneC への距離にする）。
 
 ## c37 石の砂場（wave-gl.js 砂ブロック）
 - halo=(1-smoothstep(1.2R, max(3.2R,短辺28%), 石中心距離CSS px))*has。sleepHere=mix(.012,mix(min(.035,uSleep),uSleep,halo),lit)、env側 mix(.05,1,halo)、br*=mix(1,1.9,halo)。外の残りは 0.07/0.12 だと遠景の線が石周りと同格に見えた→0.035/0.05 で局在。dataset.sandHalo="1,半径比"(main.js pushStone)。shots: sandfield-push（石を eval の pointer 列で押す）。
@@ -69,10 +67,14 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 滲みの原因は砂 br（br=0 で消えるのを確認。波glowではない）。高次の節(画面中央)で |gr|→0 かつ |f| 小の領域が広がり dcss が小さくなる→塊。dcss を伸ばす案は暗い核+棘になり不可。star=1-smoothstep(0.5, mob?6.5:4.5, |gr|) で br を 1-star*(desktop .3/mobile 1.0) に（形でなく領域を絞る）。
 - mobile: halo ×2.3、soft-clamp 0.62、上限 .5。desktop は clamp/上限/halo 不変。probe 用 steps は shots/cycle-39/probe/*.json。
 
-## c40 innovation
-- app無変更。IDEAS.md に案A撚り/B水面の残像/C触れ方で変わる水を追記。推しB（localStorage に静止時の淡い絵、再訪で初打が洗う）。
 
 ## c41 水面の残像（afterimage.js 新規）
 - localStorage 'hibiki.afterimage'={p:[[x,y,vel]..最大14]}（GL読み出しはせず打点版）。main.js tap() 冒頭で record+wash（幽霊の打は DEMO 以外では無視: ghostTap フラグ）。stepCalm で最後の打から>4s に save()、pagehide/visibilitychange でも保存。
 - 表示: `<canvas id="afterimage">`(48px幅にグラデ点→CSS blur20px, opacity .22, screen, z1。#aura の前)。起動時に保存あり→shown(1.4sフェードイン)、tap→washing(2.5s)→washed。dataset.afterimage=none/saved/shown/washing/washed。
 - `?demo=1&seed=1` は固定 SEED を即表示（フェードなし）。手紙ハッシュ付きURLを再読込すると letterPlay の tap で洗われる（仕様）。probe で再訪確認は eval で `location.replace(pathname+search)`。shots: afterimage-shown/washed。
+
+## c42 直線の筋の正体
+- 正体: 砂のクラドニ式 f は x↔y 反対称 → 対角 X=Y(画面 x+y=const の45°)が常に節 → 画面を貫く直線。(NOTES旧: 夜光虫/aura/afterimage ではない。隠して切り分け済み)
+- 対策: wave-gl.js 砂ブロック Q の直後で、対角方向に沿って変わる垂直シフト(sin 7ua / 6va)で座標を歪め S 字に曲げた。単純な低周波 warp は平行移動だけで直線が残る(失敗済み)。
+- 残像: afterimage.js 色を白側へ20%、R=m*(0.18+0.1v)、alpha1.0、opacity .22 のまま。R を 0.27 以上にすると灰色の霧になり石が沈む。
+- probe は shots/cycle-042/（3桁）に出る。mobile の clickAt は x<390。

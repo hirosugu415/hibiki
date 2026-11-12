@@ -177,6 +177,8 @@ void main(){
     float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
     vec2 P = gl_FragCoord.xy;
     vec2 Q = (P - uRes * 0.5) / shortS + 0.5;
+    // 板の僅かな不均一: 反対称式の対角節(X=Y)が画面を貫く直線にならないよう、座標をゆるく歪めて曲げる
+    { float ua = Q.x + Q.y, va = Q.x - Q.y; Q += 0.042 * vec2(1.0, -1.0) * sin(7.0 * ua + 1.1 + 1.5 * sin(3.1 * va)) + 0.03 * vec2(1.0, 1.0) * sin(6.0 * va + 0.6 + 1.3 * sin(2.7 * ua)); }
     float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
     float f = cnx * cmy - cmx * cny;
     vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,

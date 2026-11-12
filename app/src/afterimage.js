@@ -29,13 +29,13 @@ export function createAfterimage({ el, accent, demoSeed }) {
     if (!c) return false;
     c.clearRect(0, 0, w, h);
     c.globalCompositeOperation = 'lighter';
-    const [r, g, b] = accent().map((v) => Math.round(v * 255));
+    const [r, g, b] = accent().map((v) => Math.round((v * 0.8 + 0.2) * 255)); // ムード色を明るい側へ
     const m = Math.max(w, h);
     list.forEach(([x, y, v], i) => {
       const age = 0.55 + 0.45 * ((i + 1) / list.length); // 新しい打ほど少し濃い
-      const R = m * (0.2 + 0.12 * v);
+      const R = m * (0.18 + 0.1 * v);
       const gr = c.createRadialGradient(x * w, y * h, 0, x * w, y * h, R);
-      gr.addColorStop(0, `rgba(${r},${g},${b},${0.95 * age})`);
+      gr.addColorStop(0, `rgba(${r},${g},${b},${1.0 * age})`);
       gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
       c.fillStyle = gr; c.fillRect(0, 0, w, h);
     });
