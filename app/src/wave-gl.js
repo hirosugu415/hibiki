@@ -68,6 +68,8 @@ in vec2 vUv; out vec4 o;
 #define TAIL2 0.0
 #define CORE1 0.05
 #define CORE2 0.3
+#define SAND_K 50.0
+#define SAND_D 0.5
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 knee(vec3 x){
   vec3 t = max(x - 0.72, 0.0);
@@ -171,43 +173,62 @@ void main(){
   if (uChl.z > 0.001) {
     float cp = uCssPx;
     float mob = 1.0 - step(600.0, min(uRes.x, uRes.y) / cp);     // 縦長スマホ: 線を細く・量を下げる
-    float cell = 4.0 * cp;
     float wv = clamp(length(g) * 5.0, 0.0, 1.0);                 // 波頭の通過（既に読んだ勾配のみ）
-    vec2 P = gl_FragCoord.xy + normalize(g + vec2(1e-6)) * wv * 1.3 * cp; // 波が通る帯だけ最大 1.3px 揺れる（セル内余白の範囲）
-    vec2 cid = floor(P / cell);
-    float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7), h4 = hash(cid + 7.9);
-    vec2 ctr = (cid + (vec2(1.7) + vec2(h1, h2) * 0.6) / 4.0) * cell; // 粒の中心（半径1.4pxがセルの縁に触れない）
-    float rd = length(P - ctr) / cp;
-    if (rd < 1.45) {
-      float shortS = min(uRes.x, uRes.y);
-      vec2 Q = (ctr - uRes * 0.5) / shortS + 0.5;
-      float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
-      float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
-      float f = cnx * cmy - cmx * cny;
-      vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
-                     -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
-      float d = abs(f) / max(length(gr), 1.6);
-      float dn = d / mix(0.012, 0.0085, mob);                 // 節の線からの距離（線幅=短辺の1.2%単位）
-      float s = smoothstep(h3 * 0.45, h3 * 0.45 + 0.55, uChl.z); // 粒ごとに時間差で集まる
-      float reach = mix(7.0, 0.7, s);
-      float keep = step(h1 + h2 * 0.35, mix(0.2, 1.2, s) - 0.1 * dn / reach - 0.1 * mob);
-      float line = 1.0 - smoothstep(0.55, 1.0, dn / reach);
-      float rg = rd / 1.4;
-      float grain = 1.0 - smoothstep(0.2, 1.0, rg); grain *= grain * (3.0 - 2.0 * grain) * 0.4 + 0.6 * grain; // 縁の柔らかい丸粒
-      float tone = 0.6 + 0.4 * h4;                            // 粒ごとの明るさのばらつき
-      float br = mix(0.05, 0.48, s) * line * keep * grain * tone * smoothstep(0.0, 0.12, uChl.z);
-      br *= 1.0 - 0.18 * mob;
-      br += 0.35 * wv * grain * keep * line * s;              // 輪が通る帯だけ砂が明るい
-      br = min(br, 0.48 + 0.12 * wv);
-      // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
-      vec2 cs = uRes / cp, qc = ctr / cp;
-      float yt = cs.y - qc.y;
-      float quiet = 0.35 + 0.65 * smoothstep(mix(0.1, 0.13, mob), mix(0.22, 0.27, mob), vUv.y);
-      quiet *= 0.25 + 0.75 * smoothstep(34.0, 96.0, length(vec2(qc.x - 56.0, yt - 40.0)));
-      vec2 hq = vec2((qc.x - cs.x * 0.5) / 170.0, (qc.y - 122.0) / 30.0);
-      quiet *= 0.3 + 0.7 * smoothstep(0.6, 1.3, length(hq));
-      col += mix(vec3(1.0), uAcc, 0.3) * br * quiet;
+    float shortS = min(uRes.x, uRes.y);
+    float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
+    float s = 0.0;
+    float acc = 0.0;
+    // 周期の合わない 2 枚の格子（4px / 5.3px・17°回転）を重ねる。各格子で半分ほど間引く
+    for (int k = 0; k < 2; k++) {
+      float cell = (k == 0 ? 4.0 : 5.3) * cp;
+      float ang = (k == 0 ? 0.0 : 0.2967);
+      float ca = cos(ang), sa = sin(ang);
+      vec2 Pr = vec2(ca * gl_FragCoord.x + sa * gl_FragCoord.y, -sa * gl_FragCoord.x + ca * gl_FragCoord.y);
+      vec2 cid = floor(Pr / cell) + float(k) * 31.7;
+      float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7), h4 = hash(cid + 7.9), h5 = hash(cid + 3.1), h6 = hash(cid + 91.3);
+      float r0 = 0.9 + 0.7 * h5;                                 // 粒の基準半径(px)
+      float halfc = cell / cp * 0.5;
+      float ao = max(halfc - r0 * 1.3, 0.0) * 0.92;              // 波で膨らんでも欠けない範囲でばらす
+      vec2 ctrR = (cid - float(k) * 31.7 + 0.5 + (vec2(h1, h2) - 0.5) * 2.0 * ao / (cell / cp)) * cell;
+      vec2 ctr = vec2(ca * ctrR.x - sa * ctrR.y, sa * ctrR.x + ca * ctrR.y);
+      // 粒の中心で波を 1 回読む → 輪の直前は濃く・直後は疎ら（密度と半径で畝を作る）
+      float wh = texture(uState, ctr / uRes).r;
+      float wn = clamp(wh * SAND_K, -1.0, 1.0);
+      float r = r0 * (1.0 + 0.3 * wn) * cp;
+      float rd = length(Pr - ctrR);
+      if (rd < r) {
+        vec2 Q = (ctr - uRes * 0.5) / shortS + 0.5;
+        float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
+        float f = cnx * cmy - cmx * cny;
+        vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
+                       -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
+        float d = abs(f) / max(length(gr), 1.6);
+        float dn = d / mix(0.012, 0.0085, mob);                 // 節の線からの距離（線幅=短辺の1.2%単位）
+        s = smoothstep(h3 * 0.45, h3 * 0.45 + 0.55, uChl.z);     // 粒ごとに時間差で集まる
+        float reach = mix(7.0, 0.7, s);
+        vec2 cc = ctr / cp;
+        float pat = sin(cc.x * 0.021 + 1.3) * sin(cc.y * 0.017 + sin(cc.x * 0.006) * 2.0); // 低周波の斑
+        float thr = (mix(0.2, 1.2, s) - 0.1 * dn / reach - 0.1 * mob) * mix(0.6, 0.8, mob) + 0.07 * pat + SAND_D * (wn > 0.0 ? wn : wn * 0.35) * s;
+        float keep = step(h1 * 0.7 + h2 * 0.3 + h6 * 0.35, thr);
+        float line = 1.0 - smoothstep(0.55, 1.0, dn / reach);
+        float rg = rd / r;
+        float grain = 1.0 - smoothstep(0.2, 1.0, rg); grain *= grain * (3.0 - 2.0 * grain) * 0.4 + 0.6 * grain; // 縁の柔らかい丸粒
+        float tone = 0.6 + 0.4 * h4;                            // 粒ごとの明るさのばらつき
+        float br = mix(0.05, 0.48, s) * line * keep * grain * tone * smoothstep(0.0, 0.12, uChl.z);
+        br *= (1.0 - 0.18 * mob) * (1.0 + 0.3 * wn * s);
+        br += 0.2 * wv * grain * keep * line * s;               // 輪が通る帯だけ砂が少し明るい
+        br = min(br, 0.48 + 0.1 * wv);
+        // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
+        vec2 cs = uRes / cp, qc = ctr / cp;
+        float yt = cs.y - qc.y;
+        float quiet = 0.35 + 0.65 * smoothstep(mix(0.1, 0.13, mob), mix(0.22, 0.27, mob), vUv.y);
+        quiet *= 0.25 + 0.75 * smoothstep(34.0, 96.0, length(vec2(qc.x - 56.0, yt - 40.0)));
+        vec2 hq = vec2((qc.x - cs.x * 0.5) / 170.0, (qc.y - 122.0) / 30.0);
+        quiet *= 0.3 + 0.7 * smoothstep(0.6, 1.3, length(hq));
+        acc += br * quiet;
+      }
     }
+    col += mix(vec3(1.0), uAcc, 0.3) * acc;
   }
   o = vec4(col, 1.0);
 }`;

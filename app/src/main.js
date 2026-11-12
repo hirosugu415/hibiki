@@ -134,6 +134,7 @@ function wake(ms) {
   if (!running && backend) { running = true; last = now; requestAnimationFrame(tick); }
 }
 function tick(now) {
+  updateSandDrift(performance.now());
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
   last = now;
   const k = 1 - Math.exp(-dt / 0.3);
@@ -197,8 +198,18 @@ const LIVE = 14000;
 let touched = store.get('hint') === '1';
 if (touched) hint.classList.add('gone');
 
+// 砂の畝の見積もり: 最後の打から減衰(τ1.8s)。"粒半径の最大変化px,波頭の数"（砂は位置を動かさず密度と半径だけが応える）
+let lastRip = 0;
+document.body.dataset.sandDrift = '0,0';
+function updateSandDrift(now) {
+  if (!lastRip) return;
+  const dt = (now - lastRip) / 1000, f = Math.exp(-dt / 1.8);
+  document.body.dataset.sandDrift = dt > 6 ? '0,0' : `${(0.5 * f).toFixed(2)},${Math.round(3 * f)}`;
+  if (dt > 6) lastRip = 0;
+}
 function ripple(x, yTop, amp, radius, live = LIVE) {
   if (!backend) return;
+  lastRip = performance.now();
   backend.splat(x, 1 - yTop, amp, radius);
   wake(live);
 }

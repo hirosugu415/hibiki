@@ -272,6 +272,78 @@
           "wait": 600
         }
       ]
+    },
+    {
+      "name": "drift-early",
+      "url": "/",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.25,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.64,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 350
+        },
+        {
+          "eval": "document.body.dataset.sandDrift"
+        }
+      ]
+    },
+    {
+      "name": "drift-late",
+      "url": "/",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.25,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.64,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 1250
+        },
+        {
+          "eval": "document.body.dataset.sandDrift"
+        }
+      ]
+    },
+    {
+      "name": "drift-rest",
+      "url": "/",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.25,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "eval": "(()=>{const c=document.getElementById('water'),o={clientX:innerWidth*0.64,clientY:innerHeight*0.5,pointerId:7,pointerType:'mouse',button:0,bubbles:true};c.dispatchEvent(new PointerEvent('pointerdown',o));c.dispatchEvent(new PointerEvent('pointerup',o));return 1})()"
+        },
+        {
+          "wait": 5250
+        },
+        {
+          "eval": "document.body.dataset.sandDrift"
+        }
+      ]
     }
   ]
 }

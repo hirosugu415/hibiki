@@ -41,3 +41,10 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - Bash の heredoc に日本語＋記号が大量にあると失敗することがある → Write で一旦ファイルにして cat >> で追記。
 - IDEAS.md は LF。追記のみ。コミットに Claude/Co-Authored-By を入れない。
 - c28(innovation): IDEAS に A砂紋/B忘れていく水/C二点の干渉を提案。推しA。採用されたらc29で実装(砂の変位は±1.5px・畝は密度で)。
+
+## c29 砂紋（実装済み）
+- wave-gl.js 砂ブロックは 2 格子ループ(4px / 5.3px・17°回転)。粒中心で uState を1回読み wn=h*SAND_K(50)→密度(SAND_D 0.5, 谷は×0.35)と半径(±30%)に反映。変位は無し(欠け回避)。粒 r0 0.9-1.6px, 位置ずれは (半セル-1.3r0) 内。低周波斑 sin。thr は ×0.6(スマホ0.8)。
+- GLSL: `patch` は予約語(GL全滅→render=none)。変数名に注意。
+- main.js: `dataset.sandDrift`="粒半径最大変化px,波頭数"(updateSandDrift, τ1.8s)。shots: drift-early/late/rest は eval で画面比率タップ(0.25,0.5)→(0.64,0.5)。
+- 砂(plate量)は触らないと数秒で消える(既存挙動)。rest では砂ごと薄れるので『元に戻る』証明には弱い。
+- CRLF ファイル: python で書くとLFになる → 書いた後 sed -i 's/$//' で戻す。
