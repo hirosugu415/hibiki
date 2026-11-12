@@ -425,6 +425,30 @@
           "wait": 2800
         }
       ]
+    },
+    {
+      "name": "loop-cycle",
+      "url": "/?demo=1&seed=1",
+      "steps": [
+        {
+          "wait": 15000
+        },
+        {
+          "eval": "document.body.dataset.loop"
+        }
+      ]
+    },
+    {
+      "name": "loop-end",
+      "url": "/?demo=1&seed=1",
+      "steps": [
+        {
+          "wait": 25000
+        },
+        {
+          "eval": "document.body.dataset.loop"
+        }
+      ]
     }
   ]
 }

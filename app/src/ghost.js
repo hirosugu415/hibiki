@@ -8,7 +8,7 @@ const MOTIFS = [
   [6, 8, 9, 8, 6, 4],
 ];
 
-export function createGhost(api, { demo }) {
+export function createGhost(api, { demo, seed }) {
   let timers = [];
   let alive = false;
   let motifN = 0, phase = 0, lastIdx = 4;
@@ -36,9 +36,20 @@ export function createGhost(api, { demo }) {
     later(() => { if (alive) hold(xOf(7), Math.max(0.22, st.y - 0.2), 3000); }, 6200);
   }
 
+  // 覚える水の一幕（デモ）: 同じ 4 打を、間 4.5 秒（先頭から先頭）で 2 度 → 水が覚えて周回する間、幽霊は静かに待つ
+  const LOOP_PHRASE = [[0.30, 0.40, 0.7], [0.42, 0.31, 0.6], [0.56, 0.37, 0.75], [0.70, 0.29, 0.6]];
+  function loopAct() {
+    [0, 4500].forEach((base) => LOOP_PHRASE.forEach(([x, y, v], i) => {
+      later(() => { if (alive) { lastIdx = 3 + i; api.tap(x, y, v); } }, base + i * 600);
+    }));
+    later(playMotif, 6300 + 22000);
+  }
+
   function playMotif() {
     if (!alive) return;
+    if (demo && seed && motifN === 0) { motifN++; loopAct(); return; }
     if (demo && motifN === 0) { motifN++; firstAct(); return; }
+    if (demo && !seed && motifN === 4) { motifN++; loopAct(); return; }
     const m = MOTIFS[motifN++ % MOTIFS.length];
     let t = 0;
     m.forEach((idx, i) => {

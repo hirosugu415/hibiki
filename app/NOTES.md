@@ -31,15 +31,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - Bash の heredoc に日本語＋記号が大量にあると失敗することがある → Write で一旦ファイルにして cat >> で追記。
 - IDEAS.md は LF。追記のみ。コミットに Claude/Co-Authored-By を入れない。
 
-## c30 砂=画素ノイズの帯（c29の格子は廃止）
-- wave-gl.js 砂ブロック(uChl.z>0.001): 格子ループ無し。各画素で節線距離 dcss(CSS px) → band=exp(-(d/w)^2)、w=2.4px(スマホ1.7)×wf、wf=山0.6/谷1.8(wn=h*SAND_K(50)、h=既読の hs.r。追加読み取り0)。濃さ inten=山1.6/谷0.5。keep=step(nz, band*0.95)、nz=2オクターブのデバイスpx固定ハッシュ(時間で動かない)。集まり s は n2 で時間差。輝度上限0.48。quiet(バー/響/ヒント)は P/cp で同式。
-- main.js: dataset.sandHold='1' で砂の図形を保持(plateTouch は figure 変更せず age=0、plateStep は age<=0.5)。撮影専用フック。shots.json drift-*: tap0.25→2.5s→sandHold→tap0.64→early350/late1250/rest5250ms。
-
-## c31 砂の縁と目覚め（wave-gl.js 砂ブロック）
-- 縁: keep=smoothstep(nz-0.12,nz+0.12, band*0.95+0.55*core)。core=exp(-(d/(0.5w))^2)*mix(.3,1,s)（芯の下駄）。nz=0.7*n1+0.3*n4(floor(P*0.72) ブロック)。n2 は s の時間差専用に残す。
-- 目覚め: env=max(sqrt(h²+6v²), glow*0.5)（読み済みのみ）、awake=mix(SAND_SLEEP(0.35),1,smoothstep(0.006,0.05,env))を br に掛ける。0.0015〜0.016 では波の尾が広く残り差が出なかった（env×40 のデバッグ表示で確認）。
-- probe: デフォルトはデモ付きURL。素のURLで使うなら `--url "/?q=1"`。steps に goto は無い。出力は shots/cycle-0NN/（3桁）。steps.json は shots/ 外に置くと散らからない。
-
+## c30-31 砂（wave-gl.js 砂ブロック）: 画素ノイズの帯。節線距離 dcss→band=exp(-(d/w)^2)、keep=smoothstep(nz±幅, band*.95+.55*core)。dataset.sandHold='1' で図形保持（撮影用）。probe は `--url "/?q=1"` で素のURL、出力は shots/cycle-0NN/（3桁）、steps に goto 無しだが shots.json には goto 可。
 
 ## c33 砂の眠り sandSleep（初音）
 - wave-gl.js: uniform uSleep（SAND_SLEEP 定数は廃止）、backend.setSleep(v)。main.js: sandWake()(tap内) / stepSleep(dt)(tick内) / hatsune()。dataset.sandSleep/hatsune。
@@ -82,3 +74,9 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 ## c43 髪の毛状の線を抑える（wave-gl.js 砂ブロック）
 - 調整値: 歪み 0.042/0.03→0.034/0.024、star smoothstep(0.9, 6.0/7.5)、線幅 w 3.3/2.4(mob)、br 係数 0.4、soft-clamp sc 0.32/0.46、上限 .27/.34(mob)、keep の縁幅 ±0.24、halo 倍率 1.55。細く粒立った断片は「細さ×halo倍率」が原因。
 - afterimage.js: 色 = accent*0.78 + 0.11 + 0.11*[.35,.85,.9]（白混ぜ約11%＋青緑寄り）。probe は shots/cycle-043/probe。steps は shots/cycle-43/probe/{push,wash,shown}.json。
+
+## c45 覚える水（loop.js 新規）
+- createLoop({play,short,onState,onLearn}).tap(x,y,vel,human)。フレーズ=3〜6打・間隔≤1.5s・全体≤4.6s。直近8s内の前フレーズと一致（位置0.08短辺・間隔±25%/最小90ms・打数一致・2か所以上に散る）で学習→1.2s後に最大4周(AMPS .35/.26/.17/.09, 周期=全体+1.1s≤6s)→off。human の触れは残り2周＋音量半減、1周目前なら中止。同フレーズ再演で再学習。
+- main.js: `memory`(~404)。onDown→memory.tap(..,true)、DEMO の幽霊の打→false。周回の打は quietTap=true で tap(record=false)（残像に触れない）。dataset.loop=off/learned/cycle,k/4。響の呼吸=#wordmark.learn(CSS)。
+- ghost.js loopAct: 同じ4打(間600ms)を先頭から4.5s間隔で2度、後22秒待つ。seed=1 は最初の一幕、通常demo は motifN===4。shots: loop-cycle(15s)/loop-end(25s)。probe 検証 steps は shots/cycle-45/probe/{loop,fp}.json（偽陽性: 2打・同点3連打・別フレーズは off）。
+- 落とし穴: probe の eval で打を並べるとき、フレーズ長+1.5s 以上待たないと次の run と結合する。

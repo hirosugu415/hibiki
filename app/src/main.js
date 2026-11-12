@@ -4,6 +4,7 @@ import { createGL } from './wave-gl.js';
 import { create2D } from './wave-2d.js';
 import { createAudio } from './audio.js';
 import { createGhost } from './ghost.js';
+import { createLoop } from './loop.js';
 import { createEcho } from './echo.js';
 import { createGlimmer } from './glimmer.js';
 import { createAfterimage } from './afterimage.js';
@@ -384,8 +385,9 @@ function barChime(x, yTop) {
 }
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 let ghostTap = false; // 幽霊の指の打か（デモ以外では残像を洗わず・覚えない）
+let quietTap = false; // 周回再生の打か（残像に触れない）
 function tap(x, yTop, vel = 1, record = true) {
-  if (!ghostTap || DEMO) { afterimage.wash(); afterimage.record(x, yTop, vel); }
+  if (!quietTap && (!ghostTap || DEMO)) { afterimage.wash(); afterimage.record(x, yTop, vel); }
   plateTouch(x, !record);
   sandWake(x, yTop);
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
@@ -396,6 +398,21 @@ function tap(x, yTop, vel = 1, record = true) {
   if (!backend || backend.kind !== 'webgl2') flash(x, yTop, vel); // WebGL2 では光は屈折シェーダーが描く
   if (record) echo.record(x, yTop, vel);
 }
+
+// ---- 覚える水: 同じフレーズを 2 度弾くと、弱い幽霊の打として最大 4 周まわって溶ける（loop.js） ----
+document.body.dataset.loop = 'off';
+const memory = createLoop({
+  play(x, yTop, vel) {
+    if (document.hidden) return;
+    quietTap = true; try { tap(x, yTop, Math.max(0.12, vel), false); } finally { quietTap = false; }
+  },
+  short: () => ({ w: viewW, h: viewH, m: Math.min(viewW, viewH) }),
+  onState(s) { document.body.dataset.loop = s; },
+  onLearn() { // 「響」が一度だけ呼吸する
+    wordmark.classList.remove('learn'); void wordmark.offsetWidth; wordmark.classList.add('learn');
+    setTimeout(() => wordmark.classList.remove('learn'), 2000);
+  },
+});
 
 // ---- こだま: 触れた場所が数秒後にそっと戻る（自身は記録しない） ----
 document.body.dataset.echoes = '0';
@@ -492,6 +509,7 @@ function onDown(e) {
   const p = { x, y, idx: noteIndex(x), t: now, t0: now, moveT: now, lx: e.clientX, ly: e.clientY, timer: 0 };
   pointers.set(e.pointerId, p);
   tap(x, y, 1);
+  memory.tap(x, y, 1, true);
   letterRec.record(x, y, 1);
   vesselAdd(1);
   armHold(e.pointerId, p);
@@ -583,6 +601,7 @@ const ghost = createGhost({
     ghostPlayNote();
     ghostPtr.x = x; ghostPtr.y = y; ghostPtr.idx = noteIndex(x); ghostPtr.t = performance.now();
     ghostTap = true; try { tap(x, y, vel); } finally { ghostTap = false; }
+    if (DEMO) memory.tap(x, y, vel, false);
     if (DEMO) letterRec.record(x, y, vel); // デモ時のみ、幽霊の打も手紙に記録（「響」を押せるように）
     vesselAdd(DEMO ? 2 : 1); // デモの幽霊は約 10 秒で満たす
   },
@@ -590,7 +609,7 @@ const ghost = createGhost({
   holdStart(x, y) { ghostPtr.x = x; ghostPtr.y = y; fountainStart('ghost', ghostPtr); },
   holdEnd(reward) { fountainStop('ghost', !!reward); },
   dotHide() { dot.classList.remove('show'); },
-}, { demo: DEMO });
+}, { demo: DEMO, seed: SEED });
 function dotShow(x, y) {
   dot.style.transform = `translate(${x * viewW}px, ${y * viewH}px)`;
   dot.classList.add('show');

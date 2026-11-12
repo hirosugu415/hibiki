@@ -48,8 +48,10 @@ body { position: fixed; inset: 0; }
 @keyframes wm-wave { to { -webkit-mask-position: 24px var(--wl), 0 calc(var(--wl) + 4px); mask-position: 24px var(--wl), 0 calc(var(--wl) + 4px); } }
 /* 8 打で満ちきったら、約 6 秒周期でゆっくり明滅して「押せる」手がかりになる */
 #wordmark.ready { animation: wm-breathe 6s ease-in-out infinite; }
+#wordmark.learn { animation: wm-learn 1.8s ease-in-out 1; }
+@keyframes wm-learn { 0%, 100% { opacity: 1; } 35% { opacity: .8; } }
 @keyframes wm-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .75; } }
-@media (prefers-reduced-motion: reduce) { #wordmark::after { animation: none; } #wordmark.ready { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #wordmark::after { animation: none; } #wordmark.ready, #wordmark.learn { animation: none; } }
 /* 見た目はそのまま、当たり判定だけ 44px 以上に広げる */
 #wordmark::before { content: ''; position: absolute; inset: -9px -12px; }
 @media (hover: hover) { #wordmark:hover { color: rgb(255 255 255 / .94); } }
