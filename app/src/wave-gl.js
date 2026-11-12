@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -166,6 +166,36 @@ void main(){
   vec2 vc = (uv - 0.5) * vec2(1.0, 1.15);
   col *= 1.0 - 0.38 * smoothstep(0.25, 0.95, length(vc));
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
+
+  // クラドニ図形: 板 f=cos(nπX)cos(mπY)−cos(mπX)cos(nπY) の節の線に砂粒(2px)が集まる。解析式のみ・追加読み取り無し
+  if (uChl.z > 0.001) {
+    float cell = 3.0 * uCssPx;
+    vec2 P = gl_FragCoord.xy, cid = floor(P / cell);
+    vec2 loc = (P / cell - cid) * 3.0;
+    float h1 = hash(cid), h2 = hash(cid + 17.3), h3 = hash(cid + 41.7);
+    vec2 off = vec2(h1, h2) * 1.0;
+    vec2 inb = step(off, loc) * step(loc, off + 2.0);
+    float grain = inb.x * inb.y;
+    if (grain > 0.5) {
+      float shortS = min(uRes.x, uRes.y);
+      vec2 Q = ((cid + 0.5) * cell - uRes * 0.5) / shortS + 0.5;
+      float nn = uChl.x, mm = uChl.y, PI = 3.14159265;
+      float cnx = cos(nn * PI * Q.x), cmy = cos(mm * PI * Q.y), cmx = cos(mm * PI * Q.x), cny = cos(nn * PI * Q.y);
+      float f = cnx * cmy - cmx * cny;
+      vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
+                     -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
+      float d = abs(f) / max(length(gr), 1.6);
+      float dn = d / 0.012;                                   // 節の線からの距離（線幅=短辺の1.2%単位）
+      float s = smoothstep(h3 * 0.45, h3 * 0.45 + 0.55, uChl.z); // 粒ごとに時間差で集まる
+      float reach = mix(7.0, 0.7, s);
+      float keep = step(h1 + h2 * 0.35, mix(0.18, 1.05, s) - 0.1 * dn / reach);
+      float line = 1.0 - smoothstep(0.55, 1.0, dn / reach);
+      float br = mix(0.05, 0.48, s) * line * keep * smoothstep(0.0, 0.12, uChl.z);
+      br *= 1.0 + min(1.2, length(g) * 5.0);                  // 輪が通ると砂が瞬く
+      br = min(br, 0.5) * (0.35 + 0.65 * smoothstep(0.1, 0.22, vUv.y)); // 下端（バー）は静かに
+      col += mix(vec3(1.0), uAcc, 0.3) * br;
+    }
+  }
   o = vec4(col, 1.0);
 }`;
 
@@ -213,7 +243,7 @@ export function createGL(canvas) {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    let bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
+    let plate = [0, 0, 0, 0], bar = { x: 0.5, y: 0.7, rx: 100, ry: 50, on: 0 }, stone = { x: 0.5, y: 0.4, r: 44, on: 0 }, pulse = 0, quality = 1, lastCss = [0, 0, 1], look = [1, 0.95, 2.2, 0.9955, 1, 0.9915], W = 0, H = 0, tex = [], fbo = [], cur = 0, acc = 0, time = 0, lost = false, pending = 0;
     const splats = new Float32Array(64);
     const queue = []; // 未処理の波源 (x, y, 半径, 振幅) を溜め、1 ステップに最大 16 個ずつ注入する
 
@@ -266,6 +296,7 @@ export function createGL(canvas) {
     // 石: ux, uy は 0–1（uy は下が 0）、rPx は CSS ピクセル半径
     function setStone(ux, uy, rPx) { stone.x = ux; stone.y = uy; stone.r = rPx; stone.on = 1; }
     function firePulse() { pulse = 1; }
+    function setPlate(n, m, a, ph) { plate[0] = n; plate[1] = m; plate[2] = a; plate[3] = ph; }
     // 砂州: ux, uy は 0–1（uy は下が 0）、rxPx / ryPx は CSS ピクセル半径（楕円）
     function setBar(ux, uy, rxPx, ryPx) { bar.x = ux; bar.y = uy; bar.rx = rxPx; bar.ry = ryPx; bar.on = 1; }
 
@@ -329,6 +360,8 @@ export function createGL(canvas) {
       gl.uniform4f(ren.u.uLook, look[0], look[1], look[2], look[3]);
       gl.uniform1f(ren.u.uRimW, look[4]);
       gl.uniform1f(ren.u.uPulse, pulse * pulse);
+      gl.uniform4f(ren.u.uChl, plate[0], plate[1], plate[2], plate[3]);
+      gl.uniform1f(ren.u.uCssPx, canvas.width / lastCss[0]);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
       gl.uniform4f(ren.u.uBarC, bar.x, bar.y, bar.rx / lastCss[1], bar.on ? bar.ry / lastCss[1] : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -337,7 +370,7 @@ export function createGL(canvas) {
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; });
     canvas.addEventListener('webglcontextrestored', () => { lost = false; W = H = 0; window.dispatchEvent(new Event('resize')); });
 
-    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse };
+    return { kind: 'webgl2', resize, splat, frame, setStone, setBar, firePulse, setPlate };
   } catch (e) {
     try { console.warn('webgl unavailable, falling back'); } catch { /* noop */ }
     return null;

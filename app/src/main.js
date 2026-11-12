@@ -157,12 +157,40 @@ function tick(now) {
       stone.x += dx * ks; stone.y += dy * ks; pushStone(); moving = true;
     } else if (dx || dy) { stone.x = stone.tx; stone.y = stone.ty; pushStone(); }
   }
+  if (plateStep(dt)) moving = true;
   shoal.phase = (shoal.phase + dt) % BAR_PERIOD; pushBar();
   try { backend.frame(dt, pal); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
 
+// ---- 砂の図形（クラドニ）: 音の高さ(横位置の度数)が板の振動モード (n,m) を決め、砂が節の線に集まる ----
+const PLATE_MODES = [[1, 2], [1, 3], [2, 3], [2, 5], [3, 4], [3, 5], [4, 7], [3, 8], [5, 8], [6, 9]];
+const plate = { n: 0, m: 0, a: 0, age: 9, idx: -1, at: -1e9, figs: 0, shown: '' };
+document.body.dataset.plateFig = '0';
+function plateTouch(x, quiet) {
+  const idx = noteIndex(x), now = performance.now();
+  if (idx !== plate.idx && now - plate.at >= 500) {
+    plate.idx = idx; plate.at = now; plate.n = PLATE_MODES[idx][0]; plate.m = PLATE_MODES[idx][1];
+    plate.a = Math.min(plate.a, 0.12); // 砂がいったんほどけて次の図形へ集まり直す
+    plate.figs++; document.body.dataset.plateFig = String(plate.figs);
+    if (!quiet) audio.sand((x * 2 - 1) * 0.5);
+  }
+  plate.age = 0;
+}
+function plateStep(dt) {
+  if (!backend || !backend.setPlate) return false;
+  if (fountain) plate.age = Math.min(plate.age, 0.5); // 歌っている間は保つ
+  plate.age += dt;
+  if (plate.age < 1.0) plate.a = Math.min(1, plate.a + dt / 0.7);
+  else plate.a = Math.max(0, plate.a - dt / 5.0);
+  const on = plate.a > 0.001;
+  backend.setPlate(on ? plate.n : 0, on ? plate.m : 0, on ? plate.a : 0, 0);
+  const s = on ? `${plate.n},${plate.m},${plate.a.toFixed(2)}` : '0';
+  if (s !== plate.shown) { plate.shown = s; document.body.dataset.plate = s; }
+  return on;
+}
+document.body.dataset.plate = '0';
 // ---- 触れる → 波紋 + 音 ----
 const LIVE = 14000;
 let touched = store.get('hint') === '1';
@@ -273,6 +301,7 @@ function barChime(x, yTop) {
 }
 const letterRec = createLetterRecorder((n, len) => { document.body.dataset.letter = `n=${n};len=${len}`; });
 function tap(x, yTop, vel = 1, record = true) {
+  plateTouch(x, !record);
   ripple(x, yTop, 0.3 + 0.2 * vel, 0.013);
   note(x, yTop, vel);
   stoneEcho(x, yTop);
@@ -312,6 +341,7 @@ function fountainTick(f) {
 function fountainStart(owner, ref) {
   if (!backend || fountain) return;
   const f = fountain = { owner, ref, timer: 0, voice: null };
+  plateTouch(ref.x, false);
   const m = target, hz = noteFreq(m, noteIndex(ref.x));
   f.voice = audio.voiceHold(hz, Math.min(1, Math.max(0, 1 - ref.y + m.bright)), (ref.x * 2 - 1) * 0.5);
   document.body.dataset.holding = '1';

@@ -213,8 +213,25 @@ export function createAudio() {
     } catch { return null; }
   }
 
+  // 砂の粒音: 図形が組み上がる約 0.4 秒だけ、高域の短いノイズ（極小音量）
+  function sand(pan = 0) {
+    if (unavailable || muted || !gesture || !ctx || ctx.state !== 'running') return;
+    try {
+      const t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.45);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() < 0.35 ? Math.random() * 2 - 1 : 0) * Math.sin(Math.PI * i / len);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3800;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.44);
+      const pn = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      src.connect(hp); hp.connect(g);
+      if (pn) { pn.pan.value = pan; g.connect(pn); pn.connect(bus); } else g.connect(bus);
+      src.start(t); src.onended = () => { try { g.disconnect(); } catch { /* noop */ } };
+    } catch { /* noop */ }
+  }
+
   function applyPendingMood() { if (ctx && pendingMood) { setMood(pendingMood); pendingMood = null; } }
 
   publish();
-  return { unlock, play, voiceHold, setMood, setMuted, applyPendingMood, get muted() { return muted; }, get live() { return !!(ctx && !unavailable && !muted && gesture && ctx.state === 'running'); } };
+  return { unlock, play, voiceHold, sand, setMood, setMuted, applyPendingMood, get muted() { return muted; }, get live() { return !!(ctx && !unavailable && !muted && gesture && ctx.state === 'running'); } };
 }
