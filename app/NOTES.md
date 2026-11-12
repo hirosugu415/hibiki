@@ -64,7 +64,7 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - wave-gl.js: SIM uGate(y,x,gw,hw セル)=帯で kk×(1-0.85gz)・damp-0.07gz。RENDER uGateC(CSS px)=col*(1-0.45w) の陰影のみ。setGate(yPx,xPx,gwPx,hwPx)。
 - **落とし穴**: 最終 col の乗算は見た目で約1/3〜1/4にしか効かない(0.9で20%減)。波は3秒で消えるので回折は門の近く(堤の上端のすぐ上)で打たないと見えない。shots.json は eval の PointerEvent で画面比の位置を打つ(clickAt は幅で座標が変わるため)。
 
-## c82: 門の磨き
-- gate を**非デモでも既定 on**（?gate=0 で無効）。home/disp系回帰なし(probe確認)。堤の陰影: ガウス型 wy(幅1.15hw)・係数0.2・端 gx smoothstep(0.3→2.4gw) で「気づく程度」。GATED 0.07→0.04、門幅 portrait 0.085S(min30)/landscape 0.052S。
-- gate-split 撮影: eval で dataset.gate の x/y から堤の直上(portrait -0.005S, landscape は門から+0.05S 横・堤上端+0.04S)を打ち 1.1s 待つ。desktop は headless で sim が遅く、輪が堤で欠けるのは片側が読める程度。
-- build が stall したら `npx vite build` を直接フォアグラウンドで。
+## c82-83: 門の磨き
+- gate は非デモでも既定 on（?gate=0 で無効）。**c83: 堤の陰影(render側の col 乗算)を完全に廃止**（静止時の継ぎ目ゼロ。mobile-home y≈400 に筋なし確認）。堤は SIM の屈折/反射だけ。GATED 0.015、門の半幅 portrait 0.12S(min42)/landscape 0.075S。
+- gate-split 撮影: 門 x(dataset.gate の2番目)の真上・堤の上端のすぐ上(portrait -0.005S, landscape は +0.02S 堤側)を打つ。headless は fps で sim 速度が変わるので **early(1.0s) と late(+0.8s) の2枚**を撮る（mobile は early、desktop は late が読める）。gate-off は ?gate=0 で dataset.gate 不在でも落ちない eval(フォールバック座標)。
+- probe 出力は shots/cycle-0NN(3桁)。build が stall したら npx vite build を直接。

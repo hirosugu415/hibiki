@@ -144,7 +144,7 @@ document.body.dataset.gateHits = '0';
 const gateS = () => Math.min(viewW, viewH);
 const gateYf = () => (viewH > viewW ? 0.47 : 0.5);              // 堤の中心 y（上からの画面比。石・砂州・ヒントを避ける）
 const gateHw = () => Math.max(0.065 * gateS(), 26);               // 堤の半幅 CSS px（帯の全幅は短辺の 13%）
-const gateGw = () => (viewH > viewW ? Math.max(0.085 * gateS(), 30) : 0.052 * gateS());                // 門の半幅
+const gateGw = () => (viewH > viewW ? Math.max(0.12 * gateS(), 42) : 0.075 * gateS());                // 門の半幅
 const gateXf = () => 0.55 + 0.05 * Math.sin(2 * Math.PI * performance.now() / 180000 + 0.7); // 約3分で画面幅の1割ゆっくり漂う
 function pushGate() {
   if (!GATE_ON || !backend || !backend.setGate) return;
