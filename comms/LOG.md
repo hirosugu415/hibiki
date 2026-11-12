@@ -95,3 +95,4 @@
 - [cycle 087] mode=normal | score 7/10 | health=ok | polish | 殻に触れると演奏が蘇る。機能は成立だが再生の波紋が大きく賑やかで静けさが薄れた。7点据え置き
 - [cycle 088] mode=innovation | score 7/10 | health=ok | polish | 殻の再生は小さく静かになり、ホームは静かで回帰なし。発想サイクルのため7点据え置き
 - [cycle 089] mode=normal | score 7/10 | health=ok | polish | 底の光は desktop で読める2層になったが灰褐色で濁り、mobile は淡く読みにくい
+- [cycle 090] mode=normal | score 7/10 | health=ok | polish | 底の光は金色に読めるようになった。ただ青輪との間に灰色の層が残り、mobile 中央に金の羽根状の染みが出た
