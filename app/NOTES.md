@@ -40,3 +40,4 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 塗り円盤・強い発光は「泡」に見えて評価が落ちた。縁を持たない低コントラストに。
 - Bash の heredoc に日本語＋記号が大量にあると失敗することがある → Write で一旦ファイルにして cat >> で追記。
 - IDEAS.md は LF。追記のみ。コミットに Claude/Co-Authored-By を入れない。
+- c28(innovation): IDEAS に A砂紋/B忘れていく水/C二点の干渉を提案。推しA。採用されたらc29で実装(砂の変位は±1.5px・畝は密度で)。
