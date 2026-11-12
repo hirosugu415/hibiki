@@ -480,7 +480,7 @@ let fountain = null; // { owner, ref, timer, voice }
 // ---- 双つの泉(c77): 離した泉は約 8 秒、線形に弱まりながら湧き続ける（最大 2 つ）。共有の拍で打つので、2 つ目を置くと干渉縞が静止して見える ----
 const SPRINGS_ON = params.get('springs') !== '0';
 const SPR_DEMO = params.get('springs') === 'demo' || params.get('sprdemo') === '1'; // 撮影用: 1.5s 後に A を置いて離し、続けて B を長押し
-const SPR = { LIFE: 8000, get AMP() { return parseFloat(params.get("spamp")) || (viewW < 600 ? 0.4 : 0.24); }, RAD: 0.016, get LAM() { return parseFloat(params.get("splam")) || (viewW < 600 ? 0.085 : 0.11); }, F: () => 0.68 * 95 * (viewW / 420) / (SPR.LAM * Math.min(viewW, viewH)) }; // 振幅は通常の泉(0.2)の 0.6 倍・波長は短辺の 11%
+const SPR = { LIFE: 8000, get AMP() { return parseFloat(params.get("spamp")) || (viewW < 600 ? 0.34 : 0.24); }, get RAD() { return parseFloat(params.get("sprad")) || 0.026; }, get LAM() { return parseFloat(params.get("splam")) || (viewW < 600 ? 0.102 : 0.11); }, F: () => 0.68 * 95 * (viewW / 420) / (SPR.LAM * Math.min(viewW, viewH)) }; // 振幅は通常の泉(0.2)の 0.6 倍・波長は短辺の 11%
 const springs = []; // { x, y, idx, t0, end, lv0, voice, n }
 let sprClock = 0;
 const sprLevel = (s, now) => Math.max(0, s.lv0 * (1 - (now - s.t0) / (s.end - s.t0)));
@@ -507,8 +507,9 @@ function springStep(dt) {
   sprClock = 1;
   sprT += dt;
   const w = Math.sin(2 * Math.PI * SPR.F() * sprT), g = SPR.AMP * (dt / 0.07) * w;
-  for (const s of springs) ripple(s.x, s.y, g * sprLevel(s, now), SPR.RAD, 600);
-  if (f && f.shared) ripple(f.ref.x, f.ref.y, g, SPR.RAD, 600);
+  const lvA = springs.length ? sprLevel(springs[0], now) : 1;
+  springs.forEach((s, i) => ripple(s.x, s.y, g * (i === 0 ? lvA : Math.min(lvA, sprLevel(s, now))), SPR.RAD, 600));
+  if (f && f.shared) { const rp = Math.min(1, (now - (f.t0 || now)) / 1500); ripple(f.ref.x, f.ref.y, g * (springs.length ? lvA : 1) * rp, SPR.RAD, 600); }
   const ph = Math.floor(sprT * SPR.F() / 2); // 2 周期ごとに粒が脈打つ（光だけ）
   if (ph !== sprPh) {
     sprPh = ph;
@@ -521,7 +522,7 @@ function springClockEnsure() { sprClock = 1; }
 function springAdopt(f) { // 離した泉を余韻の泉にする
   const now = performance.now();
   while (springs.length >= 2) springKill(springs.shift(), 400);
-  springs.push({ x: f.ref.x, y: f.ref.y, idx: f.idx, t0: now, end: now + SPR.LIFE, lv0: 1, voice: f.voice, n: 0 });
+  springs.push({ x: f.ref.x, y: f.ref.y, idx: f.idx, t0: now, end: now + SPR.LIFE, lv0: springs.length ? sprLevel(springs[0], now) : 1, voice: f.voice, n: 0 });
   if (f.voice) f.voice.fade(SPR.LIFE / 1000);
   springClockEnsure();
   springsData();
@@ -542,7 +543,7 @@ function fountainTick(f) {
 function fountainStart(owner, ref) {
   if (!backend || fountain) return;
   if (SPRINGS_ON) while (springs.length >= 2) springKill(springs.shift(), 400); // 3 つ目: 最古を即フェードアウト
-  const f = fountain = { owner, ref, timer: 0, voice: null, idx: noteIndex(ref.x), shared: false };
+  const f = fountain = { t0: performance.now(), owner, ref, timer: 0, voice: null, idx: noteIndex(ref.x), shared: false };
   plateTouch(ref.x, false);
   const m = target;
   let lv = 1;
@@ -897,11 +898,12 @@ function ghostPlayNote() {
   ghostPlayTimer = setTimeout(() => { document.body.dataset.ghostPlay = '0'; }, 6000);
 }
 if (SPR_DEMO) {
-  const S = () => Math.min(viewW, viewH), ys = () => (viewH < viewW ? 0.5 : 0.44);
-  const pa = { x: 0.5 - (parseFloat(params.get("spd")) || (viewW < 600 ? 0.34 : 0.28)) / 2 * S() / viewW, y: ys() }, pb = { x: 0.5 + (parseFloat(params.get("spd")) || (viewW < 600 ? 0.34 : 0.28)) / 2 * S() / viewW, y: ys() };
-  setTimeout(() => { tap(pa.x, pa.y, 0.7); fountainStart('demoA', pa); }, 1500);
+  const S = () => Math.min(viewW, viewH), ys = () => (viewH < viewW ? 0.38 : 0.44), sd = () => parseFloat(params.get("spd")) || (viewW < 600 ? 0.34 : 0.27);
+  const pt = (sg) => ({ x: 0.5 + sg * sd() / 2 * S() / viewW, y: ys() }); // 画面サイズ確定後(発火時)に計算
+  let pa, pb;
+  setTimeout(() => { pa = pt(-1); tap(pa.x, pa.y, 0.7); fountainStart('demoA', pa); }, 1500);
   setTimeout(() => fountainStop('demoA', true), 1700);
-  setTimeout(() => { tap(pb.x, pb.y, 0.7); fountainStart('demoB', pb); }, 2700);
+  setTimeout(() => { pb = pt(1); tap(pb.x, pb.y, 0.7); fountainStart('demoB', pb); }, 2700);
 }
 const ghost = createGhost({
   bar() { return { x: shoal.x, y: shoal.y, rx: barRx() / viewW }; },

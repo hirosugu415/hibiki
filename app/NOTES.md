@@ -48,3 +48,8 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - フラグ: ?springs=0 で無効、?sprdemo=1 または ?springs=demo で撮影用(1.5s A置き→1.7s離す→2.7s B長押し、ghostのtap/holdは抑止)。?spamp= ?splam= ?spd= で調整。dataset.springs="本数,x1,y1,x2,y2"。
 - ghost.js springsAct: seed デモ 17s 付近(loopAct内)。stone/rain は springsLive() 中は休む。
 - 作業メモ: 一時ファイルは shots/cycle-77/ に置く(/tmp は使わない)。
+
+## c78: 泉の磨き
+- **バグ根治**: デモの泉座標は module 初期化時 viewW=1 で計算され mobile 値・間隔0.34Sになっていた → 発火時(setTimeout内)に pt() で計算。画面サイズ依存の値はタイマー内で。
+- desktop 間隔0.27S, y=0.38(石 y≈0.62 から>15%S)。駆動点 RAD 0.016→0.026(?sprad=、中心のジャギー解消)。mobile LAM 0.085→0.102, AMP 0.4→0.34。
+- 振幅揃え: springStep で2番目の泉/held泉の level = min(古い泉の現在level, 自分)、held は f.t0 から1.5s で立ち上がり。springAdopt の lv0 は古い泉の現在levelに合わせる。
