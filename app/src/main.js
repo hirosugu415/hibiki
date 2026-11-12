@@ -217,6 +217,7 @@ function hatsune(x, yTop, vel) {
   [[0, 0, 1], [2, 0.18, 0.8], [4, 0.36, 0.7]].forEach(([d, t, lv]) => audio.play(noteFreq(m, Math.min(NOTE_COUNT - 1, i0 + d)), br, vel, x, 1, lv, t));
   return true;
 }
+let clearK = 0; // 雨あがり: 減衰を最大 +0.0004（0.04%）だけ緩める
 function tick(now) {
   updateSandDrift(performance.now());
   const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
@@ -248,7 +249,11 @@ function tick(now) {
   }
   if (plateStep(dt)) moving = true;
   shoal.phase = (shoal.phase + dt) % BAR_PERIOD; pushBar();
-  try { backend.frame(dt, pal); } catch { /* 描画失敗でも落とさない */ }
+  const clearT = document.body.dataset.weather === 'clearing' ? 1 : 0;
+  clearK += (clearT - clearK) * (1 - Math.exp(-dt / (clearT ? 0.8 : 1.2)));
+  if (clearK < 0.002 && !clearT) clearK = 0; else moving = true;
+  document.body.dataset.clearK = clearK.toFixed(3);
+  try { backend.frame(dt, clearK ? { ...pal, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : pal); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;
 }
@@ -783,6 +788,7 @@ let rainFirst = rainForced;
 function rainDrop() {
   const now = performance.now();
   while (rainLive.length && rainLive[0] < now) rainLive.shift();
+  document.body.dataset.rainLive = String(rainLive.length);
   if (document.hidden || !backend || backend.kind !== 'webgl2' || rainLive.length >= RAIN_MAX_LIVE || pointers.size || fountain) return false;
   const sx = stone.x * viewW, sy = stone.y * viewH, avoid = stoneR() * 1.9;
   const top = 100 / viewH, bottom = 1 - 225 / viewH;
