@@ -69,6 +69,7 @@ in vec2 vUv; out vec4 o;
 #define CORE1 0.05
 #define CORE2 0.3
 #define SAND_K 50.0
+#define SAND_SLEEP 0.35
 #define SAND_D 0.5
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 knee(vec3 x){
@@ -184,7 +185,8 @@ void main(){
     float dcss = abs(f) / max(length(gr), 1.6) * shortS / cp;     // 節の線までの距離(CSS px)
     // 画素ごとの固定ノイズ（2 オクターブ・時間で動かさない）
     float n1 = hash(P + 3.7), n2 = hash(floor(P * 0.5) + 19.1), n3 = hash(P + 71.3);
-    float nz = 0.62 * n1 + 0.38 * n2;
+    float n4 = hash(floor(P * 0.72) + 5.3);
+    float nz = 0.7 * n1 + 0.3 * n4;
     float s = smoothstep(n2 * 0.45, n2 * 0.45 + 0.55, uChl.z);   // 塊ごとに時間差で集まる
     // 波頭: 山で締まって濃く、谷でほどけて薄く（読み済みの h のみ）
     float wn = clamp(h * SAND_K, -1.0, 1.0);
@@ -192,8 +194,13 @@ void main(){
     float inten = wn > 0.0 ? mix(1.0, 1.6, wn) : mix(1.0, 0.5, -wn);
     float w = mix(2.4, 1.7, mob) * wf * mix(3.2, 1.0, s);
     float band = exp(-(dcss / w) * (dcss / w)) * inten * mix(0.3, 1.0, s) * mix(1.0, 0.8, mob);
-    float keep = step(nz, band * 0.95);
-    float br = 0.5 * keep * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z);
+    // 芯は下駄を履かせて抜けにくく、縁だけ smoothstep で粒にほどける
+    float core = exp(-(dcss / (w * 0.5)) * (dcss / (w * 0.5))) * mix(0.3, 1.0, s);
+    float keep = smoothstep(nz - 0.12, nz + 0.12, band * 0.95 + 0.55 * core);
+    // 静かに眠り、波のエネルギー(読み済みの h・v・glow の包絡)で目覚める
+    float env = max(sqrt(h * h + hs.g * hs.g * 6.0), hs.b * 0.5);
+    float awake = mix(SAND_SLEEP, 1.0, smoothstep(0.006, 0.05, env));
+    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z);
     br = min(br, 0.48);
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;

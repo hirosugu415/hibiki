@@ -43,3 +43,8 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 - 検証は shots/cycle-0NN/probe の PNG を pngjs(ルート node_modules)で3x切り出して縦に並べると差が見える。
 - 履歴: c29 の 2格子粒/変位なしは廃止。sandDrift(main.js)は残存だが未使用に近い。
 - python は無い。編集は node -e か Edit。
+
+## c31 砂の縁と目覚め（wave-gl.js 砂ブロック）
+- 縁: keep=smoothstep(nz-0.12,nz+0.12, band*0.95+0.55*core)。core=exp(-(d/(0.5w))^2)*mix(.3,1,s)（芯の下駄）。nz=0.7*n1+0.3*n4(floor(P*0.72) ブロック)。n2 は s の時間差専用に残す。
+- 目覚め: env=max(sqrt(h²+6v²), glow*0.5)（読み済みのみ）、awake=mix(SAND_SLEEP(0.35),1,smoothstep(0.006,0.05,env))を br に掛ける。0.0015〜0.016 では波の尾が広く残り差が出なかった（env×40 のデバッグ表示で確認）。
+- probe: デフォルトはデモ付きURL。素のURLで使うなら `--url "/?q=1"`。steps に goto は無い。出力は shots/cycle-0NN/（3桁）。steps.json は shots/ 外に置くと散らからない。
