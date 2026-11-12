@@ -644,6 +644,21 @@
           "wait": 250
         }
       ]
+    },
+    {
+      "name": "stone-zoom",
+      "url": "/?demo=1&seed=1&hour=13",
+      "steps": [
+        {
+          "wait": 1200
+        },
+        {
+          "eval": "(()=>{const c=document.querySelector('#water');c.style.transformOrigin='50% 60%';c.style.transform='scale(2.5)';})()"
+        },
+        {
+          "wait": 300
+        }
+      ]
     }
   ]
 }

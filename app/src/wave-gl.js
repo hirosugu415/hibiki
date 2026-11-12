@@ -163,18 +163,29 @@ void main(){
   float wetline = smoothstep(-0.55, -0.1, lp.y);   // 水際より下は沈んで暗く
   stoneC *= mix(0.74, 1.0, wetline);
   // 濡れた艶: 左上寄りのごく淡い面の光
-  vec2 gp = lp - vec2(-0.38, 0.42);
-  stoneC += mix(uAcc, vec3(1.0), 0.45) * 0.085 * exp(-dot(gp, gp) * 5.5) * wetline;
+  vec2 gp = (lp - vec2(-0.30, 0.40)) * vec2(1.0, 1.55);
+  stoneC += mix(uAcc, vec3(1.0), 0.45) * 0.17 * exp(-dot(gp, gp) * 3.4) * wetline;
+  // 下側の淡い反射（水の色が石の下面に映る）
+  vec2 rp = (lp - vec2(0.12, -0.62)) * vec2(0.8, 1.9);
+  stoneC += mix(uMid, uAcc, 0.35) * 0.17 * exp(-dot(rp, rp) * 2.6);
+  // 受光側の面の明るみ: 縁に向かって広く淡く（線ではなく階調）
+  float lit = max(dot(normalize(lp + 1e-4), normalize(vec2(-0.55, 0.72))), 0.0);
+  float rimg = smoothstep(0.35, 1.0, length(lp));
+  stoneC *= 1.0 + 0.22 * pow(lit, 2.0) * rimg - 0.12 * (1.0 - lit) * rimg;
   stoneC += uAcc * 0.02 * smoothstep(0.55, 1.0, m);
   col = mix(col, stoneC, m * 0.95);
 
   float facing = max(dot(sn, normalize(vec2(-0.55, 0.72))), 0.0);
-  float inB = exp(-pow((dpx + 1.1) / 1.7, 2.0)) * has;     // 縁のすぐ内側の細い帯
+  float inB = exp(-pow((dpx + 2.2) / 3.6, 2.0)) * has;     // 縁のすぐ内側の細い帯
   float outB = exp(-pow((dpx - 1.6) / 2.6, 2.0)) * has;    // 縁のすぐ外側（波の光が回り込む）
   vec3 arcC = mix(uAcc, vec3(1.0), 0.55);
-  col += arcC * inB * (0.55 * pow(facing, 3.0) + 0.05 + 0.04 * (1.0 - facing)) ;
+  col += arcC * inB * (0.15 * pow(facing, 3.0) + 0.02 + 0.015 * (1.0 - facing)) ;
   float meniscus = exp(-pow((dpx - 3.2) / 2.2, 2.0)) * has;   // 縁の外側の影（水が石に寄る暗い溝）
   col *= 1.0 - 0.16 * meniscus * (1.0 - 0.7 * facing);
+  // 接地の影: 光と反対（右下）へずらした淡いにじみ。石の外側だけ
+  float sd2 = (length(spc - vec2(0.16, -0.22) * sRy) - sr) / sRy * uStoneC.w;
+  float cshadow = exp(-max(sd2, 0.0) / 11.0) * (1.0 - smoothstep(-1.0, 2.0, dpx)) * has;
+  col *= 1.0 - 0.13 * cshadow * (0.35 + 0.65 * (1.0 - facing));
   col += uAcc * outB * (gl * 0.9 + (0.25 + 0.5 * facing) * 0.07 + 0.3 * uPulse * (0.4 + 0.6 * facing));
   col += uAcc * inB * (0.12 * uPulse + gl * 0.5);
 

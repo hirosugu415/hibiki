@@ -46,3 +46,5 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 - probe で押下保持: steps の eval で #water に PointerEvent(pointerdown/up,pointerId:7)を dispatch。shot は遅く(~0.5s)泉(260ms)が始まるので凹み単体は撮れない→一時 URL フラグで tap/泉を切って確認した(撤去済)。mobile は stone に当たる(0.45,0.55)を避け(0.3,0.3)。
 
 - 沈む指の強化(c62): DENT={R:0.08,RM:0.095(縦長),GAIN:6,AMP:0.08}。setDent の w=k*GAIN。shader: dg=0.34*dr*dsh; dentK=w*(dg*(dg>0?1:0.5)-0.04*de)=明側1.0/暗側0.5・中心沈み弱め(c61は両側等・w=1で見えず。GAIN7.5/対称は暗葉が「染み」に見えた)。dataset.touch 深さ=0.08*GAIN*k(最大0.48)。`?dent=1`=撮影用: 押下で tap/泉/音を出さず凹みだけ(DENT_ONLY)。shots: press-hold / press-hold-zoom(#water を transform scale(3) 原点30% 30%) / press-hold-live(通常押下)。crop は shots/cycle-62/probe/crop.mjs(pngjs)。
+
+- 石の質感(c63): wave-gl RENDER の石ブロック。艶=楕円ハイライト(gp,0.17,左上)+下面の淡い反射(rp,uMid,0.17)+縁に向かう受光階調(lit×rimg: 受光側+22%/影側-12%)。縁の白弧 inB は幅 dpx+2.2/3.6 に広げ強度 0.55→0.15(線でなく階調)。接地影 cshadow: 右下(0.16,-0.22)*sRy ずらした形から exp(-d/11px)、石の外のみ ×(1-0.13..)。shots: stone-zoom(#water scale 2.5 原点50% 60%、石は (0.5,0.6))。crop は shots/cycle-62/probe/crop.mjs。patch は shots/cycle-63/probe/patch.mjs(EOL保持 node 編集)。
