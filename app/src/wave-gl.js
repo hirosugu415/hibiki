@@ -188,6 +188,11 @@ void main(){
     vec2 so = uv + dn / asp * (uCaus.w * 2.1) * tx;
     vec2 co = tx * uCaus.w;
     float lw = texture(uState, so + vec2(co.x, 0.0)).r + texture(uState, so - vec2(co.x, 0.0)).r + texture(uState, so + vec2(0.0, co.y)).r + texture(uState, so - vec2(0.0, co.y)).r - 4.0 * h;
+    if (asp.x < 0.8) { // 縦長画面（c94）: 斜め 4 点も平均してサンプル格子のギザつきをならす
+      vec2 cd = co * 0.707;
+      float lw2 = texture(uState, so + cd).r + texture(uState, so - cd).r + texture(uState, so + vec2(cd.x, -cd.y)).r + texture(uState, so + vec2(-cd.x, cd.y)).r - 4.0 * h;
+      lw = 0.5 * (lw + lw2);
+    }
     float cb = clamp(-lw * uCaus.x, 0.0, 1.0), cd = clamp(lw * uCaus.x, 0.0, 1.0);
     base *= 1.0 - 0.1 * cd * uCaus.y;
     float cx = max(-lw * uCaus.x, 0.0);

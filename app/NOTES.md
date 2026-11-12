@@ -40,3 +40,9 @@ plate render mood stones bar echoes holding letter vessel glints sandSleep wakeR
 - 押下の瞬間の tap で vel>=0.7（ユーザー打は常に1・幽霊初打0.75）→ 800ms 後に同位置へ ripple(amp=min(0.3,主×0.7), r=0.0072) + 音(1oct上, vel0.3, decay0.45)。定数 REB={VEL,DELAY,GAP:2500,BUSY:1000,AMP,RAD}。
 - 出さない: quietTap(周回/こだま系)・前打から1s未満(幽霊連打)・前回発火から2.5s未満・発火時に pointers/fountain/dents が生きている(長押し=press-rebound と排他)。?rebound=0 で off。
 - dataset.rebound="回数,振幅比"/off。デモの幽霊初打は 4.5s 後なので撮影は wait 5800（初打+1.3s）。shots: rebound-ring / rebound-off。
+
+## c94: mobile 仕上げ
+- reboundDrop: innerWidth<600 は amp=min(0.42,主×1.0)・半径0.0095（desktop は 0.3/×0.7/0.0072 のまま）。dataset.rebound 比は mobile で ~0.84-0.95。
+- wave-gl.js 底の光: asp.x<0.8（縦長）のとき斜め4点を追加で読み lw を平均 → 金の縁のギザつきが減った（desktop 不変）。打点中心付近の小さな金の欠片は残る。
+- 雫の音: OfflineAudioContext をProxyで包み app/dist に一時ページ(audio_t.js)を置いて計測（dist は git 無視）。ピーク比(雫/主)≈0.55, RMS比≈0.31-0.45。
+- headless の sim 時間は遅く、デモ撮影は打点・時刻が揺れる。mobile 確認は実クリックで `clickAt` 後 wait1500 が安定。

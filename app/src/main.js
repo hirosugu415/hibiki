@@ -494,8 +494,9 @@ function reboundDrop(x, yTop, vel) {
   setTimeout(() => {
     // 長押し（泉・沈む指）のあいだは出さない = press-rebound と重ならない
     if (document.hidden || fountain || pointers.size || dents.size && [...dents.values()].some((d) => !d.ending)) return;
-    const main = 0.3 + 0.2 * vel, amp = Math.min(REB.AMP, main * 0.7);
-    ripple(x, yTop, amp, REB.RAD, 3000);
+    const mob = innerWidth < 600; // 狭い画面では少し強く・太く（主の輪よりは細い）
+    const main = 0.3 + 0.2 * vel, amp = Math.min(mob ? 0.42 : REB.AMP, main * (mob ? 1.0 : 0.7));
+    ripple(x, yTop, amp, mob ? 0.0095 : REB.RAD, 3000);
     const m = target;
     audio.play(Math.min(2400, noteFreq(m, noteIndex(x)) * 2), Math.min(1, Math.max(0, 1 - yTop + m.bright)), 0.3, x, 0.45, 1, 0, 1 - yTop);
     rebN++;
