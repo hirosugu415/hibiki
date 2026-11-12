@@ -39,3 +39,4 @@
 - [cycle 031] mode=normal | score 8/10 | health=ok | polish | 砂線の縁は少し落ち着き静止時は暗めに。だが home の線はまだ主役で差は微妙、8点維持
 - [cycle 032] mode=innovation | score 8/10 | health=ok | polish | 発想サイクルでアプリ無変更。home は静かで一貫だが砂線が石より先に見える点が残り8点維持
 - [cycle 033] mode=normal | score 8/10 | health=ok | polish | home は石・一言・バーの静かな4階層に到達。だが目覚めた砂は画面全体に一斉に出て波頭に乗っていない
+- [cycle 034] mode=normal | score 8/10 | health=ok | polish | 砂の目覚めが波頭から外へ広がり初画面は石が主役に。全面覚醒時と手紙再生では線が強い
