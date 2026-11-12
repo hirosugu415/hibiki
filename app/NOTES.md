@@ -64,3 +64,7 @@ plate("n,m,量") plateFig audio render mood stones stoneHits stonePush stone bar
 
 ## c38 石が最前面
 - wave-gl.js 砂ブロック末尾: br を soft-clamp(0.4*(1-exp(-br/0.4)))→min .34、石輪郭 dpx で smoothstep(0,6) マスク。star 減光 desktop .3/mobile .7、halo ×1.9 は mobile のみ ×1.3 追加。
+
+## c39 mobile砂の復調・節の滲み
+- 滲みの原因は砂 br（br=0 で消えるのを確認。波glowではない）。高次の節(画面中央)で |gr|→0 かつ |f| 小の領域が広がり dcss が小さくなる→塊。dcss を伸ばす案は暗い核+棘になり不可。star=1-smoothstep(0.5, mob?6.5:4.5, |gr|) で br を 1-star*(desktop .3/mobile 1.0) に（形でなく領域を絞る）。
+- mobile: halo ×2.3、soft-clamp 0.62、上限 .5。desktop は clamp/上限/halo 不変。probe 用 steps は shots/cycle-39/probe/*.json。

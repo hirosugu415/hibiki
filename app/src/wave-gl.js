@@ -181,7 +181,9 @@ void main(){
     float f = cnx * cmy - cmx * cny;
     vec2 gr = vec2(-nn * sin(nn * PI * Q.x) * cmy + mm * sin(mm * PI * Q.x) * cny,
                    -mm * cnx * sin(mm * PI * Q.y) + nn * cmx * sin(nn * PI * Q.y)) * PI;
-    float dcss = abs(f) / max(length(gr), 1.6) * shortS / cp;     // 節の線までの距離(CSS px)
+    float glen = length(gr);
+    float star = 1.0 - smoothstep(0.5, mix(4.5, 6.5, mob), glen);      // 節線の交点(密な結び目)
+    float dcss = abs(f) / max(glen, 1.6) * shortS / cp ;     // 節の線までの距離(CSS px)。結び目では距離を伸ばし帯を締める(滲みの広がり対策)
     // 画素ごとの固定ノイズ（2 オクターブ・時間で動かさない）
     float n1 = hash(P + 3.7), n2 = hash(floor(P * 0.5) + 19.1), n3 = hash(P + 71.3);
     float n4 = hash(floor(P * 0.72) + 5.3);
@@ -210,13 +212,13 @@ void main(){
     float halo = (1.0 - smoothstep(1.2 * stR, hOut, dsC)) * has;
     float sleepHere = mix(0.012, mix(min(0.035, uSleep), uSleep, halo), lit);
     float awake = mix(sleepHere, mix(0.05, 1.0, halo), smoothstep(0.006, 0.05, env));
-    float star = 1.0 - smoothstep(1.5, 6.0, length(gr));      // 節線の交点(密な結び目)は控えめに
-    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 0.7, mob));
+    float br = 0.5 * keep * awake * (0.65 + 0.35 * n3) * smoothstep(0.0, 0.12, uChl.z) * (1.0 - star * mix(0.3, 1.0, mob));
     // 輪が通り過ぎた後は静かに(uCalm)。波のエネルギーが残る波頭の近くだけ今のまま
     br *= mix(uCalm, 1.0, smoothstep(0.02, 0.1, env));
-    br *= mix(1.0, 1.9 * mix(1.0, 1.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
-    br = 0.4 * (1.0 - exp(-br / 0.4));   // 交点で光が溜まらないよう soft-clamp
-    br = min(br, 0.34);
+    br *= mix(1.0, 1.9 * mix(1.0, 2.3, mob), halo);   // 砂場の中は石の影として少し濃く(スマホは×1.3)
+    float sc = mix(0.4, 0.62, mob);
+    br = sc * (1.0 - exp(-br / sc));   // 交点で光が溜まらないよう soft-clamp
+    br = min(br, mix(0.34, 0.5, mob));
     br *= mix(1.0, smoothstep(0.0, 6.0, dpx), has);   // 石が最前面: 輪郭の内側は 0、外 6px で立ち上がる
     // 静かな場所: 下端のバー・左上の「響」・ヒント文のまわり
     vec2 cs = uRes / cp, qc = P / cp;
