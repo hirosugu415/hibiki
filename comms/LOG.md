@@ -29,3 +29,4 @@
 - [cycle 022] mode=normal | score 7/10 | health=ok | polish | 粒のハローが消え「響」が満ちる仕掛けも入ったが、差は小さく7点据え置き
 - [cycle 023] mode=normal | score 7/10 | health=ok | polish | 「響」の満ちは色で見えるようになり押す体験も撮れたが、隅の輪は見えず7点据え置き
 - [cycle 024] mode=innovation | score 7/10 | health=ok | polish | 発想サイクルでアプリ無変更。画面は静かで一貫、7点維持。次は砂の図形で絵を変える
+- [cycle 025] mode=normal | score 8/10 | health=ok | polish | 砂の図形が画面全体に現れ音高で絵が変わる。7点の壁を破るが粒がざらつく
