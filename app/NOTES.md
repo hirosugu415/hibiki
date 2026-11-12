@@ -39,3 +39,5 @@ plate plateFig audio render mood stones stoneHits stonePush bar barChimes echoes
 
 - 刻の水の色(c58): 空は "下地に足す" 加算なので上端最終色=下地(12,24,41)+sky*0.45。夕(h19)は mul[4.3,1.1,0.1] add[.075,.04,0] で上端12%=(60,44,43)琥珀銅(c57 33,40,48は灰茶)。朝 mul[1,1.2,1.5] add[.015,.025,.05]→(23,44,77)。夜 mul[.3,.4,.6]→(15,30,55)。昼(22,38,62)。mobile は下地Bが高く夕もR<Bだが暖色の帯に見える。計測: shots/cycle-58/probe/run.sh(viewport hour..)+m.mjs。1回の probe 約15s、run.sh は4時点/120s以内。
 - 縦長(innerH>innerW)は main.js の hk=1.9 で mul偏差・addを増幅(空寄与が小さいため。昼は恒等)。mobile 夕(61,49,60)/朝(26,49,86)/夜(19,37,64)。
+
+- 刻の水の仕上げ(c59): HOUR_KEYS に band(夜1.0/朝1.25/昼1.0/夕1.6)。hourTint が補間→main.js palT.band→wave-gl uSky を vec4(強さ,帯高×band,exp,band)に。vignette は vtop=1-0.95*clamp((band-1)/.6)*smoothstep(.55,.8,uv.y) で夕の上端暗縁を弱める。縦長は band=1+(band-1)*2.4、hk=1.5(c58は1.9)。値: 夕 mul[2.3,.5,.05] add[.038,.014,0]、朝 mul[1,1.35,2] add[.02,.03,.065]、夜 mul[.1,.12,.3] add[0,0,.008]。desktop上端12%: h0(15,26,48) h3(17,34,64) h6(26,51,100) h9(24,46,84) h13(21,38,61) h16(34,38,56) h19(50,37,45) h22(29,31,47)。dataset.hour 末尾 ",bN"。計測 shots/cycle-59/probe/run.sh(出力 shots/cycle-059/)+m.mjs(プロファイル付)。夕を明るくせず琥珀に寄せるのは G を上げると輝度が戻るので難しい(maroon寄り)。

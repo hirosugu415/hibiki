@@ -80,7 +80,7 @@ function applyHour() {
   setHourPitch(hourTintNow.semis);
   audio.setReverbK(hourTintNow.rev);
   const t = hourTintNow, f = (v, n) => v.toFixed(n);
-  document.body.dataset.hour = f(hourNow, 1) + ',m' + t.mul.map((v) => f(v, 2)).join(':') + '+a' + t.add.map((v) => f(v, 3)).join(':') + ',' + f(t.rev, 3);
+  document.body.dataset.hour = f(hourNow, 1) + ',m' + t.mul.map((v) => f(v, 2)).join(':') + '+a' + t.add.map((v) => f(v, 3)).join(':') + ',' + f(t.rev, 3) + ',b' + f(t.band, 2);
   document.body.dataset.hourPitch = f(t.semis, 2);
 }
 applyHour();
@@ -272,8 +272,8 @@ function tick(now) {
   document.body.dataset.clearK = clearK.toFixed(3);
   if (backend.setSky) backend.setSky(SKY_K);
   document.body.dataset.sky = target.id + ',' + SKY_K.toFixed(2) + ',' + (1 - 0.2 * Math.min(1, innerWidth / innerHeight)).toFixed(3);
-  const hk = innerHeight > innerWidth ? 1.9 : 1; // 縦長は空の寄与が小さいので刻の差を強める（昼は恒等）
-  const palT = { ...pal, sky: pal.sky.map((v, i) => Math.max(0, v * (1 + (hourTintNow.mul[i] - 1) * hk) + hourTintNow.add[i] * hk)) };
+  const hk = innerHeight > innerWidth ? 1.5 : 1; // 縦長は空の寄与が小さいので刻の差を強める（昼は恒等）
+  const palT = { ...pal, sky: pal.sky.map((v, i) => Math.max(0, v * (1 + (hourTintNow.mul[i] - 1) * hk) + hourTintNow.add[i] * hk)), band: innerHeight > innerWidth ? 1 + (hourTintNow.band - 1) * 2.4 : hourTintNow.band };
   try { backend.frame(dt, clearK ? { ...palT, look: [pal.look[0], pal.look[1], pal.look[2], pal.look[3] + 0.0004 * clearK, pal.look[4], pal.look[5]] } : palT); } catch { /* 描画失敗でも落とさない */ }
   try { glimmer.frame(now, dt); } catch { /* noop */ }
   if (now < keepUntil || moving) requestAnimationFrame(tick); else running = false;

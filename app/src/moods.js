@@ -41,10 +41,10 @@ export const noteIndex = (x) => Math.max(0, Math.min(NOTE_COUNT - 1, Math.floor(
 // ---- 刻の水: 時刻 → 空の色の変換・音階の中心・残響の長さ（ムードの上に足すだけ） ----
 // mul/add は空色 (sky) に sky*mul+add として掛ける。add は最大 0.08 以内。
 const HOUR_KEYS = [
-  { h: 1, mul: [0.3, 0.4, 0.6], add: [0, 0.004, 0.016], semis: -2, rev: 1.15 }, // 深い夜
-  { h: 6, mul: [1.0, 1.2, 1.5], add: [0.015, 0.025, 0.05], semis: -0.5, rev: 1.0 }, // 朝: 冷たい青灰
-  { h: 13, mul: [1, 1, 1], add: [0, 0, 0], semis: 0, rev: 0.85 }, // 昼: 中立
-  { h: 19, mul: [4.3, 1.1, 0.1], add: [0.075, 0.04, 0], semis: -0.7, rev: 1.05 }, // 夕: 琥珀
+  { h: 1, band: 1.0, mul: [0.1, 0.12, 0.3], add: [0, 0, 0.008], semis: -2, rev: 1.15 }, // 深い夜
+  { h: 6, band: 1.25, mul: [1.0, 1.35, 2.0], add: [0.02, 0.03, 0.065], semis: -0.5, rev: 1.0 }, // 朝: 冷たい青灰
+  { h: 13, band: 1.0, mul: [1, 1, 1], add: [0, 0, 0], semis: 0, rev: 0.85 }, // 昼: 中立
+  { h: 19, band: 1.6, mul: [2.3, 0.5, 0.05], add: [0.038, 0.014, 0], semis: -0.7, rev: 1.05 }, // 夕: 琥珀
 ];
 const ease = (t) => t * t * (3 - 2 * t);
 export function hourTint(hour) {
@@ -59,7 +59,7 @@ export function hourTint(hour) {
   return {
     mul: a.mul.map((v, j) => mix(v, b.mul[j])),
     add: a.add.map((v, j) => Math.min(0.08, mix(v, b.add[j]))),
-    semis: mix(a.semis, b.semis), rev: mix(a.rev, b.rev),
+    band: mix(a.band, b.band), semis: mix(a.semis, b.semis), rev: mix(a.rev, b.rev),
   };
 }
 let hourRatio = 1;

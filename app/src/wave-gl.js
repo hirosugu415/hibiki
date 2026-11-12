@@ -56,7 +56,7 @@ void main(){
 const RENDER = `#version 300 es
 precision highp float;
 uniform sampler2D uState; uniform vec2 uTexel; uniform vec2 uRes; uniform float uTime;
-uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec3 uSky; uniform vec3 uSkyC;
+uniform vec3 uDeep; uniform vec3 uMid; uniform vec3 uAcc; uniform vec4 uLook; uniform float uRimW; uniform float uPulse; uniform vec4 uStoneC; uniform vec4 uBarC; uniform vec4 uChl; uniform float uCssPx; uniform float uSleep; uniform float uCalm; uniform float uLife; uniform vec4 uWakeA; uniform vec4 uWakeB; uniform vec4 uSky; uniform vec3 uSkyC;
 in vec2 vUv; out vec4 o;
 #define FRESH 0.9
 #define LENS 0.0
@@ -178,7 +178,8 @@ void main(){
     col += uSkyC * uSky.x * sk;
   }
   vec2 vc = (uv - 0.5) * vec2(1.0, mix(1.15, 0.98, smoothstep(0.55, 1.0, uv.y)));   // 上端側は暗縁を弱め、空との帯にしない
-  col *= 1.0 - 0.38 * (1.0 - 0.3 * rtk) * smoothstep(0.25, 0.95, length(vc));
+  float vtop = 1.0 - 0.95 * clamp((uSky.w - 1.0) / 0.6, 0.0, 1.0) * smoothstep(0.55, 0.8, uv.y);   // 夕: 上端側の暗縁を弱め、帯の下に谷を作らない
+  col *= 1.0 - 0.38 * (1.0 - 0.3 * rtk) * vtop * smoothstep(0.25, 0.95, length(vc));
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 160.0;
 
   // クラドニ図形: 板 f=cos(nπX)cos(mπY)−cos(mπX)cos(nπY) の節の線に砂粒(2px)が集まる。解析式のみ・追加読み取り無し
@@ -418,7 +419,8 @@ export function createGL(canvas) {
       gl.uniform1f(ren.u.uCalm, calm);
       gl.uniform1f(ren.u.uLife, life);
       gl.uniform4fv(ren.u.uWakeA, wakeA);
-      gl.uniform3f(ren.u.uSky, skyK * 0.9, 0.2 * Math.min(1, canvas.width / canvas.height), 1.6);
+      const bnd = pal.band || 1;
+      gl.uniform4f(ren.u.uSky, skyK * 0.9, 0.2 * bnd * Math.min(1, canvas.width / canvas.height), 1.6, bnd);
       gl.uniform3fv(ren.u.uSkyC, pal.sky || [0, 0, 0]);
       gl.uniform4fv(ren.u.uWakeB, wakeB);
       gl.uniform4f(ren.u.uStoneC, stone.x, stone.y, stone.r / lastCss[1], stone.on ? stone.r : 0);
