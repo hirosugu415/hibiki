@@ -177,7 +177,7 @@ builder / commander の2つのループを実際に同時起動し、番の受�
 初回のみ手動でリモートを設定します:
 
 ```powershell
-git remote add origin https://github.com/hirosugu415/appByClaude.git
+git remote add origin https://github.com/hirosugu415/hibiki.git
 git push -u origin main --tags
 ```
 
