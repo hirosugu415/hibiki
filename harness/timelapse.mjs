@@ -108,6 +108,8 @@ const html = `<!doctype html>
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 system-ui,"Hiragino Sans","Yu Gothic UI",sans-serif}
 .top{max-width:1500px;margin:0 auto;padding:18px 16px 0}
 h1{margin:0;font-size:1.35rem}.muted{color:var(--muted)}
+.back{position:fixed;z-index:8;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));display:inline-flex;align-items:center;height:44px;padding:0 18px;border:1px solid rgb(255 255 255 / .16);border-radius:99px;background:rgb(22 24 32 / .78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 22px rgb(0 0 0 / .4);color:var(--fg);text-decoration:none;font-size:14px}
+.back:hover{border-color:var(--acc);color:#fff}.back:active{background:var(--panel2)}
 .hero{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
 .stat b{font-size:1.25rem}
 .chartbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:10px 0 14px}
@@ -152,6 +154,7 @@ figcaption{font-size:11px;color:var(--muted);margin-top:2px}
 @media (max-width:900px){.main{grid-template-columns:1fr}.viewer{position:sticky;top:0;max-height:52vh;order:-1;z-index:5}}
 </style></head><body>
 <div class="top">
+${PUB ? '<a class="back" href="../">← 響に戻る</a>' : ''}
 <div class="hero"><div><h1>${esc(genre || 'App evolution timelapse')}</h1><div class="muted">生成: ${esc(new Date().toLocaleString('ja-JP'))}</div></div>
 <div class="stat"><b>${cycles.filter((c) => c.n > 0).length}</b> <span class="muted">サイクル</span></div>
 <div class="stat"><b>${last ? last.score : '–'}</b> <span class="muted">最新スコア${scored.length > 1 ? `（初回 ${scored[0].score}）` : ''}</span></div></div>
@@ -249,13 +252,13 @@ function renderViewer() {
 function toggleAll(on) { viewer.querySelectorAll('details.acc').forEach((d) => { d.open = on; }); }
 
 // ── 選択・再生 ──
-function select(i, { scroll = false } = {}) {
+function select(i, { scroll = false, hash = true } = {}) {
   if (i < 0 || i >= C.length || i === cur) return;
   cur = i;
   items.forEach((el, k) => el.classList.toggle('sel', k === i));
   document.querySelectorAll('.dot').forEach((d) => d.classList.toggle('cur', Number(d.dataset.n) === C[i].n));
   if (scroll) items[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  history.replaceState(null, '', '#c' + C[i].n);
+  if (hash) history.replaceState(null, '', '#c' + C[i].n);
   renderViewer();
 }
 function step(d) { select(Math.min(C.length - 1, Math.max(0, cur + d)), { scroll: true }); }
@@ -297,7 +300,8 @@ const fromHash = () => { const m = location.hash.match(/^#c(\\d+)$/); return m ?
 window.addEventListener('hashchange', () => { const i = fromHash(); if (i >= 0) select(i, { scroll: true }); });
 const start = fromHash();
 const lastShot = C.map((c) => c.screens.length > 0).lastIndexOf(true);
-select(start >= 0 ? start : Math.max(0, lastShot), { scroll: start >= 0 });
+// 最初の表示は一番上から（URL に #cN が無いときは、最新サイクルを選ぶだけで、履歴にも書かず、スクロールもしない）
+select(start >= 0 ? start : Math.max(0, lastShot), { scroll: start >= 0, hash: start >= 0 });
 </script></body></html>`;
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
