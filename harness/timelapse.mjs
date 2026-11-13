@@ -1,9 +1,10 @@
-// 使い方: npm run timelapse [-- --embed] [-- --out path.html]
+// 使い方: npm run timelapse [-- --embed] [-- --out path.html] [-- --public dir [--screens home,touched]]
 // shots/ と comms/ から、サイクルごとの経過を 1 枚の HTML にまとめる。
 //   左  : 文字だけのサイクル一覧（点数・要約・評価全文）。画像は置かない。
 //   右  : 選んだサイクルのスクショ。画面名ごとのアコーディオン（開いた画面は他のサイクルでも開いたまま）。
 //   ▶   : サイクルを順に自動再生（タイムラプス）。←/→ キーでも移動できる。
 //   --embed : 画像を base64 で埋め込み、HTML 単体で持ち運べるようにする（サイズは非常に大きくなる）
+//   --public dir : 公開用。指定した画面（既定 home,touched）だけを JPEG に縮小して dir/img/ に書き出し、dir/index.html を作る（動画なし）
 import fs from 'node:fs';
 import path from 'node:path';
 import { SHOTS, P, ROOT } from './lib/paths.mjs';
@@ -13,7 +14,12 @@ import { readJson } from './lib/util.mjs';
 const argv = process.argv.slice(2);
 const embed = argv.includes('--embed');
 const outArg = argv.indexOf('--out');
-const OUT = outArg >= 0 ? path.resolve(ROOT, argv[outArg + 1]) : path.join(SHOTS, 'timelapse.html');
+const pubArg = argv.indexOf('--public');
+const PUB = pubArg >= 0 ? path.resolve(ROOT, argv[pubArg + 1]) : null;
+const scrArg = argv.indexOf('--screens');
+const PUB_SCREENS = new Set((scrArg >= 0 ? argv[scrArg + 1] : 'home,touched').split(',').map((s) => s.trim()).filter(Boolean));
+const OUT = PUB ? path.join(PUB, 'index.html') : outArg >= 0 ? path.resolve(ROOT, argv[outArg + 1]) : path.join(SHOTS, 'timelapse.html');
+const pubJobs = []; // { from, to, w }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ── LOG をサイクルごとに集める ──
@@ -30,7 +36,12 @@ if (fs.existsSync(P.log)) {
   }
 }
 
-const imgSrc = (pad, file) => {
+const imgSrc = (pad, file, s) => {
+  if (PUB) {
+    const rel = `img/c${pad}-${s.viewport}-${s.name}.jpg`;
+    pubJobs.push({ from: path.join(SHOTS, `cycle-${pad}`, file), to: path.join(PUB, rel), w: s.viewport === 'mobile' ? 390 : 960 });
+    return rel;
+  }
   if (!embed) return `cycle-${pad}/${file}`;
   try { return 'data:image/png;base64,' + fs.readFileSync(path.join(SHOTS, `cycle-${pad}`, file)).toString('base64'); } catch { return ''; }
 };
@@ -56,8 +67,8 @@ const cycles = [...nums].sort((a, b) => a - b).map((n) => {
     logline: log.main ?? '',
     notes: log.harness,
     feedback: fbBody,
-    videos: embed ? [] : (meta?.videos ?? []).map((v) => ({ viewport: v.viewport, src: `cycle-${pad}/${v.file}`, sec: v.durationSec })),
-    screens: (meta?.screens ?? []).map((s) => ({ name: s.name, viewport: s.viewport, blank: !!s.blank, src: imgSrc(pad, s.file) })),
+    videos: embed || PUB ? [] : (meta?.videos ?? []).map((v) => ({ viewport: v.viewport, src: `cycle-${pad}/${v.file}`, sec: v.durationSec })),
+    screens: (meta?.screens ?? []).filter((s) => !PUB || PUB_SCREENS.has(s.name)).map((s) => ({ name: s.name, viewport: s.viewport, blank: !!s.blank, src: imgSrc(pad, s.file, s) })),
   };
 });
 
@@ -292,3 +303,26 @@ select(start >= 0 ? start : Math.max(0, lastShot), { scroll: start >= 0 });
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, html);
 console.log(`timelapse を生成しました: ${OUT}${embed ? '（画像埋め込み）' : ''}`);
+
+// ── 公開用: 画像を JPEG に縮小（ブラウザの canvas を借りる。追加の npm パッケージは不要） ──
+if (PUB && pubJobs.length) {
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.setContent('<canvas id="c"></canvas>');
+  let done = 0, bytes = 0;
+  for (const j of pubJobs) {
+    let png; try { png = fs.readFileSync(j.from).toString('base64'); } catch { continue; }
+    const b64 = await page.evaluate(async ({ png, w }) => {
+      const img = new Image(); img.src = 'data:image/png;base64,' + png; await img.decode();
+      const sc = Math.min(1, w / img.naturalWidth), c = document.getElementById('c');
+      c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.8).split(',')[1];
+    }, { png, w: j.w });
+    fs.mkdirSync(path.dirname(j.to), { recursive: true });
+    const buf = Buffer.from(b64, 'base64'); fs.writeFileSync(j.to, buf); bytes += buf.length; done++;
+  }
+  await browser.close();
+  console.log(`公開用の画像: ${done} 枚, ${(bytes / 1e6).toFixed(1)} MB → ${path.join(PUB, 'img')}`);
+}

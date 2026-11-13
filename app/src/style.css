@@ -116,6 +116,20 @@ body[data-letter-play="1"] #hint:not([data-say]), body[data-ghost-play="1"] #hin
 }
 #ghost-dot.show { opacity: 1; transition-duration: .12s; }
 
+/* 制作過程（タイムラプス）への小さな入口。右上に静かに置く */
+#making {
+  position: fixed; z-index: 2; display: inline-flex; align-items: center; height: 44px; padding: 0 12px;
+  top: max(17px, calc(env(safe-area-inset-top) + 9px));
+  right: max(16px, calc(env(safe-area-inset-right) + 10px));
+  font-size: 13px; font-weight: 300; letter-spacing: .14em; text-decoration: none;
+  color: rgb(255 255 255 / .5); text-shadow: 0 1px 10px rgb(var(--deep) / .6);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation; outline: none;
+  transition: color .3s var(--ease), opacity .6s var(--ease);
+}
+@media (hover: hover) { #making:hover { color: rgb(255 255 255 / .92); } }
+#making:active { color: #fff; transition-duration: .12s; }
+#making:focus-visible { box-shadow: 0 0 0 2px rgb(var(--accent) / .7); border-radius: 999px; }
+
 /* ---- glass control bar ---- */
 #bar {
   position: fixed; z-index: 3; left: 50%; transform: translateX(-50%);
